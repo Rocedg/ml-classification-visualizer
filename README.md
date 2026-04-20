@@ -14,6 +14,10 @@ The app focuses only on classification workflows:
 ```text
 myDashboardApp/
 |-- app.R
+|-- R/
+|   |-- data_helpers.R
+|   |-- metrics_helpers.R
+|   `-- model_training_helpers.R
 |-- modules/
 |   |-- home_module.R
 |   |-- visualizer_module.R
@@ -83,5 +87,9 @@ The app automatically converts the two uploaded class labels into `Class A` and 
 ## Beginner notes
 
 - The project is split into small modules so the code is easier to read.
-- Shared helper functions are kept in `app.R`.
+- Shared helper functions are kept in the `R/` folder:
+  - `data_helpers.R` prepares preset, uploaded, and plotting-grid data.
+  - `metrics_helpers.R` calculates classification metrics.
+  - `model_training_helpers.R` trains Logistic Regression, SVM, and k-NN models.
+- `app.R` remains the main entry point for loading packages, sourcing files, and wiring the UI and server together.
 - The visualizer is designed for understanding model behavior, not for large production datasets.
