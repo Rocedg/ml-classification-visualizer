@@ -22,7 +22,9 @@ library(ggplot2)
 helper_files <- c(
   "R/data_helpers.R",
   "R/metrics_helpers.R",
-  "R/model_training_helpers.R"
+  "R/model_training_helpers.R",
+  "R/playback_helpers.R",
+  "R/plot_helpers.R"
 )
 
 for (helper_file in helper_files) {

@@ -17,7 +17,9 @@ myDashboardApp/
 |-- R/
 |   |-- data_helpers.R
 |   |-- metrics_helpers.R
-|   `-- model_training_helpers.R
+|   |-- model_training_helpers.R
+|   |-- playback_helpers.R
+|   `-- plot_helpers.R
 |-- modules/
 |   |-- home_module.R
 |   |-- visualizer_module.R
@@ -35,8 +37,8 @@ myDashboardApp/
 ## Supported models
 
 - Logistic Regression
-- SVM
-- k-NN
+- SVM (coming soon in the UI)
+- k-NN (coming soon in the UI)
 
 ## Preset datasets
 
@@ -90,6 +92,8 @@ The app automatically converts the two uploaded class labels into `Class A` and 
 - Shared helper functions are kept in the `R/` folder:
   - `data_helpers.R` prepares preset, uploaded, and plotting-grid data.
   - `metrics_helpers.R` calculates classification metrics.
-  - `model_training_helpers.R` trains Logistic Regression, SVM, and k-NN models.
+  - `model_training_helpers.R` trains the currently available Logistic Regression model.
+  - `playback_helpers.R` keeps playback state calculations easy to inspect.
+  - `plot_helpers.R` builds the main classification plot and iteration metric plot.
 - `app.R` remains the main entry point for loading packages, sourcing files, and wiring the UI and server together.
 - The visualizer is designed for understanding model behavior, not for large production datasets.

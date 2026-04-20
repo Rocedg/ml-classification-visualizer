@@ -156,42 +156,18 @@ plot_panel_module_server <- function(id,
     # TODO: Future: generalize this playback system for other classifiers.
     logistic_iteration_history <- reactive({
       model_results <- safe_model_results()
-
-      if (is.null(model_results) || model_results$algorithm_key != "logistic_regression") {
-        return(NULL)
-      }
-
-      model_results$iterations
+      get_logistic_iteration_history(model_results)
     })
 
     total_iteration_count <- reactive({
       iteration_history <- logistic_iteration_history()
-
-      if (is.null(iteration_history)) {
-        return(0)
-      }
-
-      length(iteration_history)
+      get_iteration_count(iteration_history)
     })
 
     active_iteration_results <- reactive({
       model_results <- safe_model_results()
-
-      if (is.null(model_results)) {
-        return(NULL)
-      }
-
-      if (model_results$algorithm_key != "logistic_regression") {
-        return(model_results)
-      }
-
       iteration_history <- logistic_iteration_history()
-      if (is.null(iteration_history) || length(iteration_history) == 0) {
-        return(model_results)
-      }
-
-      bounded_iteration <- min(max(current_iteration(), 1), length(iteration_history))
-      iteration_history[[bounded_iteration]]
+      get_active_iteration_results(model_results, iteration_history, current_iteration())
     })
 
     observeEvent(safe_model_results(), {
@@ -200,7 +176,7 @@ plot_panel_module_server <- function(id,
       playback_running(FALSE)
       current_iteration(1)
 
-      if (!is.null(model_results) && model_results$algorithm_key == "logistic_regression") {
+      if (model_supports_logistic_playback(model_results)) {
         updateSliderInput(
           session = session,
           inputId = "iteration_slider",
@@ -293,46 +269,18 @@ plot_panel_module_server <- function(id,
 
     output$iteration_status_text <- renderText({
       model_results <- safe_model_results()
-
-      if (is.null(model_results) || model_results$algorithm_key != "logistic_regression") {
-        return("Iteration playback ready after Logistic Regression")
-      }
-
-      paste("Iteration:", current_iteration(), "/", total_iteration_count())
+      format_iteration_status_text(model_results, current_iteration(), total_iteration_count())
     })
 
     output$playback_status_text <- renderText({
       model_results <- safe_model_results()
-
-      if (is.null(model_results) || model_results$algorithm_key != "logistic_regression") {
-        return("Playback inactive")
-      }
-
-      if (playback_running()) {
-        "Playback running"
-      } else {
-        "Playback paused"
-      }
+      format_playback_status_text(model_results, playback_running())
     })
 
     output$playback_helper_text <- renderText({
       model_results <- safe_model_results()
-
-      if (is.null(model_results)) {
-        return("Run Logistic Regression to unlock the step-by-step training replay controls.")
-      }
-
-      if (model_results$algorithm_key != "logistic_regression") {
-        return("Iteration playback is currently available only for Logistic Regression.")
-      }
-
       active_iteration <- active_iteration_results()
-
-      paste(
-        "Loss:",
-        active_iteration$loss_value,
-        "| Use the slider or buttons to move through how the boundary changes over time."
-      )
+      format_playback_helper_text(model_results, active_iteration)
     })
 
     output$drawing_status_text <- renderText({
@@ -347,100 +295,18 @@ plot_panel_module_server <- function(id,
       current_classification_data <- classification_data()
       active_model_view <- active_iteration_results()
 
-      plot_object <- ggplot()
-
-      if (!is.null(active_model_view)) {
-        prediction_grid <- active_model_view$prediction_grid
-
-        plot_object <- plot_object +
-          geom_raster(
-            data = prediction_grid,
-            aes(x = x, y = y, fill = predicted_class),
-            alpha = 0.22
-          ) +
-          geom_contour(
-            data = prediction_grid,
-            aes(x = x, y = y, z = class_b_probability),
-            breaks = 0.5,
-            color = "#1f3552",
-            linewidth = 0.65,
-            alpha = 0.9
-          )
-      }
-
-      plot_object +
-        geom_hline(yintercept = 0, color = "#d6dfe8", linewidth = 0.6) +
-        geom_vline(xintercept = 0, color = "#d6dfe8", linewidth = 0.6) +
-        geom_point(
-          data = current_classification_data,
-          aes(x = x, y = y, color = class),
-          size = 2.4,
-          alpha = 0.95
-        ) +
-        scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d")) +
-        scale_fill_manual(values = c("Class A" = "#dce9ff", "Class B" = "#ffe3d1")) +
-        coord_equal() +
-        labs(
-          x = "X",
-          y = "Y"
-        ) +
-        theme_minimal(base_family = "Manrope") +
-        theme(
-          legend.position = "none",
-          panel.grid.minor = element_blank(),
-          panel.grid.major = element_line(color = "#eef3f7", linewidth = 0.55),
-          axis.title = element_text(color = "#47627b", size = 10, face = "bold"),
-          axis.text = element_text(color = "#6d8196", size = 9),
-          plot.background = element_rect(fill = "#ffffff", color = NA),
-          panel.background = element_rect(fill = "#ffffff", color = NA)
-        )
+      build_classification_plot(current_classification_data, active_model_view)
     }, res = 110)
 
     output$iteration_metric_plot <- renderPlot({
       model_results <- safe_model_results()
 
-      if (is.null(model_results) || model_results$algorithm_key != "logistic_regression") {
-        plot.new()
-        text(
-          x = 0.5,
-          y = 0.5,
-          labels = "Loss over time will appear here after you run Logistic Regression.",
-          col = "#6d8196",
-          cex = 1
-        )
-        return(invisible(NULL))
+      if (!model_supports_logistic_playback(model_results)) {
+        return(draw_empty_iteration_metric_plot())
       }
 
       metric_history <- model_results$iteration_metrics
-      highlighted_iteration <- min(max(current_iteration(), 1), nrow(metric_history))
-      highlighted_metric <- metric_history[highlighted_iteration, , drop = FALSE]
-
-      ggplot(metric_history, aes(x = iteration, y = loss)) +
-        geom_line(color = "#5db5a2", linewidth = 1) +
-        geom_point(color = "#d7ebe6", size = 1.8) +
-        geom_point(
-          data = highlighted_metric,
-          color = "#243b57",
-          fill = "#79c9b7",
-          size = 3,
-          shape = 21,
-          stroke = 0.8
-        ) +
-        labs(
-          x = "Iteration",
-          y = "Loss",
-          subtitle = paste("Accuracy at this step:", highlighted_metric$accuracy)
-        ) +
-        theme_minimal(base_family = "Manrope") +
-        theme(
-          panel.grid.minor = element_blank(),
-          panel.grid.major = element_line(color = "#eef3f7", linewidth = 0.55),
-          axis.title = element_text(color = "#47627b", size = 10, face = "bold"),
-          axis.text = element_text(color = "#6d8196", size = 9),
-          plot.subtitle = element_text(color = "#6d8196", size = 10),
-          plot.background = element_rect(fill = "#ffffff", color = NA),
-          panel.background = element_rect(fill = "#ffffff", color = NA)
-        )
+      build_iteration_metric_plot(metric_history, current_iteration())
     }, res = 110)
 
     output$accuracy_value <- renderText({
