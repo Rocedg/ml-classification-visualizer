@@ -9,7 +9,7 @@ The app focuses only on classification workflows:
 3. Run the model
 4. Study the decision regions, raw data, and metrics
 
-## Project structure
+## Project structure:
 
 ```text
 myDashboardApp/
