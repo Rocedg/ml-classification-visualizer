@@ -67,6 +67,7 @@ algorithm_controls_module_ui <- function(id) {
 algorithm_controls_module_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     selected_algorithm_key <- reactiveVal("logistic_regression")
+    default_decision_threshold <- 0.50
 
     observeEvent(input$choose_logistic_regression, {
       selected_algorithm_key("logistic_regression")
@@ -166,8 +167,13 @@ algorithm_controls_module_server <- function(id) {
       selected_algorithm_key = reactive(selected_algorithm_key()),
       algorithm_parameters = reactive({
         if (selected_algorithm_key() == "logistic_regression") {
+          decision_threshold <- input$decision_threshold
+          if (is.null(decision_threshold)) {
+            decision_threshold <- default_decision_threshold
+          }
+
           list(
-            decision_threshold = input$decision_threshold
+            decision_threshold = decision_threshold
           )
         } else {
           list()

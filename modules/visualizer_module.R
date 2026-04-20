@@ -161,8 +161,10 @@ visualizer_module_server <- function(id) {
       drawn_classification_data(updated_drawn_points)
     })
 
-    trained_model_bundle <- eventReactive(algorithm_controls$run_model_clicks(), {
-      tryCatch(
+    trained_model_bundle <- reactiveVal(NULL)
+
+    observeEvent(algorithm_controls$run_model_clicks(), {
+      trained_model_results <- tryCatch(
         train_classification_model(
           classification_data = current_classification_data(),
           algorithm_name = algorithm_controls$selected_algorithm_key(),
@@ -173,6 +175,8 @@ visualizer_module_server <- function(id) {
           NULL
         }
       )
+
+      trained_model_bundle(trained_model_results)
     }, ignoreInit = TRUE)
 
     plot_panel$set_model_reactive(trained_model_bundle)

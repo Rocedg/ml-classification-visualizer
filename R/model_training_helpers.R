@@ -127,10 +127,23 @@ train_classification_model <- function(classification_data, algorithm_name, para
   prediction_grid <- build_prediction_grid(classification_data)
 
   if (algorithm_name == "logistic_regression") {
+    decision_threshold <- parameter_values$decision_threshold
+    if (is.null(decision_threshold)) {
+      decision_threshold <- 0.5
+    }
+
+    if (!is.numeric(decision_threshold) || length(decision_threshold) != 1 || is.na(decision_threshold)) {
+      stop("Decision threshold must be a single numeric value.")
+    }
+
+    if (decision_threshold < 0 || decision_threshold > 1) {
+      stop("Decision threshold must be between 0 and 1.")
+    }
+
     logistic_training_results <- train_logistic_regression_iterations(
       classification_data = classification_data,
       prediction_grid = prediction_grid,
-      prediction_threshold = parameter_values$decision_threshold
+      prediction_threshold = decision_threshold
     )
 
     algorithm_label <- "Logistic Regression"
