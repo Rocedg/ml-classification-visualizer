@@ -134,99 +134,18 @@ train_classification_model <- function(classification_data, algorithm_name, para
     )
 
     algorithm_label <- "Logistic Regression"
-  } else if (algorithm_name == "svm") {
-    if (!requireNamespace("e1071", quietly = TRUE)) {
-      stop("Package 'e1071' is required for SVM. Install it with install.packages('e1071').")
-    }
-
-    trained_model <- e1071::svm(
-      class ~ x + y,
-      data = classification_data,
-      type = "C-classification",
-      kernel = parameter_values$svm_kernel,
-      cost = parameter_values$svm_cost,
-      gamma = parameter_values$svm_gamma,
-      probability = TRUE,
-      scale = TRUE
-    )
-
-    training_predictions <- predict(trained_model, newdata = classification_data, probability = TRUE)
-    training_probability_table <- attr(training_predictions, "probabilities")
-
-    training_class_b_probability <- if ("Class B" %in% colnames(training_probability_table)) {
-      training_probability_table[, "Class B"]
-    } else {
-      as.numeric(training_predictions == "Class B")
-    }
-
-    grid_predictions <- predict(trained_model, newdata = prediction_grid, probability = TRUE)
-    grid_probability_table <- attr(grid_predictions, "probabilities")
-
-    grid_class_b_probability <- if ("Class B" %in% colnames(grid_probability_table)) {
-      grid_probability_table[, "Class B"]
-    } else {
-      as.numeric(grid_predictions == "Class B")
-    }
-
-    algorithm_label <- "Support Vector Machine"
-  } else if (algorithm_name == "knn") {
-    if (!requireNamespace("class", quietly = TRUE)) {
-      stop("Package 'class' is required for k-NN. Install it with install.packages('class').")
-    }
-
-    training_matrix <- as.matrix(classification_data[, c("x", "y")])
-    grid_matrix <- as.matrix(prediction_grid[, c("x", "y")])
-
-    training_predictions <- class::knn(
-      train = training_matrix,
-      test = training_matrix,
-      cl = classification_data$class,
-      k = parameter_values$knn_neighbors,
-      prob = TRUE
-    )
-
-    training_vote_share <- attr(training_predictions, "prob")
-    training_class_b_probability <- ifelse(training_predictions == "Class B", training_vote_share, 1 - training_vote_share)
-
-    grid_predictions <- class::knn(
-      train = training_matrix,
-      test = grid_matrix,
-      cl = classification_data$class,
-      k = parameter_values$knn_neighbors,
-      prob = TRUE
-    )
-
-    grid_vote_share <- attr(grid_predictions, "prob")
-    grid_class_b_probability <- ifelse(grid_predictions == "Class B", grid_vote_share, 1 - grid_vote_share)
-
-    trained_model <- list(k = parameter_values$knn_neighbors)
-    algorithm_label <- "k-Nearest Neighbors"
   } else {
-    stop("Unknown algorithm selected.")
+    stop("Only Logistic Regression is currently available for training.")
   }
 
-  if (algorithm_name == "logistic_regression") {
-    trained_model <- logistic_training_results$model_object
-    prediction_grid <- logistic_training_results$prediction_grid
-    training_predictions <- logistic_training_results$training_predictions
-    metrics <- logistic_training_results$metrics
-    iteration_history <- logistic_training_results$iterations
-    iteration_metrics <- logistic_training_results$iteration_metrics
-  } else {
-    training_predictions <- factor(training_predictions, levels = c("Class A", "Class B"))
-    grid_predictions <- factor(grid_predictions, levels = c("Class A", "Class B"))
-
-    prediction_grid$predicted_class <- grid_predictions
-    prediction_grid$class_b_probability <- grid_class_b_probability
-
-    metrics <- calculate_classification_metrics(
-      actual_labels = classification_data$class,
-      predicted_labels = training_predictions
-    )
-
-    iteration_history <- NULL
-    iteration_metrics <- NULL
-  }
+  # SVM and k-NN training branches can be restored here when those
+  # algorithms are ready to be enabled again in the UI.
+  trained_model <- logistic_training_results$model_object
+  prediction_grid <- logistic_training_results$prediction_grid
+  training_predictions <- logistic_training_results$training_predictions
+  metrics <- logistic_training_results$metrics
+  iteration_history <- logistic_training_results$iterations
+  iteration_metrics <- logistic_training_results$iteration_metrics
 
   list(
     algorithm_key = algorithm_name,

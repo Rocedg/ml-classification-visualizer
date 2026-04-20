@@ -270,6 +270,16 @@ a { text-decoration: none; }
 }
 
 .algorithm-selection-card { text-align: left; white-space: normal; }
+.algorithm-selection-card.is-coming-soon {
+  opacity: 0.58;
+  cursor: not-allowed;
+  background: #fafbfd;
+}
+
+.algorithm-selection-card.is-coming-soon:hover {
+  background: #fafbfd;
+  border-color: var(--border);
+}
 .sidebar-input-label { display: block; margin: 14px 0 7px; color: var(--navy); font-size: 12px; font-weight: 800; }
 .button-row { display: flex; align-items: stretch; gap: 10px; }
 .half-width-button, .upload-button-shell { flex: 1; }

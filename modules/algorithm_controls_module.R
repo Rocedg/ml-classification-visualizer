@@ -72,31 +72,32 @@ algorithm_controls_module_server <- function(id) {
       selected_algorithm_key("logistic_regression")
     })
 
-    observeEvent(input$choose_svm, {
-      selected_algorithm_key("svm")
-    })
-
-    observeEvent(input$choose_knn, {
-      selected_algorithm_key("knn")
-    })
-
     output$algorithm_cards_ui <- renderUI({
-      create_algorithm_card <- function(button_id, title_text, description_text, helper_badge, algorithm_key) {
+      create_algorithm_card <- function(button_id, title_text, description_text, helper_badge, algorithm_key, is_available = TRUE) {
         active_class <- if (identical(selected_algorithm_key(), algorithm_key)) "algorithm-selection-card is-active" else "algorithm-selection-card"
 
-        actionLink(
-          inputId = session$ns(button_id),
-          label = HTML(
-            paste0(
-              "<div class='algorithm-card-title-row'>",
-              "<span>", title_text, "</span>",
-              "<span class='inline-status-badge subtle'>", helper_badge, "</span>",
-              "</div>",
-              "<p>", description_text, "</p>"
-            )
-          ),
-          class = active_class
+        card_contents <- HTML(
+          paste0(
+            "<div class='algorithm-card-title-row'>",
+            "<span>", title_text, "</span>",
+            "<span class='inline-status-badge subtle'>", helper_badge, "</span>",
+            "</div>",
+            "<p>", description_text, "</p>"
+          )
         )
+
+        if (is_available) {
+          actionLink(
+            inputId = session$ns(button_id),
+            label = card_contents,
+            class = active_class
+          )
+        } else {
+          div(
+            class = paste(active_class, "is-coming-soon"),
+            card_contents
+          )
+        }
       }
 
       div(
@@ -112,15 +113,17 @@ algorithm_controls_module_server <- function(id) {
           button_id = "choose_svm",
           title_text = "SVM",
           description_text = "Learns a boundary with margin maximization and can model nonlinear regions.",
-          helper_badge = "Flexible",
-          algorithm_key = "svm"
+          helper_badge = "Coming soon",
+          algorithm_key = "svm",
+          is_available = FALSE
         ),
         create_algorithm_card(
           button_id = "choose_knn",
           title_text = "k-NN",
           description_text = "Classifies by local neighbor voting and is useful for comparison.",
-          helper_badge = "Optional",
-          algorithm_key = "knn"
+          helper_badge = "Coming soon",
+          algorithm_key = "knn",
+          is_available = FALSE
         )
       )
     })
@@ -141,48 +144,11 @@ algorithm_controls_module_server <- function(id) {
             "The threshold decides when a predicted probability becomes Class B."
           )
         )
-      } else if (selected_algorithm_key() == "svm") {
-        tagList(
-          selectInput(
-            inputId = session$ns("svm_kernel"),
-            label = "Kernel",
-            choices = c("radial", "linear"),
-            selected = "radial"
-          ),
-          sliderInput(
-            inputId = session$ns("svm_cost"),
-            label = "Cost",
-            min = 0.1,
-            max = 5,
-            value = 1,
-            step = 0.1
-          ),
-          sliderInput(
-            inputId = session$ns("svm_gamma"),
-            label = "Gamma",
-            min = 0.05,
-            max = 2,
-            value = 0.35,
-            step = 0.05
-          ),
-          tags$p(
-            class = "parameter-note",
-            "Higher cost penalizes mistakes more strongly. Higher gamma makes the boundary more local and more curved."
-          )
-        )
       } else {
         tagList(
-          sliderInput(
-            inputId = session$ns("knn_neighbors"),
-            label = "Number of Neighbors (k)",
-            min = 1,
-            max = 25,
-            value = 7,
-            step = 2
-          ),
           tags$p(
             class = "parameter-note",
-            "Small k creates more detailed local regions. Larger k creates smoother, more stable regions."
+            "This algorithm is coming soon. Logistic Regression is the only classifier available right now."
           )
         )
       }
@@ -191,10 +157,8 @@ algorithm_controls_module_server <- function(id) {
     output$run_helper_text <- renderText({
       if (selected_algorithm_key() == "logistic_regression") {
         "Run the classifier to draw a linear probability boundary and compute the training metrics."
-      } else if (selected_algorithm_key() == "svm") {
-        "Run the classifier to visualize the SVM decision regions and compare them with Logistic Regression."
       } else {
-        "Run the classifier to see how local neighbor voting shapes the classification regions."
+        "This algorithm is coming soon. Choose Logistic Regression to run the classifier."
       }
     })
 
@@ -205,16 +169,8 @@ algorithm_controls_module_server <- function(id) {
           list(
             decision_threshold = input$decision_threshold
           )
-        } else if (selected_algorithm_key() == "svm") {
-          list(
-            svm_kernel = input$svm_kernel,
-            svm_cost = input$svm_cost,
-            svm_gamma = input$svm_gamma
-          )
         } else {
-          list(
-            knn_neighbors = input$knn_neighbors
-          )
+          list()
         }
       }),
       run_model_clicks = reactive(input$run_classifier_button)
