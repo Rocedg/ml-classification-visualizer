@@ -53,11 +53,6 @@ plot_panel_module_ui <- function(id) {
       div(
         class = "button-row",
         actionButton(
-          inputId = ns("play_pause_button"),
-          label = "Play",
-          class = "ml-button ml-button-primary half-width-button"
-        ),
-        actionButton(
           inputId = ns("step_backward_button"),
           label = "Step Back",
           class = "ml-button ml-button-secondary half-width-button"
@@ -132,7 +127,6 @@ plot_panel_module_server <- function(id,
   moduleServer(id, function(input, output, session) {
     internal_model_reactive <- reactiveVal(NULL)
     current_iteration <- reactiveVal(1)
-    playback_running <- reactiveVal(FALSE)
 
     set_model_reactive <- function(model_reactive_expression) {
       internal_model_reactive(model_reactive_expression)
@@ -145,15 +139,10 @@ plot_panel_module_server <- function(id,
         return(NULL)
       }
 
-      tryCatch(
-        model_reactive_expression(),
-        error = function(error_object) {
-          NULL
-        }
-      )
+      model_reactive_expression()
     })
 
-    # TODO: Future: generalize this playback system for other classifiers.
+    # TODO: Future: generalize this iteration navigation system for other classifiers.
     logistic_iteration_history <- reactive({
       model_results <- safe_model_results()
       get_logistic_iteration_history(model_results)
@@ -173,7 +162,6 @@ plot_panel_module_server <- function(id,
     observeEvent(safe_model_results(), {
       model_results <- safe_model_results()
 
-      playback_running(FALSE)
       current_iteration(1)
 
       if (model_supports_logistic_playback(model_results)) {
@@ -196,28 +184,24 @@ plot_panel_module_server <- function(id,
     }, ignoreInit = TRUE)
 
     observeEvent(input$iteration_slider, {
-      if (total_iteration_count() == 0) {
+      total_iterations <- total_iteration_count()
+      if (total_iterations == 0 || is.null(input$iteration_slider)) {
         return(NULL)
       }
 
-      current_iteration(input$iteration_slider)
+      bounded_iteration <- bound_iteration_index(input$iteration_slider, total_iterations)
+      if (!identical(as.integer(current_iteration()), as.integer(bounded_iteration))) {
+        current_iteration(bounded_iteration)
+      }
     }, ignoreInit = TRUE)
 
-    observeEvent(input$play_pause_button, {
-      if (total_iteration_count() == 0) {
-        return(NULL)
-      }
-
-      playback_running(!playback_running())
-    })
-
     observeEvent(input$step_forward_button, {
-      if (total_iteration_count() == 0) {
+      total_iterations <- total_iteration_count()
+      if (total_iterations == 0) {
         return(NULL)
       }
 
-      playback_running(FALSE)
-      current_iteration(min(current_iteration() + 1, total_iteration_count()))
+      current_iteration(min(current_iteration() + 1, total_iterations))
     })
 
     observeEvent(input$step_backward_button, {
@@ -225,35 +209,25 @@ plot_panel_module_server <- function(id,
         return(NULL)
       }
 
-      playback_running(FALSE)
       current_iteration(max(current_iteration() - 1, 1))
     })
 
     observe({
-      if (!playback_running()) {
+      if (total_iteration_count() == 0) {
         return(NULL)
       }
 
-      total_iterations <- total_iteration_count()
-      if (total_iterations == 0) {
-        playback_running(FALSE)
+      slider_value <- input$iteration_slider
+      iteration_value <- current_iteration()
+
+      if (!is.null(slider_value) && identical(as.integer(slider_value), as.integer(iteration_value))) {
         return(NULL)
       }
 
-      invalidateLater(350, session)
-
-      if (current_iteration() >= total_iterations) {
-        playback_running(FALSE)
-      } else {
-        current_iteration(current_iteration() + 1)
-      }
-    })
-
-    observe({
       updateSliderInput(
         session = session,
         inputId = "iteration_slider",
-        value = current_iteration()
+        value = iteration_value
       )
     })
 
@@ -274,7 +248,7 @@ plot_panel_module_server <- function(id,
 
     output$playback_status_text <- renderText({
       model_results <- safe_model_results()
-      format_playback_status_text(model_results, playback_running())
+      format_iteration_navigation_status_text(model_results)
     })
 
     output$playback_helper_text <- renderText({
@@ -331,14 +305,6 @@ plot_panel_module_server <- function(id,
       active_model_view <- active_iteration_results()
       if (is.null(active_model_view)) return("Run model")
       active_model_view$metrics$f1_score
-    })
-
-    observe({
-      if (playback_running()) {
-        updateActionButton(session, "play_pause_button", label = "Pause")
-      } else {
-        updateActionButton(session, "play_pause_button", label = "Play")
-      }
     })
 
     list(

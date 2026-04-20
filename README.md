@@ -93,7 +93,7 @@ The app automatically converts the two uploaded class labels into `Class A` and 
   - `data_helpers.R` prepares preset, uploaded, and plotting-grid data.
   - `metrics_helpers.R` calculates classification metrics.
   - `model_training_helpers.R` trains the currently available Logistic Regression model.
-  - `playback_helpers.R` keeps playback state calculations easy to inspect.
+  - `playback_helpers.R` keeps iteration navigation calculations easy to inspect.
   - `plot_helpers.R` builds the main classification plot and iteration metric plot.
 - `app.R` remains the main entry point for loading packages, sourcing files, and wiring the UI and server together.
 - The visualizer is designed for understanding model behavior, not for large production datasets.

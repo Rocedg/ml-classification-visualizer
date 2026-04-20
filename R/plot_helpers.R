@@ -19,7 +19,8 @@ build_classification_plot <- function(classification_data, active_model_view) {
         color = "#1f3552",
         linewidth = 0.65,
         alpha = 0.9
-      )
+      ) +
+      scale_fill_manual(values = c("Class A" = "#dce9ff", "Class B" = "#ffe3d1"))
   }
 
   plot_object +
@@ -32,7 +33,6 @@ build_classification_plot <- function(classification_data, active_model_view) {
       alpha = 0.95
     ) +
     scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d")) +
-    scale_fill_manual(values = c("Class A" = "#dce9ff", "Class B" = "#ffe3d1")) +
     coord_equal() +
     labs(
       x = "X",
@@ -52,16 +52,22 @@ build_classification_plot <- function(classification_data, active_model_view) {
 
 
 draw_empty_iteration_metric_plot <- function() {
-  plot.new()
-  text(
-    x = 0.5,
-    y = 0.5,
-    labels = "Loss over time will appear here after you run Logistic Regression.",
-    col = "#6d8196",
-    cex = 1
+  placeholder_data <- data.frame(
+    x = 1,
+    y = 1,
+    label = "Loss over time will appear here after you run Logistic Regression."
   )
 
-  invisible(NULL)
+  ggplot(placeholder_data, aes(x = x, y = y, label = label)) +
+    geom_text(color = "#6d8196", size = 4) +
+    xlim(0, 2) +
+    ylim(0, 2) +
+    theme_void(base_family = "Manrope") +
+    theme(
+      plot.margin = margin(4, 4, 4, 4),
+      plot.background = element_rect(fill = "#ffffff", color = NA),
+      panel.background = element_rect(fill = "#ffffff", color = NA)
+    )
 }
 
 
@@ -92,6 +98,7 @@ build_iteration_metric_plot <- function(metric_history, current_iteration) {
       axis.title = element_text(color = "#47627b", size = 10, face = "bold"),
       axis.text = element_text(color = "#6d8196", size = 9),
       plot.subtitle = element_text(color = "#6d8196", size = 10),
+      plot.margin = margin(4, 4, 4, 4),
       plot.background = element_rect(fill = "#ffffff", color = NA),
       panel.background = element_rect(fill = "#ffffff", color = NA)
     )
