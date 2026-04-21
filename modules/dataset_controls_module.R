@@ -96,23 +96,32 @@ dataset_controls_module_ui <- function(id) {
       ),
       tags$label(class = "sidebar-input-label", "Or Create Custom Data"),
       div(
-        class = "button-row",
-        actionButton(
-          inputId = ns("draw_data_button"),
-          label = "Draw Data",
-          class = "ml-button ml-button-secondary half-width-button"
-        ),
-        div(
-          class = "upload-button-shell",
-          fileInput(
-            inputId = ns("dataset_upload"),
-            label = NULL,
-            accept = c(".csv"),
-            buttonLabel = "Upload CSV",
-            placeholder = "No file selected"
-          )
-        )
-      ),
+  class = "button-row",
+  actionButton(
+    inputId = ns("draw_data_button"),
+    label = "Draw Data",
+    class = "ml-button ml-button-secondary half-width-button"
+  ),
+  div(
+    class = "upload-button-shell",
+    fileInput(
+      inputId = ns("dataset_upload"),
+      label = NULL,
+      accept = c(".csv"),
+      buttonLabel = "Upload CSV",
+      placeholder = "No file selected"
+    )
+  )
+),
+
+div(
+  class = "button-row",
+  downloadButton(
+    outputId = ns("download_example_csv"),
+    label = "Download CSV Template",
+    class = "ml-button ml-button-secondary full-width-button"
+  )
+),
       div(
         class = "draw-mode-status",
         textOutput(ns("drawing_mode_status"))
@@ -151,6 +160,22 @@ dataset_controls_module_server <- function(id) {
     observeEvent(input$draw_data_button, {
       drawing_mode_active(!drawing_mode_active())
     })
+    output$download_example_csv <- downloadHandler(
+  filename = function() {
+    "ml_visualizer_csv_template.csv"
+  },
+  content = function(file) {
+
+    example_template <- data.frame(
+      x = c(-2.5, 2.5, rep(NA, 10)),
+      y = c(2.0, -2.0, rep(NA, 10)),
+      class = c("A", "B", rep("", 10)),
+      stringsAsFactors = FALSE
+    )
+
+    write.csv(example_template, file, row.names = FALSE)
+  }
+)
 
     observeEvent(input$dataset_upload, {
       req(input$dataset_upload$datapath)
