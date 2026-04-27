@@ -458,3 +458,27 @@ a { text-decoration: none; }
   border-radius: 6px;
   font-size: 16px;
 }
+
+
+.theory-panel-grid {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+}
+
+/* Parte grande (teoría) */
+.theory-main {
+  flex: 2;   /* ocupa el doble */
+}
+
+/* Parte pequeña (summary) */
+.theory-side {
+  flex: 1;   /* ocupa la mitad que la principal */
+}
+
+/* Responsive (móvil) */
+@media (max-width: 768px) {
+  .theory-panel-grid {
+    flex-direction: column;
+  }
+}
