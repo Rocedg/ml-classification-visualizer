@@ -28,20 +28,48 @@ model_theory_panel_module_ui <- function(id) {
 model_theory_panel_module_server <- function(id, selected_algorithm_key, trained_model_bundle) {
   moduleServer(id, function(input, output, session) {
 
-    #  Configuración centralizada por modelo
+# Configuración centralizada por modelo
     model_theory_content <- list(
 
       logistic_regression = list(
         title = "Logistic Regression",
-        explanation = "Logistic Regression estimates the probability that a point belongs to Class B. The decision boundary appears where that probability crosses the threshold you selected.",
-        strengths = c(
-          "Easy to interpret",
-          "Fast baseline model",
-          "Works well for roughly linear separation"
-        ),
-        parameter_note = "Main parameter in this app: decision threshold."
-      ),
 
+        explanation = tagList(
+          tags$p("Logistic Regression estimates the probability that a point belongs to a class using a smooth S-shaped curve (called the sigmoid function)."),
+
+          tags$p("Instead of predicting a class directly, the model first builds a linear combination of the input variables, and then transforms that value into a probability between 0 and 1."),
+
+          tags$div(
+            class = "math-box",
+            withMathJax("$$P(y=1 \\mid x) = \\frac{1}{1 + e^{-(w_0 + w_1 x_1 + \\cdots + w_n x_n)}}$$")
+          ),
+
+          tags$p("This process can be understood in two steps:"),
+
+          tags$ul(
+            tags$li(tags$b("Linear step: "), "combines the variables into a weighted sum (similar to a straight line or plane)."),
+            tags$li(tags$b("Nonlinear step: "), "applies the sigmoid function to convert that value into a probability.")
+          ),
+
+          tags$p("The decision boundary appears where this probability crosses the selected threshold (usually 0.5), separating the space into two regions.")
+        ),
+
+        strengths = tagList(
+          tags$li("Easy to interpret (each variable has a clear influence)"),
+          tags$li("Fast and efficient baseline model"),
+          tags$li("Works well when classes are roughly linearly separable")
+        ),
+
+        parameter_note = tagList(
+          tags$p(tags$b("Main parameter: "), "decision threshold."),
+          tags$p("Changing this threshold shifts the decision boundary:"),
+          tags$ul(
+            tags$li("Lower threshold → more points classified as Class B"),
+            tags$li("Higher threshold → stricter classification")
+          )
+        )
+      ),
+      
       svm = list(
         title = "Support Vector Machine",
         explanation = "SVM searches for a separating boundary that maximizes the margin between classes. With a radial kernel, the boundary can bend around more complex shapes.",
