@@ -449,3 +449,12 @@ a { text-decoration: none; }
   .button-row { flex-direction: column; }
   .main-panel-card .tab-content { padding: 14px; }
 }
+
+.math-box {
+  background-color: #f5f7fa;
+  border-left: 4px solid #4a90e2;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 6px;
+  font-size: 16px;
+}
