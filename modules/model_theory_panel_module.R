@@ -124,19 +124,29 @@ model_theory_panel_module_server <- function(id, selected_algorithm_key, trained
         )
       }
 
-      div(
-        class = "theory-panel-grid",
-        div(
-          class = "app-card theory-detail-card",
-          tags$h3(model_info$title),
-          tags$p(model_info$explanation),
-          tags$h4("Why it helps in this app"),
-          tags$ul(lapply(model_info$strengths, tags$li)),
-          tags$h4("Parameter focus"),
-          tags$p(model_info$parameter_note)
-        ),
-        metrics_block
-      )
+div(
+  class = "theory-panel-grid",
+
+  div(
+    class = "theory-main",
+    div(
+      class = "app-card theory-detail-card",
+      tags$h3(model_info$title),
+      model_info$explanation,
+
+      tags$h4("Why it helps in this app"),
+      tags$ul(model_info$strengths),
+
+      tags$h4("Parameter focus"),
+      model_info$parameter_note
+    )
+  ),
+
+  div(
+    class = "theory-side",
+    metrics_block
+  )
+)
     })
   })
 }
