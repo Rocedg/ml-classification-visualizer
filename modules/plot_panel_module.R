@@ -4,6 +4,7 @@
 #   This module draws:
 #   - the input data points
 #   - the Logistic Regression probability heatmap
+#   - the Logistic Regression parameter trajectory
 #   - metric summary cards
 #   It also exposes plot click coordinates back to the parent module
 #   so users can draw their own points.
@@ -81,6 +82,31 @@ plot_panel_module_ui <- function(id) {
       plotOutput(
         outputId = ns("iteration_metric_plot"),
         height = "180px"
+      )
+    ),
+    div(
+      class = "app-card theory-summary-card",
+      div(
+        class = "plot-top-status-row",
+        div(class = "status-chip status-chip-primary", "Parameter trajectory")
+      ),
+      selectInput(
+        inputId = ns("parameter_projection_select"),
+        label = "Projection plane",
+        choices = c(
+          "weight_x vs weight_y" = "weight_x_weight_y",
+          "weight_x vs bias" = "weight_x_bias",
+          "weight_y vs bias" = "weight_y_bias"
+        ),
+        selected = "weight_x_weight_y",
+        width = "100%"
+      )
+    ),
+    div(
+      class = "plot-canvas-shell",
+      plotOutput(
+        outputId = ns("parameter_trajectory_plot"),
+        height = "260px"
       )
     ),
     div(
@@ -280,6 +306,21 @@ plot_panel_module_server <- function(id,
 
       metric_history <- model_results$iteration_metrics
       build_iteration_metric_plot(metric_history, current_iteration())
+    }, res = 110)
+
+    output$parameter_trajectory_plot <- renderPlot({
+      model_results <- safe_model_results()
+      iteration_history <- logistic_iteration_history()
+
+      if (!model_supports_logistic_playback(model_results)) {
+        return(draw_empty_parameter_trajectory_plot())
+      }
+
+      build_parameter_trajectory_plot(
+        iteration_history = iteration_history,
+        current_iteration = current_iteration(),
+        selected_projection = input$parameter_projection_select
+      )
     }, res = 110)
 
     output$accuracy_value <- renderText({
