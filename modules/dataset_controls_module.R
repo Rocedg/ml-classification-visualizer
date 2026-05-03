@@ -25,7 +25,7 @@
 #     - Reactive selected dataset name
 #     - Reactive uploaded dataset
 #     - Reactive draw mode state
-#     - Reactive selected drawing class 
+#     - Reactive selected drawing class
 #     - Reactive undo / clear button clicks
 
 dataset_controls_module_ui <- function(id) {
@@ -94,7 +94,9 @@ dataset_controls_module_ui <- function(id) {
           "Linearly separable",
           "Overlapping classes",
           "Moons",
-          "Circles"
+          "Circles",
+          "Titanic passengers",
+          "Diabetes health data"
         ),
         selected = "Gaussian clusters",
         width = "100%"
