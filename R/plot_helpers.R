@@ -88,7 +88,7 @@ build_iteration_metric_plot <- function(metric_history, current_iteration) {
     ) +
     labs(
       x = "Iteration",
-      y = "Loss",
+      y = "Regularized Loss",
       subtitle = paste("Accuracy at this step:", highlighted_metric$accuracy)
     ) +
     theme_minimal(base_family = "Manrope") +
