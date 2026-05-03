@@ -5,6 +5,7 @@
 #   - showing classification as the active workflow
 #   - loading preset datasets
 #   - accepting CSV uploads
+#   - downloading a CSV template
 #   - toggling draw mode
 #   - choosing which class to draw
 #
@@ -17,25 +18,26 @@
 #   Inputs:
 #     - Preset dataset dropdown
 #     - Upload CSV control
+#     - Download CSV Template button
 #     - Draw Data, Undo Last, Clear All buttons
 #     - Class A / Class B drawing toggle
 #   Outputs:
 #     - Reactive selected dataset name
 #     - Reactive uploaded dataset
 #     - Reactive draw mode state
-#     - Reactive selected drawing class
+#     - Reactive selected drawing class 
 #     - Reactive undo / clear button clicks
 
 dataset_controls_module_ui <- function(id) {
   ns <- NS(id)
-
+  
   tagList(
     div(
       class = "sidebar-header-block",
       tags$h2("Build Your Model"),
       tags$p("Follow these steps to configure and run your classification workflow.")
     ),
-
+    
     div(
       class = "sidebar-section",
       div(
@@ -46,29 +48,29 @@ dataset_controls_module_ui <- function(id) {
       div(
         class = "problem-type-card is-active",
         tags$div(class = "problem-type-title-row",
-          tags$span("Classification"),
-          tags$span(class = "inline-status-badge", "Active")
+                 tags$span("Classification"),
+                 tags$span(class = "inline-status-badge", "Active")
         ),
         tags$p("Separate 2D points into Class A and Class B.")
       ),
       div(
         class = "problem-type-card is-disabled",
         tags$div(class = "problem-type-title-row",
-          tags$span("Regression"),
-          tags$span(class = "inline-muted-badge", "Disabled")
+                 tags$span("Regression"),
+                 tags$span(class = "inline-muted-badge", "Disabled")
         ),
         tags$p("Hidden in this project so the app stays focused on classification.")
       ),
       div(
         class = "problem-type-card is-disabled",
         tags$div(class = "problem-type-title-row",
-          tags$span("Clustering"),
-          tags$span(class = "inline-muted-badge", "Disabled")
+                 tags$span("Clustering"),
+                 tags$span(class = "inline-muted-badge", "Disabled")
         ),
         tags$p("Not included in this version of the visualizer.")
       )
     ),
-
+    
     div(
       class = "sidebar-section",
       div(
@@ -76,11 +78,14 @@ dataset_controls_module_ui <- function(id) {
         div(class = "sidebar-step-pill", "2"),
         tags$span("Choose or Create Data")
       ),
+      
       tags$p(
         class = "sidebar-helper-text",
-        "Choose a preset dataset, upload a CSV, or turn on draw mode and click directly on the plot."
+        "Choose a preset dataset, upload a CSV, download a template, or draw data directly on the plot."
       ),
+      
       tags$label(class = "sidebar-input-label", "Preset Datasets"),
+      
       selectInput(
         inputId = ns("preset_dataset"),
         label = NULL,
@@ -94,39 +99,43 @@ dataset_controls_module_ui <- function(id) {
         selected = "Gaussian clusters",
         width = "100%"
       ),
+      
       tags$label(class = "sidebar-input-label", "Or Create Custom Data"),
+      
       div(
-  class = "button-row",
-  actionButton(
-    inputId = ns("draw_data_button"),
-    label = "Draw Data",
-    class = "ml-button ml-button-secondary half-width-button"
-  ),
-  div(
-    class = "upload-button-shell",
-    fileInput(
-      inputId = ns("dataset_upload"),
-      label = NULL,
-      accept = c(".csv"),
-      buttonLabel = "Upload CSV",
-      placeholder = "No file selected"
-    )
-  )
-),
-
-div(
-  class = "button-row",
-  downloadButton(
-    outputId = ns("download_example_csv"),
-    label = "Download CSV Template",
-    class = "ml-button ml-button-secondary full-width-button"
-  )
-),
+        class = "custom-data-buttons-vertical",
+        
+        actionButton(
+          inputId = ns("draw_data_button"),
+          label = "Draw Data",
+          class = "ml-button ml-button-secondary custom-data-button"
+        ),
+        
+        div(
+          class = "custom-upload-button",
+          fileInput(
+            inputId = ns("dataset_upload"),
+            label = NULL,
+            accept = c(".csv"),
+            buttonLabel = "Upload CSV",
+            placeholder = "No file selected"
+          )
+        ),
+        
+        downloadButton(
+          outputId = ns("download_example_csv"),
+          label = "Template",
+          class = "ml-button ml-button-secondary custom-data-button"
+        )
+      ),
+      
       div(
         class = "draw-mode-status",
         textOutput(ns("drawing_mode_status"))
       ),
+      
       tags$label(class = "sidebar-input-label", "Select Class For Drawing"),
+      
       radioButtons(
         inputId = ns("drawing_class"),
         label = NULL,
@@ -134,6 +143,7 @@ div(
         selected = "Class A",
         inline = TRUE
       ),
+      
       div(
         class = "button-row utility-button-row",
         actionButton(
@@ -156,30 +166,30 @@ dataset_controls_module_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     drawing_mode_active <- reactiveVal(FALSE)
     uploaded_dataset <- reactiveVal(NULL)
-
+    
     observeEvent(input$draw_data_button, {
       drawing_mode_active(!drawing_mode_active())
     })
+    
     output$download_example_csv <- downloadHandler(
-  filename = function() {
-    "ml_visualizer_csv_template.csv"
-  },
-  content = function(file) {
-
-    example_template <- data.frame(
-      x = c(-2.5, 2.5, rep(NA, 10)),
-      y = c(2.0, -2.0, rep(NA, 10)),
-      class = c("A", "B", rep("", 10)),
-      stringsAsFactors = FALSE
+      filename = function() {
+        "ml_visualizer_csv_template.csv"
+      },
+      content = function(file) {
+        example_template <- data.frame(
+          x = c(-2.5, 2.5, rep(NA, 10)),
+          y = c(2.0, -2.0, rep(NA, 10)),
+          class = c("A", "B", rep("", 10)),
+          stringsAsFactors = FALSE
+        )
+        
+        write.csv(example_template, file, row.names = FALSE)
+      }
     )
-
-    write.csv(example_template, file, row.names = FALSE)
-  }
-)
-
+    
     observeEvent(input$dataset_upload, {
       req(input$dataset_upload$datapath)
-
+      
       uploaded_table <- tryCatch(
         read.csv(input$dataset_upload$datapath, stringsAsFactors = FALSE),
         error = function(error_object) {
@@ -190,11 +200,11 @@ dataset_controls_module_server <- function(id) {
           NULL
         }
       )
-
+      
       if (is.null(uploaded_table)) {
         return(NULL)
       }
-
+      
       cleaned_dataset <- tryCatch(
         convert_uploaded_csv_to_dataset(uploaded_table),
         error = function(error_object) {
@@ -202,13 +212,16 @@ dataset_controls_module_server <- function(id) {
           NULL
         }
       )
-
+      
       if (!is.null(cleaned_dataset)) {
         uploaded_dataset(cleaned_dataset)
-        showNotification("CSV uploaded successfully. The visualizer is now using your custom dataset.", type = "message")
+        showNotification(
+          "CSV uploaded successfully. The visualizer is now using your custom dataset.",
+          type = "message"
+        )
       }
     })
-
+    
     output$drawing_mode_status <- renderText({
       if (drawing_mode_active()) {
         paste("Drawing mode is ON. Click inside the plot to add", input$drawing_class, "points.")
@@ -216,7 +229,7 @@ dataset_controls_module_server <- function(id) {
         "Drawing mode is OFF. Press 'Draw Data' to start placing points on the plot."
       }
     })
-
+    
     list(
       selected_dataset_name = reactive(input$preset_dataset),
       uploaded_dataset = reactive(uploaded_dataset()),
