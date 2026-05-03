@@ -9,18 +9,16 @@ build_classification_plot <- function(classification_data, active_model_view) {
     plot_object <- plot_object +
       geom_raster(
         data = prediction_grid,
-        aes(x = x, y = y, fill = predicted_class),
-        alpha = 0.22
+        aes(x = x, y = y, fill = class_b_probability),
+        alpha = 0.88,
+        interpolate = TRUE
       ) +
-      geom_contour(
-        data = prediction_grid,
-        aes(x = x, y = y, z = class_b_probability),
-        breaks = 0.5,
-        color = "#1f3552",
-        linewidth = 0.65,
-        alpha = 0.9
-      ) +
-      scale_fill_manual(values = c("Class A" = "#dce9ff", "Class B" = "#ffe3d1"))
+      scale_fill_gradientn(
+        colours = c("#bdd8ff", "#fff7ed", "#ffc5a3"),
+        values = c(0, 0.5, 1),
+        limits = c(0, 1),
+        name = "Class B probability"
+      )
   }
 
   plot_object +
@@ -28,9 +26,16 @@ build_classification_plot <- function(classification_data, active_model_view) {
     geom_vline(xintercept = 0, color = "#d6dfe8", linewidth = 0.6) +
     geom_point(
       data = classification_data,
+      aes(x = x, y = y),
+      color = "#ffffff",
+      size = 3.4,
+      alpha = 0.9
+    ) +
+    geom_point(
+      data = classification_data,
       aes(x = x, y = y, color = class),
-      size = 2.4,
-      alpha = 0.95
+      size = 2.55,
+      alpha = 0.98
     ) +
     scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d")) +
     coord_equal() +

@@ -3,8 +3,7 @@
 #   Render the main interactive plot tab.
 #   This module draws:
 #   - the input data points
-#   - classification regions
-#   - the decision boundary
+#   - the Logistic Regression probability heatmap
 #   - metric summary cards
 #   It also exposes plot click coordinates back to the parent module
 #   so users can draw their own points.
