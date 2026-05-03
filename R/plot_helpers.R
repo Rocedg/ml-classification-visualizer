@@ -2,22 +2,41 @@
 
 build_classification_plot <- function(classification_data, active_model_view) {
   plot_object <- ggplot()
+  plot_x_limits <- NULL
+  plot_y_limits <- NULL
 
   if (!is.null(active_model_view)) {
     prediction_grid <- active_model_view$prediction_grid
+    prediction_grid$class_a_probability <- 1 - prediction_grid$class_b_probability
+    plot_x_limits <- range(prediction_grid$x)
+    plot_y_limits <- range(prediction_grid$y)
 
     plot_object <- plot_object +
       geom_raster(
         data = prediction_grid,
-        aes(x = x, y = y, fill = class_b_probability),
-        alpha = 0.88,
+        aes(x = x, y = y, fill = class_a_probability),
+        alpha = 0.9,
         interpolate = TRUE
       ) +
       scale_fill_gradientn(
-        colours = c("#bdd8ff", "#fff7ed", "#ffc5a3"),
+        colours = c("#ffc5a3", "#fff7ed", "#bdd8ff"),
         values = c(0, 0.5, 1),
         limits = c(0, 1),
-        name = "Class B probability"
+        breaks = c(1, 0.5, 0),
+        labels = c(
+          "Class A probability = 1.0\n(100%)",
+          "0.5 = uncertain\nDecision threshold",
+          "Class B probability = 1.0\n(100%)"
+        ),
+        name = "Probability guide\nHigh = Class A\nLow = Class B",
+        guide = guide_colorbar(
+          title.position = "top",
+          barheight = grid::unit(96, "pt"),
+          barwidth = grid::unit(12, "pt"),
+          ticks = TRUE,
+          ticks.colour = "#475569",
+          frame.colour = "#cbd5e1"
+        )
       )
   }
 
@@ -37,15 +56,19 @@ build_classification_plot <- function(classification_data, active_model_view) {
       size = 2.55,
       alpha = 0.98
     ) +
-    scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d")) +
-    coord_equal() +
+    scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d"), guide = "none") +
+    coord_equal(xlim = plot_x_limits, ylim = plot_y_limits, expand = FALSE) +
     labs(
       x = "X",
       y = "Y"
     ) +
     theme_minimal(base_family = "Manrope") +
     theme(
-      legend.position = "none",
+      legend.position = if (is.null(active_model_view)) "none" else "right",
+      legend.title = element_text(color = "#334155", size = 9, face = "bold", lineheight = 0.95),
+      legend.text = element_text(color = "#475569", size = 8.5, lineheight = 0.95),
+      legend.key.height = grid::unit(24, "pt"),
+      legend.margin = margin(0, 0, 0, 8),
       panel.grid.minor = element_blank(),
       panel.grid.major = element_line(color = "#eef3f7", linewidth = 0.55),
       axis.title = element_text(color = "#47627b", size = 10, face = "bold"),
