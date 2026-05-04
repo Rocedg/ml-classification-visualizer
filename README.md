@@ -41,6 +41,15 @@ myDashboardApp/
 - k-NN (coming soon in the UI)
 
 ## Preset datasets
+## Real-world datasets
+
+The app includes real-world datasets adapted to the required 2D format:
+
+- **Titanic passengers**: uses passenger age and ticket fare to classify whether a passenger survived.
+- **Diabetes health data**: uses glucose level and body mass index to classify diabetes outcome.
+
+These datasets are simplified for visualization. The original datasets contain more variables, but ML Visualizer uses only two numeric variables so the decision regions can be shown clearly.
+### Synthetic datasets
 
 - Gaussian clusters
 - Linearly separable
@@ -48,12 +57,17 @@ myDashboardApp/
 - Moons
 - Circles
 
+### Real-world datasets
+
+- Titanic passengers
+- Diabetes health data
+
 ## Required packages
 
 Install these packages in R before running the app:
 
 ```r
-install.packages(c("shiny", "ggplot2", "e1071"))
+install.packages(c("shiny", "ggplot2", "e1071", "titanic", "mlbench"))
 ```
 
 The `class` package is normally included with R, and it is used for k-NN.

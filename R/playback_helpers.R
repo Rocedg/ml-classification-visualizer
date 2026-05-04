@@ -70,7 +70,7 @@ format_iteration_navigation_status_text <- function(model_results) {
 
 format_playback_helper_text <- function(model_results, active_iteration) {
   if (is.null(model_results)) {
-    return("Run Logistic Regression to inspect the 60 training iterations.")
+    return("Run Logistic Regression to inspect the training iterations.")
   }
 
   if (!model_supports_logistic_playback(model_results)) {

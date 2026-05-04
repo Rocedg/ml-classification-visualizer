@@ -481,4 +481,86 @@ a { text-decoration: none; }
   .theory-panel-grid {
     flex-direction: column;
   }
+/* Custom data buttons: three equal buttons */
+.custom-data-buttons-vertical {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+/* Draw Data and Template */
+.custom-data-button {
+  width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 12px 16px !important;
+  margin: 0 !important;
+  background: var(--white) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  color: var(--navy) !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+}
+
+/* Upload CSV wrapper */
+.custom-upload-button {
+  width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  flex: none !important;
+}
+
+/* Remove Shiny default spacing */
+.custom-upload-button .form-group {
+  width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  margin: 0 !important;
+}
+
+/* Make fileInput behave like a normal button */
+.custom-upload-button .input-group {
+  display: flex !important;
+  width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+}
+
+.custom-upload-button .form-control {
+  display: none !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.custom-upload-button .input-group-btn {
+  display: flex !important;
+  width: 100% !important;
+}
+
+/* Actual Upload CSV button */
+.custom-upload-button .btn-file {
+  width: 100% !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 12px 16px !important;
+  margin: 0 !important;
+  background: var(--white) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  color: var(--navy) !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  box-shadow: none !important;
 }

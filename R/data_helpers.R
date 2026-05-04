@@ -30,8 +30,14 @@ generate_preset_dataset <- function(dataset_name, points_per_class = 40) {
     "Linearly separable" = 202,
     "Overlapping classes" = 303,
     "Moons" = 404,
-    "Circles" = 505
+    "Circles" = 505,
+    "Titanic passengers" = 606,
+    "Diabetes health data" = 707
   )
+
+  if (!dataset_name %in% names(seed_lookup)) {
+    stop("Unknown preset dataset selected.")
+  }
 
   set.seed(seed_lookup[[dataset_name]])
 
@@ -40,17 +46,32 @@ generate_preset_dataset <- function(dataset_name, points_per_class = 40) {
     class_a_y <- rnorm(points_per_class, mean = 2.4, sd = 1.1)
     class_b_x <- rnorm(points_per_class, mean = 2.4, sd = 1.0)
     class_b_y <- rnorm(points_per_class, mean = -2.2, sd = 1.1)
+
+    x_values <- c(class_a_x, class_b_x)
+    y_values <- c(class_a_y, class_b_y)
+    class_labels <- c(rep("Class A", points_per_class), rep("Class B", points_per_class))
+
   } else if (dataset_name == "Linearly separable") {
     class_a_x <- runif(points_per_class, min = -5, max = 1.2)
     class_a_y <- 0.7 * class_a_x + rnorm(points_per_class, mean = -1.5, sd = 0.8)
 
     class_b_x <- runif(points_per_class, min = -1.2, max = 5)
     class_b_y <- 0.7 * class_b_x + rnorm(points_per_class, mean = 1.7, sd = 0.8)
+
+    x_values <- c(class_a_x, class_b_x)
+    y_values <- c(class_a_y, class_b_y)
+    class_labels <- c(rep("Class A", points_per_class), rep("Class B", points_per_class))
+
   } else if (dataset_name == "Overlapping classes") {
     class_a_x <- rnorm(points_per_class, mean = -1.2, sd = 1.6)
     class_a_y <- rnorm(points_per_class, mean = 0.9, sd = 1.5)
     class_b_x <- rnorm(points_per_class, mean = 1.1, sd = 1.6)
     class_b_y <- rnorm(points_per_class, mean = -0.8, sd = 1.5)
+
+    x_values <- c(class_a_x, class_b_x)
+    y_values <- c(class_a_y, class_b_y)
+    class_labels <- c(rep("Class A", points_per_class), rep("Class B", points_per_class))
+
   } else if (dataset_name == "Moons") {
     moon_angle_a <- runif(points_per_class, min = 0, max = pi)
     moon_angle_b <- runif(points_per_class, min = 0, max = pi)
@@ -60,6 +81,11 @@ generate_preset_dataset <- function(dataset_name, points_per_class = 40) {
 
     class_b_x <- 3.2 * (1 - cos(moon_angle_b)) + rnorm(points_per_class, sd = 0.18)
     class_b_y <- -3.2 * sin(moon_angle_b) + 1.1 + rnorm(points_per_class, sd = 0.18)
+
+    x_values <- c(class_a_x, class_b_x)
+    y_values <- c(class_a_y, class_b_y)
+    class_labels <- c(rep("Class A", points_per_class), rep("Class B", points_per_class))
+
   } else if (dataset_name == "Circles") {
     outer_angle <- runif(points_per_class, min = 0, max = 2 * pi)
     inner_angle <- runif(points_per_class, min = 0, max = 2 * pi)
@@ -69,17 +95,86 @@ generate_preset_dataset <- function(dataset_name, points_per_class = 40) {
 
     class_b_x <- 1.9 * cos(inner_angle) + rnorm(points_per_class, sd = 0.18)
     class_b_y <- 1.9 * sin(inner_angle) + rnorm(points_per_class, sd = 0.18)
-  } else {
-    stop("Unknown preset dataset selected.")
-  }
 
-  x_values <- c(class_a_x, class_b_x)
-  y_values <- c(class_a_y, class_b_y)
-  class_labels <- c(rep("Class A", points_per_class), rep("Class B", points_per_class))
+    x_values <- c(class_a_x, class_b_x)
+    y_values <- c(class_a_y, class_b_y)
+    class_labels <- c(rep("Class A", points_per_class), rep("Class B", points_per_class))
+
+  } else if (dataset_name == "Titanic passengers") {
+    if (!requireNamespace("titanic", quietly = TRUE)) {
+      stop("Package 'titanic' is required. Run install.packages('titanic') first.")
+    }
+
+    titanic_data <- titanic::titanic_train
+
+    titanic_data <- titanic_data[
+      stats::complete.cases(
+        titanic_data$Age,
+        titanic_data$Fare,
+        titanic_data$Survived
+      ),
+      ,
+      drop = FALSE
+    ]
+
+    titanic_data$class_label <- ifelse(
+      titanic_data$Survived == 1,
+      "Class B",
+      "Class A"
+    )
+
+    class_a_rows <- which(titanic_data$class_label == "Class A")
+    class_b_rows <- which(titanic_data$class_label == "Class B")
+
+    selected_class_a <- sample(class_a_rows, size = min(points_per_class, length(class_a_rows)))
+    selected_class_b <- sample(class_b_rows, size = min(points_per_class, length(class_b_rows)))
+
+    selected_data <- titanic_data[c(selected_class_a, selected_class_b), ]
+
+    x_values <- selected_data$Age
+    y_values <- log1p(selected_data$Fare)
+    class_labels <- selected_data$class_label
+
+  } else if (dataset_name == "Diabetes health data") {
+    if (!requireNamespace("mlbench", quietly = TRUE)) {
+      stop("Package 'mlbench' is required. Run install.packages('mlbench') first.")
+    }
+
+    data("PimaIndiansDiabetes2", package = "mlbench")
+
+    diabetes_data <- PimaIndiansDiabetes2
+
+    diabetes_data <- diabetes_data[
+      stats::complete.cases(
+        diabetes_data$glucose,
+        diabetes_data$mass,
+        diabetes_data$diabetes
+      ),
+      ,
+      drop = FALSE
+    ]
+
+    diabetes_data$class_label <- ifelse(
+      diabetes_data$diabetes == "pos",
+      "Class B",
+      "Class A"
+    )
+
+    class_a_rows <- which(diabetes_data$class_label == "Class A")
+    class_b_rows <- which(diabetes_data$class_label == "Class B")
+
+    selected_class_a <- sample(class_a_rows, size = min(points_per_class, length(class_a_rows)))
+    selected_class_b <- sample(class_b_rows, size = min(points_per_class, length(class_b_rows)))
+
+    selected_data <- diabetes_data[c(selected_class_a, selected_class_b), ]
+
+    x_values <- selected_data$glucose
+    y_values <- selected_data$mass
+    class_labels <- selected_data$class_label
+  }
 
   create_indexed_dataset(x_values, y_values, class_labels)
 }
-
 
 convert_uploaded_csv_to_dataset <- function(uploaded_table) {
   cleaned_names <- tolower(names(uploaded_table))
@@ -142,3 +237,4 @@ build_prediction_grid <- function(classification_data, grid_points = 140) {
     y = y_sequence
   )
 }
+
