@@ -88,26 +88,9 @@ plot_panel_module_ui <- function(id) {
       class = "app-card theory-summary-card",
       div(
         class = "plot-top-status-row",
-        div(class = "status-chip status-chip-primary", "Parameter trajectory")
+        div(class = "status-chip status-chip-primary", "3D parameter trajectory")
       ),
-      selectInput(
-        inputId = ns("parameter_projection_select"),
-        label = "Projection plane",
-        choices = c(
-          "weight_x vs weight_y" = "weight_x_weight_y",
-          "weight_x vs bias" = "weight_x_bias",
-          "weight_y vs bias" = "weight_y_bias"
-        ),
-        selected = "weight_x_weight_y",
-        width = "100%"
-      )
-    ),
-    div(
-      class = "plot-canvas-shell",
-      plotOutput(
-        outputId = ns("parameter_trajectory_plot"),
-        height = "260px"
-      )
+      uiOutput(ns("parameter_trajectory_3d_ui"))
     ),
     div(
       class = "metric-card-grid",
@@ -308,20 +291,37 @@ plot_panel_module_server <- function(id,
       build_iteration_metric_plot(metric_history, current_iteration())
     }, res = 110)
 
-    output$parameter_trajectory_plot <- renderPlot({
-      model_results <- safe_model_results()
-      iteration_history <- logistic_iteration_history()
-
-      if (!model_supports_logistic_playback(model_results)) {
-        return(draw_empty_parameter_trajectory_plot())
+    output$parameter_trajectory_3d_ui <- renderUI({
+      if (!requireNamespace("plotly", quietly = TRUE)) {
+        return(
+          div(
+            class = "run-helper-text",
+            "The 3D parameter trajectory uses the lightweight plotly package. Install plotly to view this graph."
+          )
+        )
       }
 
-      build_parameter_trajectory_plot(
-        iteration_history = iteration_history,
-        current_iteration = current_iteration(),
-        selected_projection = input$parameter_projection_select
+      plotly::plotlyOutput(
+        outputId = session$ns("parameter_trajectory_3d_plot"),
+        height = "320px"
       )
-    }, res = 110)
+    })
+
+    if (requireNamespace("plotly", quietly = TRUE)) {
+      output$parameter_trajectory_3d_plot <- plotly::renderPlotly({
+        model_results <- safe_model_results()
+        iteration_history <- logistic_iteration_history()
+
+        if (!model_supports_logistic_playback(model_results)) {
+          return(build_empty_parameter_trajectory_3d_plot())
+        }
+
+        build_parameter_trajectory_3d_plot(
+          iteration_history = iteration_history,
+          current_iteration = current_iteration()
+        )
+      })
+    }
 
     output$accuracy_value <- renderText({
       active_model_view <- active_iteration_results()
