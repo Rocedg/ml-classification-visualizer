@@ -1,7 +1,8 @@
 # modules/dataset_controls_module.R
 # Purpose:
-#   Create the left sidebar sections for data setup.
+#   Create the left sidebar sections for problem type selection and data setup.
 #   This module is responsible for:
+#   - showing classification as the active workflow
 #   - loading preset datasets
 #   - accepting CSV uploads
 #   - downloading a CSV template
@@ -9,7 +10,7 @@
 #   - choosing which class to draw
 #
 # Functions:
-#   - dataset_controls_module_ui(): Build the data setup sidebar section.
+#   - dataset_controls_module_ui(): Build sidebar sections 1 and 2.
 #   - dataset_controls_module_server(): Expose the selected dataset,
 #     uploaded data, draw mode state, and draw-related actions.
 #
@@ -34,7 +35,7 @@ dataset_controls_module_ui <- function(id) {
     div(
       class = "sidebar-header-block",
       tags$h2("Build Your Model"),
-      tags$p("Choose data, configure Logistic Regression, and inspect how it learns.")
+      tags$p("Follow these steps to configure and run your classification workflow.")
     ),
     
     div(
@@ -42,6 +43,39 @@ dataset_controls_module_ui <- function(id) {
       div(
         class = "sidebar-section-header",
         div(class = "sidebar-step-pill", "1"),
+        tags$span("Select Problem Type")
+      ),
+      div(
+        class = "problem-type-card is-active",
+        tags$div(class = "problem-type-title-row",
+                 tags$span("Classification"),
+                 tags$span(class = "inline-status-badge", "Active")
+        ),
+        tags$p("Separate 2D points into Class A and Class B.")
+      ),
+      div(
+        class = "problem-type-card is-disabled",
+        tags$div(class = "problem-type-title-row",
+                 tags$span("Regression"),
+                 tags$span(class = "inline-muted-badge", "Disabled")
+        ),
+        tags$p("Hidden in this project so the app stays focused on classification.")
+      ),
+      div(
+        class = "problem-type-card is-disabled",
+        tags$div(class = "problem-type-title-row",
+                 tags$span("Clustering"),
+                 tags$span(class = "inline-muted-badge", "Disabled")
+        ),
+        tags$p("Not included in this version of the visualizer.")
+      )
+    ),
+    
+    div(
+      class = "sidebar-section",
+      div(
+        class = "sidebar-section-header",
+        div(class = "sidebar-step-pill", "2"),
         tags$span("Choose or Create Data")
       ),
       

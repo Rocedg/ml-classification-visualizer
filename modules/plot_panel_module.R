@@ -36,70 +36,72 @@ plot_panel_module_ui <- function(id) {
       div(class = "status-chip", textOutput(ns("drawing_status_text"), inline = TRUE))
     ),
     div(
-      class = "plot-canvas-shell main-feature-plot-shell",
+      class = "plot-canvas-shell",
       plotOutput(
         outputId = ns("classification_plot"),
-        height = "100%",
+        height = "620px",
         click = ns("plot_click")
       )
     ),
     div(
-      class = "app-card iteration-control-card",
+      class = "app-card theory-summary-card",
       div(
-        class = "iteration-control-row",
+        class = "plot-top-status-row",
         div(class = "status-chip status-chip-primary", textOutput(ns("iteration_status_text"), inline = TRUE)),
+        div(class = "status-chip", textOutput(ns("playback_status_text"), inline = TRUE))
+      ),
+      div(
+        class = "button-row",
         actionButton(
           inputId = ns("step_backward_button"),
-          label = "Back",
-          class = "ml-button ml-button-secondary iteration-button"
-        ),
-        div(
-          class = "iteration-slider-shell",
-          sliderInput(
-            inputId = ns("iteration_slider"),
-            label = NULL,
-            min = 1,
-            max = 1,
-            value = 1,
-            step = 1,
-            width = "100%"
-          )
+          label = "Step Back",
+          class = "ml-button ml-button-secondary half-width-button"
         ),
         actionButton(
           inputId = ns("step_forward_button"),
-          label = "Next",
-          class = "ml-button ml-button-secondary iteration-button"
+          label = "Step Forward",
+          class = "ml-button ml-button-secondary half-width-button"
         )
+      ),
+      sliderInput(
+        inputId = ns("iteration_slider"),
+        label = "Iteration",
+        min = 1,
+        max = 1,
+        value = 1,
+        step = 1,
+        width = "100%"
+      ),
+      div(
+        class = "run-helper-text",
+        textOutput(ns("playback_helper_text"))
       )
     ),
     div(
-      class = "diagnostic-grid",
+      class = "plot-canvas-shell",
+      plotOutput(
+        outputId = ns("iteration_metric_plot"),
+        height = "180px"
+      )
+    ),
+    div(
+      class = "app-card theory-summary-card",
       div(
-        class = "plot-canvas-shell diagnostic-plot-shell",
-        plotOutput(
-          outputId = ns("iteration_metric_plot"),
-          height = "260px"
+        class = "plot-top-status-row",
+        div(class = "status-chip status-chip-primary", textOutput(ns("parameter_diagnostic_title"), inline = TRUE))
+      ),
+      conditionalPanel(
+        condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'true'"),
+        plotly::plotlyOutput(
+          outputId = ns("parameter_trajectory_3d_plot"),
+          height = "320px"
         )
       ),
-      div(
-        class = "app-card diagnostic-plot-shell parameter-diagnostic-card",
-        div(
-          class = "plot-top-status-row",
-          div(class = "status-chip status-chip-primary", textOutput(ns("parameter_diagnostic_title"), inline = TRUE))
-        ),
-        conditionalPanel(
-          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'true'"),
-          plotly::plotlyOutput(
-            outputId = ns("parameter_trajectory_3d_plot"),
-            height = "260px"
-          )
-        ),
-        conditionalPanel(
-          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'false'"),
-          plotOutput(
-            outputId = ns("bias_fixed_loss_landscape_plot"),
-            height = "260px"
-          )
+      conditionalPanel(
+        condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'false'"),
+        plotOutput(
+          outputId = ns("bias_fixed_loss_landscape_plot"),
+          height = "320px"
         )
       )
     ),
@@ -263,6 +265,17 @@ plot_panel_module_server <- function(id,
     output$iteration_status_text <- renderText({
       model_results <- safe_model_results()
       format_iteration_status_text(model_results, current_iteration(), total_iteration_count())
+    })
+
+    output$playback_status_text <- renderText({
+      model_results <- safe_model_results()
+      format_iteration_navigation_status_text(model_results)
+    })
+
+    output$playback_helper_text <- renderText({
+      model_results <- safe_model_results()
+      active_iteration <- active_iteration_results()
+      format_playback_helper_text(model_results, active_iteration)
     })
 
     output$drawing_status_text <- renderText({

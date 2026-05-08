@@ -196,16 +196,16 @@ a { text-decoration: none; }
 /* Visualizer layout */
 .visualizer-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  gap: 10px;
-  padding: 8px 12px 12px;
+  grid-template-columns: 340px 1fr;
+  gap: 12px;
+  padding: 12px 16px 16px;
   min-height: calc(100vh - 75px);
 }
 
-.visualizer-sidebar { padding: 10px 10px 16px; background: #f6f8fb; border-right: 1px solid var(--border); }
+.visualizer-sidebar { padding: 14px 12px 22px; background: #f6f8fb; border-right: 1px solid var(--border); }
 .visualizer-main-column { min-width: 0; }
-.sidebar-header-block { margin-bottom: 10px; }
-.sidebar-header-block h2 { margin: 0 0 4px; font-size: 24px; font-weight: 800; }
+.sidebar-header-block { margin-bottom: 18px; }
+.sidebar-header-block h2 { margin: 0 0 6px; font-size: 26px; font-weight: 800; }
 
 .sidebar-header-block p, .sidebar-helper-text, .parameter-note,
 .run-helper-text, .draw-mode-status, .sidebar-run-note {
@@ -215,7 +215,7 @@ a { text-decoration: none; }
   line-height: 1.6;
 }
 
-.sidebar-section { margin-bottom: 10px; padding: 12px; }
+.sidebar-section { margin-bottom: 14px; padding: 14px; }
 
 .sidebar-section-header, .problem-type-title-row, .algorithm-card-title-row {
   display: flex;
@@ -296,12 +296,12 @@ a { text-decoration: none; }
 .sidebar-run-note { margin-top: 12px; color: #97a6b5; text-align: center; font-size: 12px; font-weight: 800; }
 
 /* Tabs */
-.main-panel-card { min-height: calc(100vh - 104px); padding: 0; overflow: hidden; }
-.main-panel-card .nav-tabs { padding: 6px 10px 0; background: var(--white); border-bottom: 1px solid var(--border); }
+.main-panel-card { min-height: calc(100vh - 120px); padding: 0; overflow: hidden; }
+.main-panel-card .nav-tabs { padding: 8px 12px 0; background: var(--white); border-bottom: 1px solid var(--border); }
 
 .main-panel-card .nav-tabs > li > a {
   margin-right: 8px;
-  padding: 9px 14px;
+  padding: 12px 16px;
   border: 1px solid transparent;
   border-radius: 10px 10px 0 0;
   color: var(--muted);
@@ -318,60 +318,29 @@ a { text-decoration: none; }
   color: var(--navy);
 }
 
-.main-panel-card .tab-content { min-height: calc(100vh - 156px); padding: 8px 10px 10px; background: var(--white); }
+.main-panel-card .tab-content { min-height: calc(100vh - 180px); padding: 10px 14px 14px; background: var(--white); }
 
 /* Plot panel, table, and content blocks */
-.plot-tab-layout, .raw-data-tab-layout, .theory-panel-layout { display: flex; flex-direction: column; gap: 10px; }
-.plot-top-status-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.plot-tab-layout, .raw-data-tab-layout, .theory-panel-layout { display: flex; flex-direction: column; gap: 18px; }
+.plot-top-status-row { display: flex; flex-wrap: wrap; gap: 12px; }
 
 .status-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 0 10px;
+  min-height: 38px;
+  padding: 0 14px;
   border-radius: 999px;
   background: #eef4f7;
   color: var(--navy);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
 }
 
 .status-chip-primary { background: var(--mint-soft); color: var(--mint-dark); }
-.plot-canvas-shell { padding: 6px; }
-.main-feature-plot-shell {
-  box-sizing: border-box;
-  width: min(100%, 640px);
-  aspect-ratio: 1 / 1;
-  margin: 0 auto;
-}
-.main-feature-plot-shell .shiny-plot-output {
-  width: 100% !important;
-  height: 100% !important;
-}
-.iteration-control-card { padding: 8px 10px; }
-.iteration-control-row {
-  display: grid;
-  grid-template-columns: auto 70px minmax(180px, 1fr) 70px;
-  align-items: center;
-  gap: 8px;
-}
-.iteration-button {
-  min-height: 32px;
-  padding: 6px 10px;
-}
-.iteration-slider-shell .form-group { margin-bottom: 0; }
-.iteration-slider-shell .irs { margin-top: -10px; margin-bottom: -14px; }
-.diagnostic-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  align-items: stretch;
-}
-.diagnostic-plot-shell { min-width: 0; padding: 8px; }
-.parameter-diagnostic-card .plot-top-status-row { margin-bottom: 6px; }
-.metric-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
-.metric-card { padding: 12px; }
-.theory-detail-card, .theory-summary-card, .about-card, .theory-card { padding: 16px; }
+.plot-canvas-shell { padding: 10px; }
+.metric-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.metric-card { padding: 18px; }
+.theory-detail-card, .theory-summary-card, .about-card, .theory-card { padding: 24px; }
 
 .metric-label {
   display: block;
@@ -452,7 +421,6 @@ a { text-decoration: none; }
 @media (max-width: 1100px) {
   .hero-section,
   .visualizer-layout,
-  .diagnostic-grid,
   .feature-card-grid,
   .metric-card-grid,
   .theory-panel-grid,
@@ -480,8 +448,6 @@ a { text-decoration: none; }
   .hero-description { font-size: 18px; }
   .button-row { flex-direction: column; }
   .main-panel-card .tab-content { padding: 14px; }
-  .iteration-control-row { grid-template-columns: 1fr; }
-  .main-feature-plot-shell { width: 100%; }
 }
 
 .math-box {
@@ -515,8 +481,6 @@ a { text-decoration: none; }
   .theory-panel-grid {
     flex-direction: column;
   }
-}
-
 /* Custom data buttons: three equal buttons */
 .custom-data-buttons-vertical {
   display: flex !important;
