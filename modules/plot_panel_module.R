@@ -90,7 +90,10 @@ plot_panel_module_ui <- function(id) {
         class = "plot-top-status-row",
         div(class = "status-chip status-chip-primary", "3D parameter trajectory")
       ),
-      uiOutput(ns("parameter_trajectory_3d_ui"))
+      plotly::plotlyOutput(
+        outputId = ns("parameter_trajectory_3d_plot"),
+        height = "320px"
+      )
     ),
     div(
       class = "metric-card-grid",
@@ -291,37 +294,19 @@ plot_panel_module_server <- function(id,
       build_iteration_metric_plot(metric_history, current_iteration())
     }, res = 110)
 
-    output$parameter_trajectory_3d_ui <- renderUI({
-      if (!requireNamespace("plotly", quietly = TRUE)) {
-        return(
-          div(
-            class = "run-helper-text",
-            "The 3D parameter trajectory uses the lightweight plotly package. Install plotly to view this graph."
-          )
-        )
+    output$parameter_trajectory_3d_plot <- plotly::renderPlotly({
+      model_results <- safe_model_results()
+      iteration_history <- logistic_iteration_history()
+
+      if (!model_supports_logistic_playback(model_results)) {
+        return(build_empty_parameter_trajectory_3d_plot())
       }
 
-      plotly::plotlyOutput(
-        outputId = session$ns("parameter_trajectory_3d_plot"),
-        height = "320px"
+      build_parameter_trajectory_3d_plot(
+        iteration_history = iteration_history,
+        current_iteration = current_iteration()
       )
     })
-
-    if (requireNamespace("plotly", quietly = TRUE)) {
-      output$parameter_trajectory_3d_plot <- plotly::renderPlotly({
-        model_results <- safe_model_results()
-        iteration_history <- logistic_iteration_history()
-
-        if (!model_supports_logistic_playback(model_results)) {
-          return(build_empty_parameter_trajectory_3d_plot())
-        }
-
-        build_parameter_trajectory_3d_plot(
-          iteration_history = iteration_history,
-          current_iteration = current_iteration()
-        )
-      })
-    }
 
     output$accuracy_value <- renderText({
       active_model_view <- active_iteration_results()
