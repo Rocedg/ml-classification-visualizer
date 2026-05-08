@@ -11,13 +11,14 @@ train_logistic_regression_iterations <- function(classification_data,
                                                  regularization_c = 1,
                                                  l1_ratio = 0,
                                                  fit_intercept = TRUE,
+                                                 learning_rate = 0.12,
                                                  max_iter = 60,
                                                  tolerance = 0.001) {
   binary_target <- ifelse(classification_data$class == "Class B", 1, 0)
 
   # These fixed settings keep the training loop simple and readable
   # for beginners while still showing a visible learning process.
-  learning_rate <- 0.12
+  learning_rate <- max(learning_rate, 0.001)
   regularization_c <- max(regularization_c, 0.001)
   regularization_strength <- 1 / regularization_c
   l1_ratio <- min(max(l1_ratio, 0), 1)
@@ -178,6 +179,7 @@ train_classification_model <- function(classification_data, algorithm_name, para
     }
 
     decision_threshold <- parameter_values$decision_threshold
+    logistic_learning_rate <- parameter_values$logistic_learning_rate
     logistic_c <- parameter_values$logistic_c
     logistic_l1_ratio <- parameter_values$logistic_l1_ratio
     logistic_fit_intercept <- parameter_values$logistic_fit_intercept
@@ -186,6 +188,9 @@ train_classification_model <- function(classification_data, algorithm_name, para
 
     if (is.null(decision_threshold)) {
       decision_threshold <- 0.5
+    }
+    if (is.null(logistic_learning_rate)) {
+      logistic_learning_rate <- 0.12
     }
     if (is.null(logistic_c)) {
       logistic_c <- 1
@@ -210,6 +215,14 @@ train_classification_model <- function(classification_data, algorithm_name, para
 
     if (decision_threshold < 0 || decision_threshold > 1) {
       stop("Decision threshold must be between 0 and 1.")
+    }
+
+    if (!is.numeric(logistic_learning_rate) || length(logistic_learning_rate) != 1 || is.na(logistic_learning_rate)) {
+      stop("Learning rate must be a single numeric value.")
+    }
+
+    if (logistic_learning_rate <= 0) {
+      stop("Learning rate must be greater than 0.")
     }
 
     if (!is.numeric(logistic_c) || length(logistic_c) != 1 || is.na(logistic_c)) {
@@ -251,6 +264,7 @@ train_classification_model <- function(classification_data, algorithm_name, para
       regularization_c = logistic_c,
       l1_ratio = logistic_l1_ratio,
       fit_intercept = logistic_fit_intercept,
+      learning_rate = logistic_learning_rate,
       max_iter = logistic_max_iter,
       tolerance = logistic_tol
     )

@@ -67,12 +67,13 @@ algorithm_controls_module_ui <- function(id) {
 algorithm_controls_module_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     selected_algorithm_key <- reactiveVal("logistic_regression")
+    default_logistic_learning_rate <- 0.12
+    default_logistic_max_iter <- 60
     default_decision_threshold <- 0.50
     default_logistic_c <- 1
     default_logistic_l1_ratio <- 0
     default_logistic_fit_intercept <- TRUE
-    default_logistic_max_iter <- 60
-    default_logistic_tol <- 0.001
+    default_logistic_tol <- 0
 
     observeEvent(input$choose_logistic_regression, {
       selected_algorithm_key("logistic_regression")
@@ -137,58 +138,41 @@ algorithm_controls_module_server <- function(id) {
     output$parameter_controls_ui <- renderUI({
       if (selected_algorithm_key() == "logistic_regression") {
         tagList(
+          tags$p(class = "parameter-note", "Training"),
           sliderInput(
-            inputId = session$ns("decision_threshold"),
-            label = "Decision Threshold",
-            min = 0.30,
-            max = 0.70,
-            value = 0.50,
+            inputId = session$ns("logistic_learning_rate"),
+            label = "Learning rate",
+            min = 0.01,
+            max = 0.30,
+            value = 0.12,
             step = 0.01
           ),
           sliderInput(
-            inputId = session$ns("logistic_c"),
-            label = "Regularization Strength (C)",
-            min = 0.1,
-            max = 10,
-            value = 1,
-            step = 0.1
-          ),
-          sliderInput(
-            inputId = session$ns("logistic_l1_ratio"),
-            label = "Regularization Mix",
-            min = 0,
-            max = 1,
-            value = 0,
-            step = 0.05
-          ),
-          checkboxInput(
-            inputId = session$ns("logistic_fit_intercept"),
-            label = "Fit Intercept",
-            value = TRUE
-          ),
-          sliderInput(
             inputId = session$ns("logistic_max_iter"),
-            label = "Max Iterations",
+            label = "Iterations",
             min = 10,
             max = 200,
             value = 60,
             step = 10
           ),
+          tags$p(class = "parameter-note", "Prediction"),
           sliderInput(
-            inputId = session$ns("logistic_tol"),
-            label = "Stopping Tolerance",
-            min = 0.0001,
-            max = 0.01,
-            value = 0.001,
-            step = 0.0001
+            inputId = session$ns("decision_threshold"),
+            label = "Threshold",
+            min = 0.30,
+            max = 0.70,
+            value = 0.50,
+            step = 0.01
+          ),
+          tags$p(class = "parameter-note", "Model form"),
+          checkboxInput(
+            inputId = session$ns("logistic_fit_intercept"),
+            label = "Fit intercept (learn bias term)",
+            value = TRUE
           ),
           tags$p(
             class = "parameter-note",
-            "The threshold decides when a predicted probability becomes Class B."
-          ),
-          tags$p(
-            class = "parameter-note",
-            "C controls regularization: smaller C means stronger simplification. The mix slider moves from L2-style smooth shrinkage to L1-style stronger feature selection."
+            "ON: the model learns an offset term so the boundary can shift freely. OFF: the intercept is fixed to 0, which simplifies the model and enables a 2D loss-surface view."
           )
         )
       } else {
@@ -213,38 +197,34 @@ algorithm_controls_module_server <- function(id) {
       selected_algorithm_key = reactive(selected_algorithm_key()),
       algorithm_parameters = reactive({
         if (selected_algorithm_key() == "logistic_regression") {
-          decision_threshold <- input$decision_threshold
-          logistic_c <- input$logistic_c
-          logistic_l1_ratio <- input$logistic_l1_ratio
-          logistic_fit_intercept <- input$logistic_fit_intercept
+          logistic_learning_rate <- input$logistic_learning_rate
           logistic_max_iter <- input$logistic_max_iter
-          logistic_tol <- input$logistic_tol
+          decision_threshold <- input$decision_threshold
+          logistic_fit_intercept <- input$logistic_fit_intercept
+          logistic_c <- default_logistic_c
+          logistic_l1_ratio <- default_logistic_l1_ratio
+          logistic_tol <- default_logistic_tol
 
-          if (is.null(decision_threshold)) {
-            decision_threshold <- default_decision_threshold
-          }
-          if (is.null(logistic_c)) {
-            logistic_c <- default_logistic_c
-          }
-          if (is.null(logistic_l1_ratio)) {
-            logistic_l1_ratio <- default_logistic_l1_ratio
-          }
-          if (is.null(logistic_fit_intercept)) {
-            logistic_fit_intercept <- default_logistic_fit_intercept
+          if (is.null(logistic_learning_rate)) {
+            logistic_learning_rate <- default_logistic_learning_rate
           }
           if (is.null(logistic_max_iter)) {
             logistic_max_iter <- default_logistic_max_iter
           }
-          if (is.null(logistic_tol)) {
-            logistic_tol <- default_logistic_tol
+          if (is.null(decision_threshold)) {
+            decision_threshold <- default_decision_threshold
+          }
+          if (is.null(logistic_fit_intercept)) {
+            logistic_fit_intercept <- default_logistic_fit_intercept
           }
 
           list(
+            logistic_learning_rate = logistic_learning_rate,
+            logistic_max_iter = logistic_max_iter,
             decision_threshold = decision_threshold,
             logistic_c = logistic_c,
             logistic_l1_ratio = logistic_l1_ratio,
             logistic_fit_intercept = logistic_fit_intercept,
-            logistic_max_iter = logistic_max_iter,
             logistic_tol = logistic_tol
           )
         } else {

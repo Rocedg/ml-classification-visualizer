@@ -14,18 +14,20 @@ build_classification_plot <- function(classification_data, active_model_view) {
     plot_object <- plot_object +
       geom_raster(
         data = prediction_grid,
-        aes(x = x, y = y, fill = class_a_probability),
-        alpha = 0.9,
-        interpolate = TRUE
+        aes(x = x, y = y, fill = round(class_a_probability / 0.05) * 0.05),
+        alpha = 0.94,
+        interpolate = FALSE
       ) +
       scale_fill_gradientn(
-        colours = c("#ffc5a3", "#fff7ed", "#bdd8ff"),
-        values = c(0, 0.5, 1),
+        colours = c("#ff9b6b", "#ffe4d3", "#fff7ed", "#d8e8ff", "#74a9ff"),
+        values = c(0, 0.25, 0.5, 0.75, 1),
         limits = c(0, 1),
-        breaks = c(1, 0.5, 0),
+        breaks = c(1, 0.75, 0.5, 0.25, 0),
         labels = c(
           "Class A probability = 1.0\n(100%)",
+          "More likely Class A",
           "0.5 = uncertain\nDecision threshold",
+          "More likely Class B",
           "Class B probability = 1.0\n(100%)"
         ),
         name = "Probability guide\nHigh = Class A\nLow = Class B",
@@ -271,4 +273,151 @@ build_parameter_trajectory_3d_plot <- function(iteration_history, current_iterat
     paper_bgcolor = "#ffffff",
     plot_bgcolor = "#ffffff"
   )
+}
+
+
+calculate_logistic_objective <- function(weight_x, weight_y, bias, classification_data, model_object = NULL) {
+  binary_target <- ifelse(classification_data$class == "Class B", 1, 0)
+  linear_scores <- bias + weight_x * classification_data$x + weight_y * classification_data$y
+  probabilities <- sigmoid_probability(linear_scores)
+  safe_probabilities <- pmin(pmax(probabilities, 1e-6), 1 - 1e-6)
+
+  log_loss <- -mean(
+    binary_target * log(safe_probabilities) +
+      (1 - binary_target) * log(1 - safe_probabilities)
+  )
+
+  regularization_c <- 1
+  l1_ratio <- 0
+
+  if (!is.null(model_object$regularization_c)) {
+    regularization_c <- model_object$regularization_c
+  }
+  if (!is.null(model_object$l1_ratio)) {
+    l1_ratio <- model_object$l1_ratio
+  }
+
+  regularization_strength <- 1 / max(regularization_c, 0.001)
+  l1_ratio <- min(max(l1_ratio, 0), 1)
+  l2_penalty <- 0.5 * (1 - l1_ratio) * regularization_strength * (weight_x^2 + weight_y^2)
+  l1_penalty <- l1_ratio * regularization_strength * (abs(weight_x) + abs(weight_y))
+
+  log_loss + l2_penalty + l1_penalty
+}
+
+
+build_bias_fixed_loss_landscape_plot <- function(classification_data,
+                                                 iteration_history,
+                                                 current_iteration,
+                                                 model_object = NULL) {
+  trajectory_data <- build_parameter_trajectory_data(iteration_history)
+
+  if (is.null(trajectory_data) || nrow(trajectory_data) == 0) {
+    placeholder_data <- data.frame(
+      x = 1,
+      y = 1,
+      label = "Run Logistic Regression with Fit intercept off to see the 2D loss surface."
+    )
+
+    return(
+      ggplot(placeholder_data, aes(x = x, y = y, label = label)) +
+        geom_text(color = "#6d8196", size = 4) +
+        xlim(0, 2) +
+        ylim(0, 2) +
+        theme_void(base_family = "Manrope") +
+        theme(
+          plot.margin = margin(4, 4, 4, 4),
+          plot.background = element_rect(fill = "#ffffff", color = NA),
+          panel.background = element_rect(fill = "#ffffff", color = NA)
+        )
+    )
+  }
+
+  if (is.null(current_iteration) || !is.numeric(current_iteration) || length(current_iteration) != 1 || is.na(current_iteration)) {
+    current_iteration <- 1
+  }
+  bounded_iteration <- min(max(current_iteration, 1), nrow(trajectory_data))
+
+  x_range <- range(trajectory_data$weight_x)
+  y_range <- range(trajectory_data$weight_y)
+  x_padding <- max(diff(x_range) * 0.45, 0.35)
+  y_padding <- max(diff(y_range) * 0.45, 0.35)
+
+  weight_grid <- expand.grid(
+    weight_x = seq(x_range[1] - x_padding, x_range[2] + x_padding, length.out = 70),
+    weight_y = seq(y_range[1] - y_padding, y_range[2] + y_padding, length.out = 70)
+  )
+
+  weight_grid$loss_value <- vapply(
+    seq_len(nrow(weight_grid)),
+    function(row_index) {
+      calculate_logistic_objective(
+        weight_x = weight_grid$weight_x[row_index],
+        weight_y = weight_grid$weight_y[row_index],
+        bias = 0,
+        classification_data = classification_data,
+        model_object = model_object
+      )
+    },
+    numeric(1)
+  )
+  weight_grid$loss_display <- pmin(weight_grid$loss_value, stats::quantile(weight_grid$loss_value, 0.95))
+
+  marker_data <- rbind(
+    data.frame(marker = "Start", trajectory_data[1, c("weight_x", "weight_y", "iteration")]),
+    data.frame(marker = "Current", trajectory_data[bounded_iteration, c("weight_x", "weight_y", "iteration")]),
+    data.frame(marker = "Final", trajectory_data[nrow(trajectory_data), c("weight_x", "weight_y", "iteration")])
+  )
+  marker_data$marker <- factor(marker_data$marker, levels = c("Start", "Current", "Final"))
+
+  ggplot(weight_grid, aes(x = weight_x, y = weight_y)) +
+    geom_raster(aes(fill = loss_display), interpolate = TRUE, alpha = 0.95) +
+    geom_contour(aes(z = loss_value), color = "#ffffff", linewidth = 0.35, alpha = 0.5, bins = 8) +
+    geom_path(
+      data = trajectory_data,
+      aes(x = weight_x, y = weight_y),
+      color = "#243b57",
+      linewidth = 0.95,
+      alpha = 0.9
+    ) +
+    geom_point(
+      data = trajectory_data,
+      aes(x = weight_x, y = weight_y),
+      color = "#b9ddd5",
+      size = 1.8,
+      alpha = 0.9
+    ) +
+    geom_point(
+      data = marker_data,
+      aes(x = weight_x, y = weight_y, color = marker, shape = marker),
+      size = 4,
+      stroke = 0.9
+    ) +
+    scale_fill_gradientn(
+      colours = c("#e0f2fe", "#d7ebe6", "#fff7ed", "#fb923c"),
+      name = "Regularized loss"
+    ) +
+    scale_color_manual(values = c("Start" = "#243b57", "Current" = "#111827", "Final" = "#ff8b3d"), name = NULL) +
+    scale_shape_manual(values = c("Start" = 21, "Current" = 23, "Final" = 24), name = NULL) +
+    labs(
+      title = "Loss landscape (bias fixed to 0)",
+      subtitle = paste("Current iteration:", trajectory_data$iteration[bounded_iteration]),
+      x = "weight_x",
+      y = "weight_y"
+    ) +
+    theme_minimal(base_family = "Manrope") +
+    theme(
+      legend.position = "bottom",
+      legend.title = element_text(color = "#334155", size = 9, face = "bold"),
+      legend.text = element_text(color = "#475569", size = 9),
+      panel.grid.minor = element_blank(),
+      panel.grid.major = element_line(color = "#eef3f7", linewidth = 0.55),
+      axis.title = element_text(color = "#47627b", size = 10, face = "bold"),
+      axis.text = element_text(color = "#6d8196", size = 9),
+      plot.title = element_text(color = "#243b57", size = 12, face = "bold"),
+      plot.subtitle = element_text(color = "#6d8196", size = 10),
+      plot.margin = margin(4, 4, 4, 4),
+      plot.background = element_rect(fill = "#ffffff", color = NA),
+      panel.background = element_rect(fill = "#ffffff", color = NA)
+    )
 }

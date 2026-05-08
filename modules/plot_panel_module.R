@@ -88,11 +88,21 @@ plot_panel_module_ui <- function(id) {
       class = "app-card theory-summary-card",
       div(
         class = "plot-top-status-row",
-        div(class = "status-chip status-chip-primary", "3D parameter trajectory")
+        div(class = "status-chip status-chip-primary", textOutput(ns("parameter_diagnostic_title"), inline = TRUE))
       ),
-      plotly::plotlyOutput(
-        outputId = ns("parameter_trajectory_3d_plot"),
-        height = "320px"
+      conditionalPanel(
+        condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'true'"),
+        plotly::plotlyOutput(
+          outputId = ns("parameter_trajectory_3d_plot"),
+          height = "320px"
+        )
+      ),
+      conditionalPanel(
+        condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'false'"),
+        plotOutput(
+          outputId = ns("bias_fixed_loss_landscape_plot"),
+          height = "320px"
+        )
       )
     ),
     div(
@@ -294,6 +304,30 @@ plot_panel_module_server <- function(id,
       build_iteration_metric_plot(metric_history, current_iteration())
     }, res = 110)
 
+    model_uses_fit_intercept <- reactive({
+      model_results <- safe_model_results()
+
+      if (!model_supports_logistic_playback(model_results)) {
+        return(TRUE)
+      }
+
+      fit_intercept <- model_results$model_object$fit_intercept
+      is.null(fit_intercept) || isTRUE(fit_intercept)
+    })
+
+    output$show_3d_parameter_diagnostic <- renderText({
+      if (model_uses_fit_intercept()) "true" else "false"
+    })
+    outputOptions(output, "show_3d_parameter_diagnostic", suspendWhenHidden = FALSE)
+
+    output$parameter_diagnostic_title <- renderText({
+      if (model_uses_fit_intercept()) {
+        "3D parameter trajectory"
+      } else {
+        "2D loss landscape"
+      }
+    })
+
     output$parameter_trajectory_3d_plot <- plotly::renderPlotly({
       model_results <- safe_model_results()
       iteration_history <- logistic_iteration_history()
@@ -302,11 +336,47 @@ plot_panel_module_server <- function(id,
         return(build_empty_parameter_trajectory_3d_plot())
       }
 
+      if (!model_uses_fit_intercept()) {
+        return(build_empty_parameter_trajectory_3d_plot())
+      }
+
       build_parameter_trajectory_3d_plot(
         iteration_history = iteration_history,
         current_iteration = current_iteration()
       )
     })
+
+    output$bias_fixed_loss_landscape_plot <- renderPlot({
+      model_results <- safe_model_results()
+      iteration_history <- logistic_iteration_history()
+
+      if (!model_supports_logistic_playback(model_results)) {
+        return(
+          build_bias_fixed_loss_landscape_plot(
+            classification_data = classification_data(),
+            iteration_history = NULL,
+            current_iteration = current_iteration()
+          )
+        )
+      }
+
+      if (model_uses_fit_intercept()) {
+        return(
+          build_bias_fixed_loss_landscape_plot(
+            classification_data = classification_data(),
+            iteration_history = NULL,
+            current_iteration = current_iteration()
+          )
+        )
+      }
+
+      build_bias_fixed_loss_landscape_plot(
+        classification_data = classification_data(),
+        iteration_history = iteration_history,
+        current_iteration = current_iteration(),
+        model_object = model_results$model_object
+      )
+    }, res = 110)
 
     output$accuracy_value <- renderText({
       active_model_view <- active_iteration_results()
