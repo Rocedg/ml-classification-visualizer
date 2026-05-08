@@ -133,26 +133,6 @@ build_iteration_metric_plot <- function(metric_history, current_iteration) {
 }
 
 
-draw_empty_parameter_trajectory_plot <- function() {
-  placeholder_data <- data.frame(
-    x = 1,
-    y = 1,
-    label = "Parameter movement will appear here after you run Logistic Regression."
-  )
-
-  ggplot(placeholder_data, aes(x = x, y = y, label = label)) +
-    geom_text(color = "#6d8196", size = 4) +
-    xlim(0, 2) +
-    ylim(0, 2) +
-    theme_void(base_family = "Manrope") +
-    theme(
-      plot.margin = margin(4, 4, 4, 4),
-      plot.background = element_rect(fill = "#ffffff", color = NA),
-      panel.background = element_rect(fill = "#ffffff", color = NA)
-    )
-}
-
-
 build_parameter_trajectory_data <- function(iteration_history) {
   if (is.null(iteration_history) || length(iteration_history) == 0) {
     return(NULL)
@@ -179,93 +159,116 @@ build_parameter_trajectory_data <- function(iteration_history) {
 }
 
 
-build_parameter_trajectory_plot <- function(iteration_history, current_iteration, selected_projection) {
+build_empty_parameter_trajectory_3d_plot <- function() {
+  empty_plot <- plotly::plot_ly()
+
+  plotly::layout(
+    empty_plot,
+    title = list(text = "Gradient movement in 3D parameter space"),
+    annotations = list(
+      list(
+        text = "Run Logistic Regression to see the optimizer move through weight_x, weight_y, and bias.",
+        x = 0.5,
+        y = 0.5,
+        xref = "paper",
+        yref = "paper",
+        showarrow = FALSE,
+        font = list(color = "#6d8196", size = 14)
+      )
+    ),
+    xaxis = list(visible = FALSE),
+    yaxis = list(visible = FALSE),
+    margin = list(l = 0, r = 0, b = 0, t = 50)
+  )
+}
+
+
+build_parameter_trajectory_3d_plot <- function(iteration_history, current_iteration) {
   trajectory_data <- build_parameter_trajectory_data(iteration_history)
 
   if (is.null(trajectory_data) || nrow(trajectory_data) == 0) {
-    return(draw_empty_parameter_trajectory_plot())
+    return(build_empty_parameter_trajectory_3d_plot())
   }
 
-  projection_options <- list(
-    weight_x_weight_y = list(
-      x_column = "weight_x",
-      y_column = "weight_y",
-      x_label = "weight_x",
-      y_label = "weight_y"
-    ),
-    weight_x_bias = list(
-      x_column = "weight_x",
-      y_column = "bias",
-      x_label = "weight_x",
-      y_label = "bias"
-    ),
-    weight_y_bias = list(
-      x_column = "weight_y",
-      y_column = "bias",
-      x_label = "weight_y",
-      y_label = "bias"
-    )
-  )
-
-  if (is.null(selected_projection) || is.null(projection_options[[selected_projection]])) {
-    selected_projection <- "weight_x_weight_y"
-  }
-
-  selected_option <- projection_options[[selected_projection]]
   if (is.null(current_iteration) || !is.numeric(current_iteration) || length(current_iteration) != 1 || is.na(current_iteration)) {
     current_iteration <- 1
   }
   bounded_iteration <- min(max(current_iteration, 1), nrow(trajectory_data))
 
-  trajectory_plot_data <- trajectory_data
-  trajectory_plot_data$x_value <- trajectory_data[[selected_option$x_column]]
-  trajectory_plot_data$y_value <- trajectory_data[[selected_option$y_column]]
+  trajectory_data$tooltip <- paste0(
+    "Iteration: ", trajectory_data$iteration,
+    "<br>weight_x: ", round(trajectory_data$weight_x, 4),
+    "<br>weight_y: ", round(trajectory_data$weight_y, 4),
+    "<br>bias: ", round(trajectory_data$bias, 4)
+  )
 
   marker_data <- rbind(
-    data.frame(marker = "Start", trajectory_plot_data[1, c("x_value", "y_value", "iteration")]),
-    data.frame(marker = "Current", trajectory_plot_data[bounded_iteration, c("x_value", "y_value", "iteration")]),
-    data.frame(marker = "Final", trajectory_plot_data[nrow(trajectory_plot_data), c("x_value", "y_value", "iteration")])
+    data.frame(marker = "Start", trajectory_data[1, c("weight_x", "weight_y", "bias", "iteration", "tooltip")]),
+    data.frame(marker = "Current", trajectory_data[bounded_iteration, c("weight_x", "weight_y", "bias", "iteration", "tooltip")]),
+    data.frame(marker = "Final", trajectory_data[nrow(trajectory_data), c("weight_x", "weight_y", "bias", "iteration", "tooltip")])
   )
   marker_data$marker <- factor(marker_data$marker, levels = c("Start", "Current", "Final"))
 
-  ggplot(trajectory_plot_data, aes(x = x_value, y = y_value)) +
-    geom_path(color = "#5db5a2", linewidth = 0.95, alpha = 0.9) +
-    geom_point(color = "#b9ddd5", size = 1.8, alpha = 0.85) +
-    geom_point(
-      data = marker_data,
-      aes(fill = marker, shape = marker),
-      color = "#243b57",
-      size = 4,
-      stroke = 0.9
-    ) +
-    scale_fill_manual(
-      values = c("Start" = "#ffffff", "Current" = "#243b57", "Final" = "#ff8b3d"),
-      name = NULL
-    ) +
-    scale_shape_manual(
-      values = c("Start" = 21, "Current" = 23, "Final" = 24),
-      name = NULL
-    ) +
-    scale_x_continuous(expand = expansion(mult = 0.08, add = 0.02)) +
-    scale_y_continuous(expand = expansion(mult = 0.08, add = 0.02)) +
-    labs(
-      title = "Parameter trajectory during training",
-      subtitle = paste("Current iteration:", trajectory_plot_data$iteration[bounded_iteration]),
-      x = selected_option$x_label,
-      y = selected_option$y_label
-    ) +
-    theme_minimal(base_family = "Manrope") +
-    theme(
-      legend.position = "bottom",
-      legend.text = element_text(color = "#475569", size = 9),
-      panel.grid.minor = element_blank(),
-      panel.grid.major = element_line(color = "#eef3f7", linewidth = 0.55),
-      axis.title = element_text(color = "#47627b", size = 10, face = "bold"),
-      axis.text = element_text(color = "#6d8196", size = 9),
-      plot.title = element_text(color = "#243b57", size = 12, face = "bold"),
-      plot.subtitle = element_text(color = "#6d8196", size = 10),
-      plot.margin = margin(4, 4, 4, 4),
-      plot.background = element_rect(fill = "#ffffff", color = NA),
-      panel.background = element_rect(fill = "#ffffff", color = NA)
+  trajectory_plot <- plotly::plot_ly()
+  trajectory_plot <- plotly::add_trace(
+    trajectory_plot,
+    data = trajectory_data,
+    x = ~weight_x,
+    y = ~weight_y,
+    z = ~bias,
+    type = "scatter3d",
+    mode = "lines+markers",
+    name = "Training path",
+    text = ~tooltip,
+    hoverinfo = "text",
+    color = ~iteration,
+    colors = c("#b9ddd5", "#5db5a2", "#243b57"),
+    line = list(color = "#5db5a2", width = 5),
+    marker = list(size = 3, colorbar = list(title = "Iteration"))
+  )
+
+  marker_styles <- list(
+    Start = list(color = "#ffffff", line = list(color = "#243b57", width = 3), symbol = "circle"),
+    Current = list(color = "#243b57", line = list(color = "#ffffff", width = 2), symbol = "diamond"),
+    Final = list(color = "#ff8b3d", line = list(color = "#7c2d12", width = 2), symbol = "circle")
+  )
+
+  for (marker_name in levels(marker_data$marker)) {
+    selected_marker <- marker_data[marker_data$marker == marker_name, , drop = FALSE]
+
+    trajectory_plot <- plotly::add_trace(
+      trajectory_plot,
+      data = selected_marker,
+      x = ~weight_x,
+      y = ~weight_y,
+      z = ~bias,
+      type = "scatter3d",
+      mode = "markers",
+      name = marker_name,
+      text = ~paste0(marker, "<br>", tooltip),
+      hoverinfo = "text",
+      marker = c(list(size = 7), marker_styles[[marker_name]]),
+      inherit = FALSE
     )
+  }
+
+  plotly::layout(
+    trajectory_plot,
+    title = list(
+      text = paste0(
+        "Gradient movement in 3D parameter space",
+        "<br><sup>Current iteration: ", trajectory_data$iteration[bounded_iteration], "</sup>"
+      )
+    ),
+    scene = list(
+      xaxis = list(title = "weight_x", backgroundcolor = "#f8fafc", gridcolor = "#e2e8f0", zerolinecolor = "#94a3b8"),
+      yaxis = list(title = "weight_y", backgroundcolor = "#f8fafc", gridcolor = "#e2e8f0", zerolinecolor = "#94a3b8"),
+      zaxis = list(title = "bias", backgroundcolor = "#f8fafc", gridcolor = "#e2e8f0", zerolinecolor = "#94a3b8"),
+      camera = list(eye = list(x = 1.45, y = 1.45, z = 1.1))
+    ),
+    legend = list(orientation = "h", x = 0, y = -0.08),
+    margin = list(l = 0, r = 0, b = 0, t = 60),
+    paper_bgcolor = "#ffffff",
+    plot_bgcolor = "#ffffff"
+  )
 }
