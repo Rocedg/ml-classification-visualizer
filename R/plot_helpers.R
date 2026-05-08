@@ -1,15 +1,66 @@
 # Plot helper functions for the ML Visualizer app.
 
+build_square_plot_limits <- function(x_values, y_values, padding_fraction = 0) {
+  x_values <- x_values[is.finite(x_values)]
+  y_values <- y_values[is.finite(y_values)]
+
+  if (length(x_values) == 0 || length(y_values) == 0) {
+    return(list(x = c(-1, 1), y = c(-1, 1)))
+  }
+
+  x_range <- range(x_values)
+  y_range <- range(y_values)
+  x_center <- mean(x_range)
+  y_center <- mean(y_range)
+  square_span <- max(diff(x_range), diff(y_range))
+
+  if (square_span == 0) {
+    square_span <- 2
+  }
+
+  square_span <- square_span * (1 + 2 * padding_fraction)
+
+  list(
+    x = x_center + c(-0.5, 0.5) * square_span,
+    y = y_center + c(-0.5, 0.5) * square_span
+  )
+}
+
+
+build_square_probability_grid <- function(active_model_view, x_limits, y_limits, grid_points = 140) {
+  square_grid <- expand.grid(
+    x = seq(x_limits[1], x_limits[2], length.out = grid_points),
+    y = seq(y_limits[1], y_limits[2], length.out = grid_points)
+  )
+
+  square_grid$class_b_probability <- sigmoid_probability(
+    active_model_view$bias +
+      active_model_view$weight_x * square_grid$x +
+      active_model_view$weight_y * square_grid$y
+  )
+  square_grid$class_a_probability <- 1 - square_grid$class_b_probability
+
+  square_grid
+}
+
 build_classification_plot <- function(classification_data, active_model_view) {
   plot_object <- ggplot()
-  plot_x_limits <- NULL
-  plot_y_limits <- NULL
+  square_limits <- build_square_plot_limits(
+    classification_data$x,
+    classification_data$y,
+    padding_fraction = 0.18
+  )
 
   if (!is.null(active_model_view)) {
     prediction_grid <- active_model_view$prediction_grid
-    prediction_grid$class_a_probability <- 1 - prediction_grid$class_b_probability
-    plot_x_limits <- range(prediction_grid$x)
-    plot_y_limits <- range(prediction_grid$y)
+    grid_points <- max(length(unique(prediction_grid$x)), length(unique(prediction_grid$y)))
+    square_limits <- build_square_plot_limits(prediction_grid$x, prediction_grid$y)
+    prediction_grid <- build_square_probability_grid(
+      active_model_view = active_model_view,
+      x_limits = square_limits$x,
+      y_limits = square_limits$y,
+      grid_points = grid_points
+    )
 
     plot_object <- plot_object +
       geom_raster(
@@ -59,7 +110,7 @@ build_classification_plot <- function(classification_data, active_model_view) {
       alpha = 0.98
     ) +
     scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d"), guide = "none") +
-    coord_equal(xlim = plot_x_limits, ylim = plot_y_limits, expand = FALSE) +
+    coord_equal(xlim = square_limits$x, ylim = square_limits$y, expand = FALSE) +
     labs(
       x = "X",
       y = "Y"

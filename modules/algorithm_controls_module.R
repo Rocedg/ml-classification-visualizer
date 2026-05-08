@@ -27,7 +27,7 @@ algorithm_controls_module_ui <- function(id) {
       class = "sidebar-section",
       div(
         class = "sidebar-section-header",
-        div(class = "sidebar-step-pill", "3"),
+        div(class = "sidebar-step-pill", "2"),
         tags$span("Select Algorithm")
       ),
       tags$p(
@@ -41,7 +41,7 @@ algorithm_controls_module_ui <- function(id) {
       class = "sidebar-section",
       div(
         class = "sidebar-section-header",
-        div(class = "sidebar-step-pill", "4"),
+        div(class = "sidebar-step-pill", "3"),
         tags$span("Configure Parameters")
       ),
       tags$p(
