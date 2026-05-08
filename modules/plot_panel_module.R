@@ -36,72 +36,73 @@ plot_panel_module_ui <- function(id) {
       div(class = "status-chip", textOutput(ns("drawing_status_text"), inline = TRUE))
     ),
     div(
-      class = "plot-canvas-shell",
+      class = "plot-canvas-shell main-feature-plot-shell",
       plotOutput(
         outputId = ns("classification_plot"),
-        height = "620px",
+        height = "100%",
         click = ns("plot_click")
       )
     ),
     div(
-      class = "app-card theory-summary-card",
+      class = "app-card iteration-control-card",
       div(
-        class = "plot-top-status-row",
-        div(class = "status-chip status-chip-primary", textOutput(ns("iteration_status_text"), inline = TRUE)),
-        div(class = "status-chip", textOutput(ns("playback_status_text"), inline = TRUE))
+        class = "iteration-control-header",
+        div(class = "status-chip status-chip-primary", textOutput(ns("iteration_status_text"), inline = TRUE))
       ),
       div(
-        class = "button-row",
-        actionButton(
-          inputId = ns("step_backward_button"),
-          label = "Step Back",
-          class = "ml-button ml-button-secondary half-width-button"
+        class = "iteration-control-body",
+        div(
+          class = "button-row iteration-button-row",
+          actionButton(
+            inputId = ns("step_backward_button"),
+            label = "Step Back",
+            class = "ml-button ml-button-secondary half-width-button"
+          ),
+          actionButton(
+            inputId = ns("step_forward_button"),
+            label = "Step Forward",
+            class = "ml-button ml-button-secondary half-width-button"
+          )
         ),
-        actionButton(
-          inputId = ns("step_forward_button"),
-          label = "Step Forward",
-          class = "ml-button ml-button-secondary half-width-button"
+        sliderInput(
+          inputId = ns("iteration_slider"),
+          label = NULL,
+          min = 1,
+          max = 1,
+          value = 1,
+          step = 1,
+          width = "100%"
         )
-      ),
-      sliderInput(
-        inputId = ns("iteration_slider"),
-        label = "Iteration",
-        min = 1,
-        max = 1,
-        value = 1,
-        step = 1,
-        width = "100%"
-      ),
-      div(
-        class = "run-helper-text",
-        textOutput(ns("playback_helper_text"))
       )
     ),
     div(
-      class = "plot-canvas-shell",
-      plotOutput(
-        outputId = ns("iteration_metric_plot"),
-        height = "180px"
-      )
-    ),
-    div(
-      class = "app-card theory-summary-card",
+      class = "diagnostic-grid",
       div(
-        class = "plot-top-status-row",
-        div(class = "status-chip status-chip-primary", textOutput(ns("parameter_diagnostic_title"), inline = TRUE))
-      ),
-      conditionalPanel(
-        condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'true'"),
-        plotly::plotlyOutput(
-          outputId = ns("parameter_trajectory_3d_plot"),
-          height = "320px"
-        )
-      ),
-      conditionalPanel(
-        condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'false'"),
+        class = "plot-canvas-shell diagnostic-plot-shell",
         plotOutput(
-          outputId = ns("bias_fixed_loss_landscape_plot"),
-          height = "320px"
+          outputId = ns("iteration_metric_plot"),
+          height = "280px"
+        )
+      ),
+      div(
+        class = "app-card theory-summary-card diagnostic-plot-shell parameter-diagnostic-card",
+        div(
+          class = "plot-top-status-row",
+          div(class = "status-chip status-chip-primary", textOutput(ns("parameter_diagnostic_title"), inline = TRUE))
+        ),
+        conditionalPanel(
+          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'true'"),
+          plotly::plotlyOutput(
+            outputId = ns("parameter_trajectory_3d_plot"),
+            height = "280px"
+          )
+        ),
+        conditionalPanel(
+          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'false'"),
+          plotOutput(
+            outputId = ns("bias_fixed_loss_landscape_plot"),
+            height = "280px"
+          )
         )
       )
     ),

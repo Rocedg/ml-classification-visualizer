@@ -30,10 +30,81 @@ train_logistic_regression_iterations <- function(classification_data,
   bias <- 0
   previous_loss <- Inf
   actual_iteration_count <- 0
+  saved_iteration_count <- 0
 
-  iteration_history <- vector("list", total_iterations)
-  loss_history <- numeric(total_iterations)
-  accuracy_history <- numeric(total_iterations)
+  iteration_history <- vector("list", total_iterations + 1)
+  loss_history <- numeric(total_iterations + 1)
+  accuracy_history <- numeric(total_iterations + 1)
+
+  build_saved_iteration <- function(iteration_index, current_weight_x, current_weight_y, current_bias) {
+    current_training_probabilities <- sigmoid_probability(
+      current_bias + current_weight_x * classification_data$x + current_weight_y * classification_data$y
+    )
+    current_grid_probabilities <- sigmoid_probability(
+      current_bias + current_weight_x * prediction_grid$x + current_weight_y * prediction_grid$y
+    )
+
+    training_predictions <- ifelse(
+      current_training_probabilities >= prediction_threshold,
+      "Class B",
+      "Class A"
+    )
+
+    grid_predictions <- ifelse(
+      current_grid_probabilities >= prediction_threshold,
+      "Class B",
+      "Class A"
+    )
+
+    safe_training_probabilities <- pmin(pmax(current_training_probabilities, 1e-6), 1 - 1e-6)
+    log_loss <- -mean(
+      binary_target * log(safe_training_probabilities) +
+        (1 - binary_target) * log(1 - safe_training_probabilities)
+    )
+    l2_penalty <- 0.5 * (1 - l1_ratio) * regularization_strength * (current_weight_x^2 + current_weight_y^2)
+    l1_penalty <- l1_ratio * regularization_strength * (abs(current_weight_x) + abs(current_weight_y))
+    current_loss <- log_loss + l2_penalty + l1_penalty
+
+    training_predictions <- factor(training_predictions, levels = c("Class A", "Class B"))
+    current_metrics <- calculate_classification_metrics(
+      actual_labels = classification_data$class,
+      predicted_labels = training_predictions
+    )
+
+    iteration_prediction_grid <- prediction_grid
+    iteration_prediction_grid$predicted_class <- factor(
+      grid_predictions,
+      levels = c("Class A", "Class B")
+    )
+    iteration_prediction_grid$class_b_probability <- current_grid_probabilities
+
+    list(
+      loss = current_loss,
+      accuracy = current_metrics$accuracy,
+      iteration = list(
+        iteration_index = iteration_index,
+        weight_x = current_weight_x,
+        weight_y = current_weight_y,
+        bias = current_bias,
+        training_probabilities = current_training_probabilities,
+        training_predictions = training_predictions,
+        prediction_grid = iteration_prediction_grid,
+        loss_value = round(current_loss, 4),
+        metrics = current_metrics
+      )
+    )
+  }
+
+  initial_iteration <- build_saved_iteration(
+    iteration_index = 0,
+    current_weight_x = weight_x,
+    current_weight_y = weight_y,
+    current_bias = bias
+  )
+  saved_iteration_count <- 1
+  iteration_history[[saved_iteration_count]] <- initial_iteration$iteration
+  loss_history[saved_iteration_count] <- initial_iteration$loss
+  accuracy_history[saved_iteration_count] <- initial_iteration$accuracy
 
   for (iteration_index in seq_len(total_iterations)) {
     # Step 1: use the current parameters to estimate Class B probabilities.
@@ -66,62 +137,19 @@ train_logistic_regression_iterations <- function(classification_data,
     }
 
     # Step 4: save the updated state so the UI can replay it later.
-    updated_linear_scores <- bias + weight_x * classification_data$x + weight_y * classification_data$y
-    updated_training_probabilities <- sigmoid_probability(updated_linear_scores)
-    updated_grid_probabilities <- sigmoid_probability(
-      bias + weight_x * prediction_grid$x + weight_y * prediction_grid$y
-    )
-
-    training_predictions <- ifelse(
-      updated_training_probabilities >= prediction_threshold,
-      "Class B",
-      "Class A"
-    )
-
-    grid_predictions <- ifelse(
-      updated_grid_probabilities >= prediction_threshold,
-      "Class B",
-      "Class A"
-    )
-
-    safe_training_probabilities <- pmin(pmax(updated_training_probabilities, 1e-6), 1 - 1e-6)
-    log_loss <- -mean(
-      binary_target * log(safe_training_probabilities) +
-        (1 - binary_target) * log(1 - safe_training_probabilities)
-    )
-    l2_penalty <- 0.5 * (1 - l1_ratio) * regularization_strength * (weight_x^2 + weight_y^2)
-    l1_penalty <- l1_ratio * regularization_strength * (abs(weight_x) + abs(weight_y))
-    current_loss <- log_loss + l2_penalty + l1_penalty
-
-    training_predictions <- factor(training_predictions, levels = c("Class A", "Class B"))
-    current_metrics <- calculate_classification_metrics(
-      actual_labels = classification_data$class,
-      predicted_labels = training_predictions
-    )
-
-    iteration_prediction_grid <- prediction_grid
-    iteration_prediction_grid$predicted_class <- factor(
-      grid_predictions,
-      levels = c("Class A", "Class B")
-    )
-    iteration_prediction_grid$class_b_probability <- updated_grid_probabilities
-
-    loss_history[iteration_index] <- current_loss
-    accuracy_history[iteration_index] <- current_metrics$accuracy
-
-    iteration_history[[iteration_index]] <- list(
+    saved_iteration <- build_saved_iteration(
       iteration_index = iteration_index,
-      weight_x = weight_x,
-      weight_y = weight_y,
-      bias = bias,
-      training_probabilities = updated_training_probabilities,
-      training_predictions = training_predictions,
-      prediction_grid = iteration_prediction_grid,
-      loss_value = round(current_loss, 4),
-      metrics = current_metrics
+      current_weight_x = weight_x,
+      current_weight_y = weight_y,
+      current_bias = bias
     )
+    saved_iteration_count <- iteration_index + 1
+    loss_history[saved_iteration_count] <- saved_iteration$loss
+    accuracy_history[saved_iteration_count] <- saved_iteration$accuracy
+    iteration_history[[saved_iteration_count]] <- saved_iteration$iteration
 
     actual_iteration_count <- iteration_index
+    current_loss <- saved_iteration$loss
 
     if (abs(previous_loss - current_loss) < tolerance) {
       break
@@ -130,11 +158,11 @@ train_logistic_regression_iterations <- function(classification_data,
     previous_loss <- current_loss
   }
 
-  iteration_history <- iteration_history[seq_len(actual_iteration_count)]
-  loss_history <- loss_history[seq_len(actual_iteration_count)]
-  accuracy_history <- accuracy_history[seq_len(actual_iteration_count)]
+  iteration_history <- iteration_history[seq_len(saved_iteration_count)]
+  loss_history <- loss_history[seq_len(saved_iteration_count)]
+  accuracy_history <- accuracy_history[seq_len(saved_iteration_count)]
 
-  final_iteration <- iteration_history[[actual_iteration_count]]
+  final_iteration <- iteration_history[[saved_iteration_count]]
 
   list(
     model_object = list(
@@ -143,6 +171,7 @@ train_logistic_regression_iterations <- function(classification_data,
       bias = final_iteration$bias,
       learning_rate = learning_rate,
       total_iterations = actual_iteration_count,
+      stored_iteration_count = saved_iteration_count,
       requested_max_iter = total_iterations,
       tolerance = tolerance,
       regularization_c = regularization_c,
@@ -154,7 +183,7 @@ train_logistic_regression_iterations <- function(classification_data,
     metrics = final_iteration$metrics,
     iterations = iteration_history,
     iteration_metrics = data.frame(
-      iteration = seq_len(actual_iteration_count),
+      iteration = vapply(iteration_history, function(iteration_step) iteration_step$iteration_index, numeric(1)),
       loss = loss_history,
       accuracy = accuracy_history
     )

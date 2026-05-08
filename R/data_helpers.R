@@ -214,23 +214,21 @@ convert_uploaded_csv_to_dataset <- function(uploaded_table) {
 
 
 build_prediction_grid <- function(classification_data, grid_points = 140) {
-  x_padding <- diff(range(classification_data$x)) * 0.18
-  y_padding <- diff(range(classification_data$y)) * 0.18
+  x_range <- range(classification_data$x)
+  y_range <- range(classification_data$y)
+  x_center <- mean(x_range)
+  y_center <- mean(y_range)
+  largest_span <- max(diff(x_range), diff(y_range))
 
-  if (x_padding == 0) x_padding <- 1
-  if (y_padding == 0) y_padding <- 1
+  if (largest_span == 0) largest_span <- 2
 
-  x_sequence <- seq(
-    min(classification_data$x) - x_padding,
-    max(classification_data$x) + x_padding,
-    length.out = grid_points
-  )
+  half_plot_span <- largest_span * 0.68
+  x_limits <- x_center + c(-half_plot_span, half_plot_span)
+  y_limits <- y_center + c(-half_plot_span, half_plot_span)
 
-  y_sequence <- seq(
-    min(classification_data$y) - y_padding,
-    max(classification_data$y) + y_padding,
-    length.out = grid_points
-  )
+  x_sequence <- seq(x_limits[1], x_limits[2], length.out = grid_points)
+
+  y_sequence <- seq(y_limits[1], y_limits[2], length.out = grid_points)
 
   expand.grid(
     x = x_sequence,

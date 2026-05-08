@@ -5,7 +5,7 @@
 #   visualizer module can train the chosen model at the right time.
 #
 # Functions:
-#   - algorithm_controls_module_ui(): Build sections 3 and 4 of the sidebar.
+#   - algorithm_controls_module_ui(): Build the algorithm and parameter sections.
 #   - algorithm_controls_module_server(): Track selected algorithm,
 #     render dynamic parameter inputs, and expose run events.
 #
@@ -27,7 +27,7 @@ algorithm_controls_module_ui <- function(id) {
       class = "sidebar-section",
       div(
         class = "sidebar-section-header",
-        div(class = "sidebar-step-pill", "3"),
+        div(class = "sidebar-step-pill", "2"),
         tags$span("Select Algorithm")
       ),
       tags$p(
@@ -41,7 +41,7 @@ algorithm_controls_module_ui <- function(id) {
       class = "sidebar-section",
       div(
         class = "sidebar-section-header",
-        div(class = "sidebar-step-pill", "4"),
+        div(class = "sidebar-step-pill", "3"),
         tags$span("Configure Parameters")
       ),
       tags$p(

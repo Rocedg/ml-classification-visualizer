@@ -197,14 +197,14 @@ a { text-decoration: none; }
 .visualizer-layout {
   display: grid;
   grid-template-columns: 340px 1fr;
-  gap: 12px;
-  padding: 12px 16px 16px;
+  gap: 10px;
+  padding: 10px 14px 14px;
   min-height: calc(100vh - 75px);
 }
 
-.visualizer-sidebar { padding: 14px 12px 22px; background: #f6f8fb; border-right: 1px solid var(--border); }
+.visualizer-sidebar { padding: 12px 10px 18px; background: #f6f8fb; border-right: 1px solid var(--border); }
 .visualizer-main-column { min-width: 0; }
-.sidebar-header-block { margin-bottom: 18px; }
+.sidebar-header-block { margin-bottom: 12px; }
 .sidebar-header-block h2 { margin: 0 0 6px; font-size: 26px; font-weight: 800; }
 
 .sidebar-header-block p, .sidebar-helper-text, .parameter-note,
@@ -215,7 +215,7 @@ a { text-decoration: none; }
   line-height: 1.6;
 }
 
-.sidebar-section { margin-bottom: 14px; padding: 14px; }
+.sidebar-section { margin-bottom: 10px; padding: 12px; }
 
 .sidebar-section-header, .problem-type-title-row, .algorithm-card-title-row {
   display: flex;
@@ -318,26 +318,64 @@ a { text-decoration: none; }
   color: var(--navy);
 }
 
-.main-panel-card .tab-content { min-height: calc(100vh - 180px); padding: 10px 14px 14px; background: var(--white); }
+.main-panel-card .tab-content { min-height: calc(100vh - 180px); padding: 8px 12px 12px; background: var(--white); }
 
 /* Plot panel, table, and content blocks */
-.plot-tab-layout, .raw-data-tab-layout, .theory-panel-layout { display: flex; flex-direction: column; gap: 18px; }
-.plot-top-status-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.plot-tab-layout, .raw-data-tab-layout, .theory-panel-layout { display: flex; flex-direction: column; gap: 10px; }
+.plot-top-status-row { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .status-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 38px;
-  padding: 0 14px;
+  min-height: 30px;
+  padding: 0 10px;
   border-radius: 999px;
   background: #eef4f7;
   color: var(--navy);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .status-chip-primary { background: var(--mint-soft); color: var(--mint-dark); }
-.plot-canvas-shell { padding: 10px; }
+.plot-canvas-shell { padding: 8px; }
+.main-feature-plot-shell {
+  width: min(100%, 620px);
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+}
+
+.main-feature-plot-shell .shiny-plot-output {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.iteration-control-card { padding: 10px 12px; }
+.iteration-control-header { display: flex; align-items: center; margin-bottom: 8px; }
+.iteration-control-body {
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.iteration-button-row .ml-button-secondary {
+  min-height: 34px;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.iteration-control-card .form-group { margin-bottom: 0; }
+.iteration-control-card .irs { margin-top: -6px; margin-bottom: -6px; }
+.diagnostic-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.diagnostic-plot-shell { min-height: 320px; }
+.parameter-diagnostic-card { padding: 10px; }
+.parameter-diagnostic-card .plot-top-status-row { margin-bottom: 6px; }
 .metric-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .metric-card { padding: 18px; }
 .theory-detail-card, .theory-summary-card, .about-card, .theory-card { padding: 24px; }
@@ -481,6 +519,8 @@ a { text-decoration: none; }
   .theory-panel-grid {
     flex-direction: column;
   }
+}
+
 /* Custom data buttons: three equal buttons */
 .custom-data-buttons-vertical {
   display: flex !important;

@@ -1,9 +1,28 @@
 # Plot helper functions for the ML Visualizer app.
 
+build_square_plot_limits <- function(x_values, y_values, padding_fraction = 0.18) {
+  x_range <- range(x_values)
+  y_range <- range(y_values)
+  x_center <- mean(x_range)
+  y_center <- mean(y_range)
+  largest_span <- max(diff(x_range), diff(y_range))
+
+  if (largest_span == 0) largest_span <- 2
+
+  half_plot_span <- largest_span * (0.5 + padding_fraction)
+
+  list(
+    x = x_center + c(-half_plot_span, half_plot_span),
+    y = y_center + c(-half_plot_span, half_plot_span)
+  )
+}
+
+
 build_classification_plot <- function(classification_data, active_model_view) {
   plot_object <- ggplot()
-  plot_x_limits <- NULL
-  plot_y_limits <- NULL
+  square_plot_limits <- build_square_plot_limits(classification_data$x, classification_data$y)
+  plot_x_limits <- square_plot_limits$x
+  plot_y_limits <- square_plot_limits$y
 
   if (!is.null(active_model_view)) {
     prediction_grid <- active_model_view$prediction_grid

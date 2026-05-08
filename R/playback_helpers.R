@@ -55,7 +55,16 @@ format_iteration_status_text <- function(model_results, current_iteration, total
     return("Iteration navigation ready after Logistic Regression")
   }
 
-  paste("Iteration:", current_iteration, "/", total_iterations)
+  iteration_history <- get_logistic_iteration_history(model_results)
+  if (is.null(iteration_history) || length(iteration_history) == 0) {
+    return("Iteration navigation ready after Logistic Regression")
+  }
+
+  bounded_iteration <- bound_iteration_index(current_iteration, length(iteration_history))
+  active_iteration <- iteration_history[[bounded_iteration]]
+  final_iteration <- iteration_history[[length(iteration_history)]]
+
+  paste("Iteration:", active_iteration$iteration_index, "/", final_iteration$iteration_index)
 }
 
 
@@ -84,6 +93,6 @@ format_playback_helper_text <- function(model_results, active_iteration) {
   paste(
     "Loss:",
     active_iteration$loss_value,
-    "| Use the slider or step buttons to move through how the boundary changes over time."
+    "| Use the slider or step buttons to move through how the heatmap changes over time."
   )
 }
