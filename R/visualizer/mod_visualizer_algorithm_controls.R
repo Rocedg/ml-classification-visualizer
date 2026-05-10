@@ -74,10 +74,7 @@ mod_visualizer_algorithm_controls_server <- function(id) {
     default_logistic_learning_rate <- 0.12
     default_logistic_max_iter <- 60
     default_decision_threshold <- 0.50
-    default_logistic_c <- 1
-    default_logistic_l1_ratio <- 0
     default_logistic_fit_intercept <- TRUE
-    default_logistic_tol <- 0
 
     observeEvent(input$choose_logistic_regression, {
       selected_algorithm_key("logistic_regression")
@@ -209,9 +206,6 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           logistic_max_iter <- input$logistic_max_iter
           decision_threshold <- input$decision_threshold
           logistic_fit_intercept <- input$logistic_fit_intercept
-          logistic_c <- default_logistic_c
-          logistic_l1_ratio <- default_logistic_l1_ratio
-          logistic_tol <- default_logistic_tol
 
           if (is.null(logistic_learning_rate)) {
             logistic_learning_rate <- default_logistic_learning_rate
@@ -231,10 +225,7 @@ mod_visualizer_algorithm_controls_server <- function(id) {
             logistic_learning_rate = logistic_learning_rate,
             logistic_max_iter = logistic_max_iter,
             decision_threshold = decision_threshold,
-            logistic_c = logistic_c,
-            logistic_l1_ratio = logistic_l1_ratio,
-            logistic_fit_intercept = logistic_fit_intercept,
-            logistic_tol = logistic_tol
+            logistic_fit_intercept = logistic_fit_intercept
           )
         } else {
           list()

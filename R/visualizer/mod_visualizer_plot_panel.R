@@ -61,7 +61,11 @@ mod_visualizer_plot_panel_ui <- function(id) {
           actionButton(
             inputId = ns("play_pause_button"),
             label = "▶",
-            class = "ml-button ml-button-secondary iteration-icon-button"
+            class = "ml-button ml-button-secondary iteration-icon-button",
+            onclick = sprintf(
+              "Shiny.setInputValue('%s', Date.now() + Math.random(), {priority: 'event'});",
+              ns("play_pause_command")
+            )
           ),
           actionButton(
             inputId = ns("step_forward_button"),
@@ -303,7 +307,9 @@ mod_visualizer_plot_panel_server <- function(id,
     })
 
     # Play/Pause button: start from the current iteration, or pause immediately.
-    observeEvent(input$play_pause_button, {
+    # The UI sends this command explicitly from onclick so playback does not
+    # depend on the actionButton counter while the label is being updated.
+    observeEvent(input$play_pause_command, {
       total_iterations <- total_iteration_count()
       if (total_iterations == 0) {
         return(NULL)
@@ -512,8 +518,7 @@ mod_visualizer_plot_panel_server <- function(id,
       build_bias_fixed_loss_landscape_plot(
         classification_data = classification_data(),
         iteration_history = iteration_history,
-        current_iteration = current_iteration() + 1,
-        model_object = model_results$model_object
+        current_iteration = current_iteration() + 1
       )
     }, res = 110)
 

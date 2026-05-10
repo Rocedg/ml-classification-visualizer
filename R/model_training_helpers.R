@@ -19,39 +19,30 @@ sigmoid_probability <- function(linear_values) {
 #   - classification_data: current Class A / Class B training points
 #   - prediction_grid: x/y locations used to draw the probability heatmap
 #   - prediction_threshold: probability cutoff for Class B predictions
-#   - regularization_c, l1_ratio: regularization controls
 #   - fit_intercept: whether the bias/intercept term is learned
-#   - learning_rate, max_iter, tolerance: gradient descent controls
+#   - learning_rate, max_iter: gradient descent controls
 # Output:
 #   A model bundle containing final parameters, metrics, prediction grid,
 #   iteration history, and per-iteration metric data for visualization.
 train_logistic_regression_iterations <- function(classification_data,
                                                  prediction_grid,
                                                  prediction_threshold,
-                                                 regularization_c = 1,
-                                                 l1_ratio = 0,
                                                  fit_intercept = TRUE,
                                                  learning_rate = 0.12,
-                                                 max_iter = 60,
-                                                 tolerance = 0.001) {
+                                                 max_iter = 60) {
   # The training math uses 1 for Class B and 0 for Class A.
   binary_target <- ifelse(classification_data$class == "Class B", 1, 0)
 
-  # These fixed settings keep the training loop simple and readable
-  # for beginners while still showing a visible learning process.
+  # These settings keep the training loop simple and readable for beginners
+  # while still showing a visible learning process.
   learning_rate <- max(learning_rate, 0.001)
-  regularization_c <- max(regularization_c, 0.001)
-  regularization_strength <- 1 / regularization_c
-  l1_ratio <- min(max(l1_ratio, 0), 1)
   total_iterations <- max(1, as.integer(max_iter))
-  tolerance <- max(tolerance, 0)
 
   # weight_x and weight_y control the tilt of the decision surface.
   # bias is the intercept term, which shifts the boundary when it is learned.
   weight_x <- 0
   weight_y <- 0
   bias <- 0
-  previous_loss <- Inf
   actual_iteration_count <- 0
   saved_iteration_count <- 0
 
@@ -91,9 +82,7 @@ train_logistic_regression_iterations <- function(classification_data,
       binary_target * log(safe_training_probabilities) +
         (1 - binary_target) * log(1 - safe_training_probabilities)
     )
-    l2_penalty <- 0.5 * (1 - l1_ratio) * regularization_strength * (current_weight_x^2 + current_weight_y^2)
-    l1_penalty <- l1_ratio * regularization_strength * (abs(current_weight_x) + abs(current_weight_y))
-    current_loss <- log_loss + l2_penalty + l1_penalty
+    current_loss <- log_loss
 
     training_predictions <- factor(training_predictions, levels = c("Class A", "Class B"))
     current_metrics <- calculate_classification_metrics(
@@ -148,21 +137,11 @@ train_logistic_regression_iterations <- function(classification_data,
     # Step 2: measure how far the predictions are from the real labels.
     probability_error <- predicted_probabilities - binary_target
 
-    # Step 3: compute one gradient descent update.
+    # Step 3: compute one gradient descent update for plain binary
+    # cross-entropy loss.
     gradient_weight_x <- mean(probability_error * classification_data$x)
     gradient_weight_y <- mean(probability_error * classification_data$y)
     gradient_bias <- mean(probability_error)
-
-    l2_gradient_x <- (1 - l1_ratio) * regularization_strength * weight_x
-    l2_gradient_y <- (1 - l1_ratio) * regularization_strength * weight_y
-
-    l1_gradient_x <- l1_ratio * regularization_strength * sign(weight_x)
-    l1_gradient_y <- l1_ratio * regularization_strength * sign(weight_y)
-
-    # Regularization is folded into the weight gradients so the update balances
-    # fitting the data with keeping the weights from growing too large.
-    gradient_weight_x <- gradient_weight_x + l2_gradient_x + l1_gradient_x
-    gradient_weight_y <- gradient_weight_y + l2_gradient_y + l1_gradient_y
 
     # Gradient descent moves each parameter opposite the direction of error.
     weight_x <- weight_x - learning_rate * gradient_weight_x
@@ -187,14 +166,6 @@ train_logistic_regression_iterations <- function(classification_data,
     iteration_history[[saved_iteration_count]] <- saved_iteration$iteration
 
     actual_iteration_count <- iteration_index
-    current_loss <- saved_iteration$loss
-
-    # Stop early when loss changes by less than the requested tolerance.
-    if (abs(previous_loss - current_loss) < tolerance) {
-      break
-    }
-
-    previous_loss <- current_loss
   }
 
   iteration_history <- iteration_history[seq_len(saved_iteration_count)]
@@ -213,9 +184,6 @@ train_logistic_regression_iterations <- function(classification_data,
       total_iterations = actual_iteration_count,
       stored_iteration_count = saved_iteration_count,
       requested_max_iter = total_iterations,
-      tolerance = tolerance,
-      regularization_c = regularization_c,
-      l1_ratio = l1_ratio,
       fit_intercept = fit_intercept
     ),
     prediction_grid = final_iteration$prediction_grid,
@@ -260,11 +228,8 @@ train_classification_model <- function(classification_data, algorithm_name, para
 
     decision_threshold <- parameter_values$decision_threshold
     logistic_learning_rate <- parameter_values$logistic_learning_rate
-    logistic_c <- parameter_values$logistic_c
-    logistic_l1_ratio <- parameter_values$logistic_l1_ratio
     logistic_fit_intercept <- parameter_values$logistic_fit_intercept
     logistic_max_iter <- parameter_values$logistic_max_iter
-    logistic_tol <- parameter_values$logistic_tol
 
     if (is.null(decision_threshold)) {
       decision_threshold <- 0.5
@@ -272,20 +237,11 @@ train_classification_model <- function(classification_data, algorithm_name, para
     if (is.null(logistic_learning_rate)) {
       logistic_learning_rate <- 0.12
     }
-    if (is.null(logistic_c)) {
-      logistic_c <- 1
-    }
-    if (is.null(logistic_l1_ratio)) {
-      logistic_l1_ratio <- 0
-    }
     if (is.null(logistic_fit_intercept)) {
       logistic_fit_intercept <- TRUE
     }
     if (is.null(logistic_max_iter)) {
       logistic_max_iter <- 60
-    }
-    if (is.null(logistic_tol)) {
-      logistic_tol <- 0.001
     }
     logistic_fit_intercept <- isTRUE(logistic_fit_intercept)
 
@@ -307,22 +263,6 @@ train_classification_model <- function(classification_data, algorithm_name, para
       stop("Learning rate must be greater than 0.")
     }
 
-    if (!is.numeric(logistic_c) || length(logistic_c) != 1 || is.na(logistic_c)) {
-      stop("Regularization strength must be a single numeric value.")
-    }
-
-    if (logistic_c <= 0) {
-      stop("Regularization strength must be greater than 0.")
-    }
-
-    if (!is.numeric(logistic_l1_ratio) || length(logistic_l1_ratio) != 1 || is.na(logistic_l1_ratio)) {
-      stop("Regularization mix must be a single numeric value.")
-    }
-
-    if (logistic_l1_ratio < 0 || logistic_l1_ratio > 1) {
-      stop("Regularization mix must be between 0 and 1.")
-    }
-
     if (!is.numeric(logistic_max_iter) || length(logistic_max_iter) != 1 || is.na(logistic_max_iter)) {
       stop("Max iterations must be a single numeric value.")
     }
@@ -331,24 +271,13 @@ train_classification_model <- function(classification_data, algorithm_name, para
       stop("Max iterations must be at least 1.")
     }
 
-    if (!is.numeric(logistic_tol) || length(logistic_tol) != 1 || is.na(logistic_tol)) {
-      stop("Stopping tolerance must be a single numeric value.")
-    }
-
-    if (logistic_tol < 0) {
-      stop("Stopping tolerance must be 0 or greater.")
-    }
-
     logistic_training_results <- train_logistic_regression_iterations(
       classification_data = classification_data,
       prediction_grid = prediction_grid,
       prediction_threshold = decision_threshold,
-      regularization_c = logistic_c,
-      l1_ratio = logistic_l1_ratio,
       fit_intercept = logistic_fit_intercept,
       learning_rate = logistic_learning_rate,
-      max_iter = logistic_max_iter,
-      tolerance = logistic_tol
+      max_iter = logistic_max_iter
     )
 
     algorithm_label <- "Logistic Regression"

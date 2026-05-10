@@ -171,7 +171,7 @@ build_iteration_metric_plot <- function(metric_history, current_iteration) {
     ) +
     labs(
       x = "Iteration",
-      y = "Regularized Loss",
+      y = "Binary Cross-Entropy Loss",
       subtitle = paste("Accuracy at this step:", highlighted_metric$accuracy)
     ) +
     theme_minimal(base_family = "Manrope") +
@@ -371,12 +371,12 @@ build_parameter_trajectory_3d_plot <- function(iteration_history, current_iterat
 
 # calculate_logistic_objective()
 # Purpose:
-#   Compute the regularized logistic loss for a candidate parameter set.
+#   Compute plain binary cross-entropy loss for a candidate parameter set.
 # Used by:
 #   The 2D loss landscape shown when fit_intercept is off.
 # Output:
 #   One numeric loss value for weight_x, weight_y, and bias.
-calculate_logistic_objective <- function(weight_x, weight_y, bias, classification_data, model_object = NULL) {
+calculate_logistic_objective <- function(weight_x, weight_y, bias, classification_data) {
   binary_target <- ifelse(classification_data$class == "Class B", 1, 0)
   linear_scores <- bias + weight_x * classification_data$x + weight_y * classification_data$y
   probabilities <- sigmoid_probability(linear_scores)
@@ -387,23 +387,7 @@ calculate_logistic_objective <- function(weight_x, weight_y, bias, classificatio
       (1 - binary_target) * log(1 - safe_probabilities)
   )
 
-  # Match the same regularization settings used during training when available.
-  regularization_c <- 1
-  l1_ratio <- 0
-
-  if (!is.null(model_object$regularization_c)) {
-    regularization_c <- model_object$regularization_c
-  }
-  if (!is.null(model_object$l1_ratio)) {
-    l1_ratio <- model_object$l1_ratio
-  }
-
-  regularization_strength <- 1 / max(regularization_c, 0.001)
-  l1_ratio <- min(max(l1_ratio, 0), 1)
-  l2_penalty <- 0.5 * (1 - l1_ratio) * regularization_strength * (weight_x^2 + weight_y^2)
-  l1_penalty <- l1_ratio * regularization_strength * (abs(weight_x) + abs(weight_y))
-
-  log_loss + l2_penalty + l1_penalty
+  log_loss
 }
 
 
@@ -414,13 +398,11 @@ calculate_logistic_objective <- function(weight_x, weight_y, bias, classificatio
 #   - classification_data: current training data
 #   - iteration_history: saved logistic states for the parameter path
 #   - current_iteration: selected playback index
-#   - model_object: final model settings, including regularization controls
 # Output:
 #   A ggplot showing the loss landscape and parameter trajectory.
 build_bias_fixed_loss_landscape_plot <- function(classification_data,
                                                  iteration_history,
-                                                 current_iteration,
-                                                 model_object = NULL) {
+                                                 current_iteration) {
   trajectory_data <- build_parameter_trajectory_data(iteration_history)
 
   if (is.null(trajectory_data) || nrow(trajectory_data) == 0) {
@@ -468,8 +450,7 @@ build_bias_fixed_loss_landscape_plot <- function(classification_data,
         weight_x = weight_grid$weight_x[row_index],
         weight_y = weight_grid$weight_y[row_index],
         bias = 0,
-        classification_data = classification_data,
-        model_object = model_object
+        classification_data = classification_data
       )
     },
     numeric(1)
@@ -510,7 +491,7 @@ build_bias_fixed_loss_landscape_plot <- function(classification_data,
     ) +
     scale_fill_gradientn(
       colours = c("#e0f2fe", "#d7ebe6", "#fff7ed", "#fb923c"),
-      name = "Regularized loss"
+      name = "Binary cross-entropy"
     ) +
     scale_color_manual(values = c("Start" = "#243b57", "Current" = "#111827", "Final" = "#ff8b3d"), name = NULL) +
     scale_shape_manual(values = c("Start" = 21, "Current" = 23, "Final" = 24), name = NULL) +
