@@ -24,7 +24,7 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
 
   tagList(
     div(
-      class = "sidebar-section",
+      class = "sidebar-section wizard-step-section",
       div(
         class = "sidebar-section-header",
         div(class = "sidebar-step-pill", "2"),
@@ -34,13 +34,25 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
     ),
 
     div(
-      class = "sidebar-section",
+      class = "sidebar-section wizard-step-section",
       div(
         class = "sidebar-section-header",
         div(class = "sidebar-step-pill", "3"),
-        tags$span("Configure Parameters")
+        tags$span("Parameters")
       ),
-      uiOutput(ns("parameter_controls_ui")),
+      div(
+        class = "parameter-panel",
+        uiOutput(ns("parameter_controls_ui"))
+      )
+    ),
+
+    div(
+      class = "sidebar-section wizard-step-section run-step-section",
+      div(
+        class = "sidebar-section-header",
+        div(class = "sidebar-step-pill", "4"),
+        tags$span("Run")
+      ),
       actionButton(
         inputId = ns("run_classifier_button"),
         label = "Run Classifier",
@@ -183,9 +195,10 @@ mod_visualizer_algorithm_controls_server <- function(id) {
         )
       } else {
         tagList(
-          tags$p(
-            class = "parameter-note",
-            "This algorithm is coming soon. Logistic Regression is the only classifier available right now."
+          div(
+            class = "algorithm-placeholder-card",
+            tags$span("Coming soon"),
+            tags$p("Parameters for this algorithm will appear here when it is enabled.")
           )
         )
       }

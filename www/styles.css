@@ -294,6 +294,9 @@ a { text-decoration: none; }
 }
 
 .sidebar-section { margin-bottom: 10px; padding: 12px; }
+.wizard-step-section {
+  border-left: 3px solid rgba(121, 201, 183, 0.55);
+}
 
 .sidebar-section-header, .problem-type-title-row, .algorithm-card-title-row {
   display: flex;
@@ -347,6 +350,28 @@ a { text-decoration: none; }
   line-height: 1.55;
 }
 
+.sidebar-subsection-card {
+  margin-top: 10px;
+  padding: 10px;
+  background: #fbfcfd;
+  border: 1px solid #edf2f6;
+  border-radius: 8px;
+}
+
+.sidebar-section-header + .sidebar-subsection-card {
+  margin-top: 0;
+}
+
+.sidebar-subsection-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .algorithm-card-meta {
   display: inline-flex;
   align-items: center;
@@ -355,6 +380,7 @@ a { text-decoration: none; }
 }
 
 .algorithm-card-meta .help-tooltip,
+.sidebar-subsection-title .help-tooltip,
 .status-chip .help-tooltip,
 .current-run-header .help-tooltip,
 .metrics-comparison-header .help-tooltip,
@@ -386,6 +412,22 @@ a { text-decoration: none; }
 .button-row { display: flex; align-items: stretch; gap: 10px; }
 .half-width-button, .upload-button-shell { flex: 1; }
 
+.data-action-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.data-action-row .custom-upload-button {
+  flex: 1 1 0;
+  width: auto !important;
+}
+
+.data-action-row .custom-data-button {
+  flex: 1 1 0;
+  width: auto !important;
+}
+
 .draw-mode-status {
   margin-top: 10px;
   color: var(--mint-dark);
@@ -396,6 +438,32 @@ a { text-decoration: none; }
 
 .utility-button-row { margin-top: 12px; }
 .sidebar-run-note { margin-top: 12px; color: #97a6b5; text-align: center; font-size: 12px; font-weight: 800; }
+
+.parameter-panel {
+  padding: 4px 0 0;
+}
+
+.algorithm-placeholder-card {
+  padding: 12px;
+  background: #fbfcfd;
+  border: 1px dashed #d9e3ec;
+  border-radius: 8px;
+}
+
+.algorithm-placeholder-card span {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.algorithm-placeholder-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
 
 /* Tabs */
 .main-panel-card { min-height: calc(100vh - 120px); padding: 0; overflow: hidden; }

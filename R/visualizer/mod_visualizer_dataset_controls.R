@@ -48,95 +48,107 @@ mod_visualizer_dataset_controls_ui <- function(id) {
     ),
     
     div(
-      class = "sidebar-section",
+      class = "sidebar-section wizard-step-section",
       div(
         class = "sidebar-section-header",
         div(class = "sidebar-step-pill", "1"),
-        tags$span("Choose or Create Data")
+        tags$span("Data")
       ),
-      
-      tags$label(
-        class = "sidebar-input-label",
-        help_label("Preset Datasets", "Start with a predefined dataset to quickly explore classification behavior.")
-      ),
-      
-      selectInput(
-        inputId = ns("preset_dataset"),
-        label = NULL,
-        choices = c(
-          "Gaussian clusters",
-          "Linearly separable",
-          "Overlapping classes",
-          "Moons",
-          "Circles",
-          "Titanic passengers",
-          "Diabetes health data"
-        ),
-        selected = "Gaussian clusters",
-        width = "100%"
-      ),
-      
-      tags$label(class = "sidebar-input-label", "Or Create Custom Data"),
-      
+
       div(
-        class = "custom-data-buttons-vertical",
-        
+        class = "sidebar-subsection-card",
+        div(
+          class = "sidebar-subsection-title",
+          help_label("Preset dataset", "Start with a predefined dataset to quickly explore classification behavior.")
+        ),
+        selectInput(
+          inputId = ns("preset_dataset"),
+          label = NULL,
+          choices = c(
+            "Gaussian clusters",
+            "Linearly separable",
+            "Overlapping classes",
+            "Moons",
+            "Circles",
+            "Titanic passengers",
+            "Diabetes health data"
+          ),
+          selected = "Gaussian clusters",
+          width = "100%"
+        )
+      ),
+
+      div(
+        class = "sidebar-subsection-card",
+        div(
+          class = "sidebar-subsection-title",
+          help_label("Custom CSV", "Upload your own dataset with two feature columns and one class column.")
+        ),
+        div(
+          class = "data-action-row",
+          div(
+            class = "custom-upload-button",
+            title = "Upload your own dataset with two feature columns and one class column.",
+            fileInput(
+              inputId = ns("dataset_upload"),
+              label = NULL,
+              accept = c(".csv"),
+              buttonLabel = "Upload CSV",
+              placeholder = "No file selected"
+            )
+          ),
+          downloadButton(
+            outputId = ns("download_example_csv"),
+            label = "Template",
+            class = "ml-button ml-button-secondary custom-data-button",
+            title = "Download a CSV template with the expected format."
+          )
+        )
+      ),
+
+      div(
+        class = "sidebar-subsection-card",
+        div(
+          class = "sidebar-subsection-title",
+          help_label("Add drawn points", "Manually place extra points on top of the selected dataset or uploaded CSV.")
+        ),
         actionButton(
           inputId = ns("draw_data_button"),
           label = "Draw Data",
           class = "ml-button ml-button-secondary custom-data-button",
           title = "Manually place points on the plot for Class A or Class B."
         ),
-        
+
         div(
-          class = "custom-upload-button",
-          title = "Upload your own dataset with two feature columns and one class column.",
-          fileInput(
-            inputId = ns("dataset_upload"),
-            label = NULL,
-            accept = c(".csv"),
-            buttonLabel = "Upload CSV",
-            placeholder = "No file selected"
+          class = "draw-mode-status",
+          textOutput(ns("drawing_mode_status"))
+        ),
+
+        tags$label(
+          class = "sidebar-input-label",
+          help_label("Class for drawing", "Choose which class newly drawn points should belong to.")
+        ),
+
+        radioButtons(
+          inputId = ns("drawing_class"),
+          label = NULL,
+          choices = c("Class A", "Class B"),
+          selected = "Class A",
+          inline = TRUE
+        ),
+
+        div(
+          class = "button-row utility-button-row",
+          actionButton(
+            inputId = ns("undo_last_point_button"),
+            label = "Undo Last",
+            class = "ml-button ml-button-link"
+          ),
+          actionButton(
+            inputId = ns("clear_points_button"),
+            label = "Clear All",
+            class = "ml-button ml-button-link"
           )
-        ),
-        
-        downloadButton(
-          outputId = ns("download_example_csv"),
-          label = "Template",
-          class = "ml-button ml-button-secondary custom-data-button",
-          title = "Download a CSV template with the expected format."
-        )
-      ),
-      
-      div(
-        class = "draw-mode-status",
-        textOutput(ns("drawing_mode_status"))
-      ),
-      
-      tags$label(
-        class = "sidebar-input-label",
-        help_label("Select Class For Drawing", "Choose which class newly drawn points should belong to.")
-      ),
-      
-      radioButtons(
-        inputId = ns("drawing_class"),
-        label = NULL,
-        choices = c("Class A", "Class B"),
-        selected = "Class A",
-        inline = TRUE
-      ),
-      
-      div(
-        class = "button-row utility-button-row",
-        actionButton(
-          inputId = ns("undo_last_point_button"),
-          label = "Undo Last",
-          class = "ml-button ml-button-link"
-        ),
-        actionButton(
-          inputId = ns("clear_points_button"),
-          label = "Clear All",
-          class = "ml-button ml-button-link"
         )
       )
     )
