@@ -117,8 +117,7 @@ build_classification_plot <- function(classification_data, active_model_view) {
         shape = 21,
         stroke = 1.2
       ),
-      scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d"), guide = "none"),
-      labs(caption = "Filled points = train | hollow points = test")
+      scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d"), guide = "none")
     )
   } else {
     point_layers <- list(
@@ -159,7 +158,6 @@ build_classification_plot <- function(classification_data, active_model_view) {
       panel.grid.major = element_line(color = "#eef3f7", linewidth = 0.55),
       axis.title = element_text(color = "#47627b", size = 10, face = "bold"),
       axis.text = element_text(color = "#6d8196", size = 9),
-      plot.caption = element_text(color = "#6d8196", size = 8.5, hjust = 0),
       plot.background = element_rect(fill = "#ffffff", color = NA),
       panel.background = element_rect(fill = "#ffffff", color = NA)
     )

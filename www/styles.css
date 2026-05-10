@@ -476,6 +476,10 @@ a { text-decoration: none; }
   margin: 0 auto;
 }
 
+.main-feature-plot-card > .shiny-bound-output {
+  align-self: stretch;
+}
+
 .main-feature-plot-shell {
   width: min(100%, 620px);
   aspect-ratio: 1 / 1;
@@ -484,6 +488,14 @@ a { text-decoration: none; }
 .main-feature-plot-shell .shiny-plot-output {
   width: 100% !important;
   height: 100% !important;
+}
+
+.plot-guide-stack {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
 }
 
 .probability-guide-panel {
@@ -509,11 +521,11 @@ a { text-decoration: none; }
   display: grid;
   grid-template-columns: 14px 1fr;
   gap: 8px;
-  min-height: 190px;
+  min-height: 150px;
 }
 
 .probability-guide-gradient {
-  min-height: 190px;
+  min-height: 150px;
   border: 1px solid #cbd5e1;
   background: linear-gradient(
     to bottom,
@@ -532,6 +544,52 @@ a { text-decoration: none; }
   color: #475569;
   font-size: 10px;
   line-height: 1.2;
+}
+
+.point-guide-panel {
+  padding-top: 8px;
+  border-top: 1px solid #edf2f6;
+}
+
+.point-guide-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.point-guide-list {
+  display: grid;
+  gap: 6px;
+}
+
+.point-guide-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.point-guide-dot {
+  flex: 0 0 auto;
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+}
+
+.point-guide-dot-class-a { background: #5a95ff; }
+.point-guide-dot-class-b { background: #ff8b3d; }
+.point-guide-dot-train { background: #243b57; }
+.point-guide-dot-test {
+  background: #ffffff;
+  border: 2px solid #243b57;
 }
 
 .iteration-control-card { grid-area: controls; padding: 10px 12px; }
@@ -788,6 +846,21 @@ a { text-decoration: none; }
   font-size: 13px;
   font-weight: 800;
   text-align: right;
+}
+
+.metrics-comparison-test-heading,
+.metrics-comparison-test-value {
+  color: var(--mint-dark);
+}
+
+.metrics-comparison-note {
+  margin: 8px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid #edf2f6;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .plot-tab-layout .metric-card-grid {

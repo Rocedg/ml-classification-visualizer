@@ -62,23 +62,39 @@ mod_visualizer_plot_panel_ui <- function(id) {
       conditionalPanel(
         condition = paste0("output['", ns("probability_guide_visible"), "'] == 'true'"),
         div(
-          class = "probability-guide-panel",
-          title = "Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.",
-          tags$div(
-            class = "probability-guide-title",
-            tags$span("Probability guide"),
-            help_icon("Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.")
-          ),
-          tags$div(
-            class = "probability-guide-body",
-            tags$div(class = "probability-guide-gradient"),
+          class = "plot-guide-stack",
+          div(
+            class = "probability-guide-panel",
+            title = "Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.",
             tags$div(
-              class = "probability-guide-labels",
-              tags$span("Class A probability = 1.0"),
-              tags$span("More likely Class A"),
-              tags$span("0.5 = uncertain"),
-              tags$span("More likely Class B"),
-              tags$span("Class B probability = 1.0")
+              class = "probability-guide-title",
+              tags$span("Probability"),
+              help_icon("Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.")
+            ),
+            tags$div(
+              class = "probability-guide-body",
+              tags$div(class = "probability-guide-gradient"),
+              tags$div(
+                class = "probability-guide-labels",
+                tags$span("Class A likely"),
+                tags$span("Uncertain"),
+                tags$span("Class B likely")
+              )
+            )
+          ),
+          div(
+            class = "point-guide-panel",
+            div(
+              class = "point-guide-title",
+              tags$span("Points"),
+              help_icon("Training points are used to fit the model. Test points are held out for evaluation.")
+            ),
+            div(
+              class = "point-guide-list",
+              div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-class-a"), tags$span("Class A")),
+              div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-class-b"), tags$span("Class B")),
+              div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-train"), tags$span("Train")),
+              div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-test"), tags$span("Test"))
             )
           )
         )
@@ -144,7 +160,7 @@ mod_visualizer_plot_panel_ui <- function(id) {
         class = "app-card metrics-comparison-card",
         div(
           class = "metrics-comparison-header",
-          tags$span("Metrics"),
+          tags$span("Model performance"),
           help_icon("Training points fit the model. Test points are held out and used only to evaluate it.")
         ),
         uiOutput(ns("metrics_summary_ui"))
@@ -330,17 +346,17 @@ mod_visualizer_plot_panel_server <- function(id,
 
     format_split_summary <- function(model_results) {
       if (is.null(model_results) || is.null(model_results$split_counts)) {
-        return("70% train / 30% test")
+        return("70 / 30")
       }
 
       train_count <- model_results$split_counts$train
       test_count <- model_results$split_counts$test
 
       if (is.null(train_count) || is.null(test_count)) {
-        return("70% train / 30% test")
+        return("70 / 30")
       }
 
-      paste0("70/30 (", train_count, " train / ", test_count, " test)")
+      paste0(train_count, " / ", test_count)
     }
 
     # Before the Run Classifier button has been clicked, the plot displays only
@@ -606,7 +622,7 @@ mod_visualizer_plot_panel_server <- function(id,
         summary_row("Dataset", format_current_run_text(selected_dataset_label())),
         summary_row("Model", format_algorithm_label(selected_algorithm_key())),
         summary_row("Iteration", iteration_text),
-        summary_row("Split", format_split_summary(model_results)),
+        summary_row("Split 70/30", format_split_summary(model_results)),
         summary_row("Learning rate", format_current_run_number(parameter_values$logistic_learning_rate)),
         summary_row("Threshold", format_current_run_number(parameter_values$decision_threshold)),
         summary_row("Intercept", format_intercept_label(parameter_values$logistic_fit_intercept))
@@ -623,7 +639,7 @@ mod_visualizer_plot_panel_server <- function(id,
           class = "metrics-comparison-row",
           tags$span(class = "metrics-comparison-label", label_text),
           tags$span(class = "metrics-comparison-value", format_metric_value(train_metrics, metric_name)),
-          tags$span(class = "metrics-comparison-value", format_metric_value(test_metrics, metric_name))
+          tags$span(class = "metrics-comparison-value metrics-comparison-test-value", format_metric_value(test_metrics, metric_name))
         )
       }
 
@@ -632,12 +648,16 @@ mod_visualizer_plot_panel_server <- function(id,
           class = "metrics-comparison-row metrics-comparison-row-heading",
           tags$span("Metric"),
           tags$span("Train"),
-          tags$span("Test")
+          tags$span(class = "metrics-comparison-test-heading", "Test")
         ),
         metric_row("Accuracy", "accuracy"),
         metric_row("Precision", "precision"),
         metric_row("Recall", "recall"),
-        metric_row("F1", "f1_score")
+        metric_row("F1", "f1_score"),
+        tags$p(
+          class = "metrics-comparison-note",
+          "A large train-test gap can indicate overfitting."
+        )
       )
     })
 
