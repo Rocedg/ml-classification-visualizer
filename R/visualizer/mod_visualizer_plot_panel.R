@@ -31,7 +31,6 @@ mod_visualizer_plot_panel_ui <- function(id) {
   help_icon <- function(help_text) {
     tags$span(
       class = "help-tooltip",
-      title = help_text,
       `aria-label` = help_text,
       "?"
     )
@@ -170,7 +169,6 @@ mod_visualizer_training_insights_ui <- function(id) {
   help_icon <- function(help_text) {
     tags$span(
       class = "help-tooltip",
-      title = help_text,
       `aria-label` = help_text,
       "?"
     )

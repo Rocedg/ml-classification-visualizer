@@ -92,22 +92,77 @@ a { text-decoration: none; }
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
+  position: relative;
   width: 17px;
   height: 17px;
   margin-left: 6px;
   border-radius: 999px;
-  background: #eef4f7;
+  background: var(--mint-soft);
+  border: 1px solid #cfece5;
   color: var(--muted);
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
   cursor: help;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
 
 .help-tooltip:hover,
 .help-tooltip:focus {
-  background: var(--mint-soft);
-  color: var(--mint-dark);
+  background: #dff3ed;
+  border-color: var(--mint);
+  color: #5f7388;
+}
+
+.help-tooltip::after {
+  content: attr(aria-label);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 9px);
+  z-index: 50;
+  width: max-content;
+  max-width: 220px;
+  padding: 8px 10px;
+  border: 1px solid #c9e8df;
+  border-radius: 8px;
+  background: #e6f6f1;
+  box-shadow: 0 8px 18px rgba(36, 59, 87, 0.12);
+  color: #657788;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  transform: translate(-50%, 4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  white-space: normal;
+}
+
+.help-tooltip::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 4px);
+  z-index: 51;
+  border: 5px solid transparent;
+  border-top-color: #c9e8df;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+  transition: opacity 0.18s ease;
+}
+
+.help-tooltip:hover::after,
+.help-tooltip:focus::after,
+.help-tooltip:hover::before,
+.help-tooltip:focus::before {
+  opacity: 1;
+}
+
+.help-tooltip:hover::after,
+.help-tooltip:focus::after {
+  transform: translate(-50%, 0);
 }
 
 /* Home page */
@@ -550,6 +605,48 @@ a { text-decoration: none; }
 .iteration-control-card .irs--shiny .irs-handle.state_hover {
   background: var(--mint-soft);
   border-color: var(--mint-dark);
+}
+
+.visualizer-sidebar .irs--shiny .irs-bar,
+.visualizer-sidebar .irs--shiny .irs-bar-edge {
+  background: var(--mint);
+  border-color: var(--mint);
+}
+
+.visualizer-sidebar .irs--shiny .irs-single,
+.visualizer-sidebar .irs--shiny .irs-from,
+.visualizer-sidebar .irs--shiny .irs-to {
+  background: var(--mint-dark);
+  color: var(--white);
+}
+
+.visualizer-sidebar .irs--shiny .irs-single:before,
+.visualizer-sidebar .irs--shiny .irs-from:before,
+.visualizer-sidebar .irs--shiny .irs-to:before {
+  border-top-color: var(--mint-dark);
+}
+
+.visualizer-sidebar .irs--shiny .irs-handle,
+.visualizer-sidebar .irs-slider {
+  border-color: var(--mint-dark);
+}
+
+.visualizer-sidebar .irs--shiny .irs-handle:hover,
+.visualizer-sidebar .irs--shiny .irs-handle.state_hover,
+.visualizer-sidebar .irs-slider:hover,
+.visualizer-sidebar .irs-slider.state_hover {
+  background: var(--mint-soft);
+  border-color: var(--mint-dark);
+}
+
+.visualizer-sidebar .irs-grid-pol {
+  background: #cfece5;
+}
+
+.visualizer-sidebar .irs-grid-text,
+.visualizer-sidebar .irs-min,
+.visualizer-sidebar .irs-max {
+  color: var(--muted);
 }
 .training-insights-tab-layout {
   display: flex;

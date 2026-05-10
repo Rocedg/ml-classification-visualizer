@@ -32,7 +32,6 @@ mod_visualizer_dataset_controls_ui <- function(id) {
   help_icon <- function(help_text) {
     tags$span(
       class = "help-tooltip",
-      title = help_text,
       `aria-label` = help_text,
       "?"
     )

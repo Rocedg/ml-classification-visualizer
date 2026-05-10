@@ -57,7 +57,6 @@ mod_visualizer_algorithm_controls_server <- function(id) {
     help_icon <- function(help_text) {
       tags$span(
         class = "help-tooltip",
-        title = help_text,
         `aria-label` = help_text,
         "?"
       )
@@ -147,7 +146,7 @@ mod_visualizer_algorithm_controls_server <- function(id) {
               "Controls how large each training update is. Higher values learn faster but may become unstable."
             ),
             min = 0.01,
-            max = 0.30,
+            max = 1,
             value = 0.12,
             step = 0.01
           ),
@@ -158,7 +157,7 @@ mod_visualizer_algorithm_controls_server <- function(id) {
               "Maximum number of training steps shown in the visualization."
             ),
             min = 10,
-            max = 200,
+            max = 100,
             value = 60,
             step = 10
           ),
