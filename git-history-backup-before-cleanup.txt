@@ -1,0 +1,60 @@
+﻿* 4c304f6 (HEAD -> refactor/module-file-names) Clarify prediction grid documentation
+* d6cd5ed Refactor module file names and visualizer structure
+* 4fdec0c (origin/main, origin/HEAD, main, improving-visualizer-graphics) Document visualizer training and plot flow
+* b9cf064 (origin/improving-visualizer-graphics) feat: refine visualizer layout and iteration zero
+* d305793 Revert "feat: refine visualizer graph layout"
+* 47299cb feat: refine visualizer graph layout
+* f62fb17 feat: improve logistic visual diagnostics
+*   0d09385 Merge branch 'improving-visualizer-graphics'
+|\  
+| * efbd840 fix: mount 3d trajectory plot directly
+| * dc7cdf5 feat: add 3d logistic parameter trajectory
+* |   22f39d5 Merge pull request #7 from Rocedg/beaskjr123-sys-patch-2
+|\ \  
+| * | 32f5ade Add static datasets
+|/ /  
+* |   c6bd9f5 Merge pull request #6 from Rocedg/modul_theory_panel
+|\ \  
+| | | * bbeddd5 (origin/modul_theory_panel) Translate comments and improve formatting in R module
+| | |/  
+| |/|   
+| * |   d6e17c5 Merge branch 'main' into modul_theory_panel
+| |\ \  
+| |/ /  
+|/| |   
+* | |   8d71b94 Merge pull request #5 from Rocedg/improving-visualizer-graphics
+|\ \ \  
+| | |/  
+| |/|   
+| * | 78bd136 feat: add logistic parameter trajectory plot
+| * | bc280ea feat: polish logistic probability heatmap
+| * | 9ef5718 feat: show logistic probability heatmap
+|/ /  
+* |   0225d16 Merge pull request #4 from Rocedg/feat/logistic-regression-hyperparameters
+|\ \  
+| * | 68385e0 feat: add logistic regression hyperparameters
+|/ /  
+* |   3a0cb90 Merge pull request #3 from Rocedg/beaskjr123-sys-patch-1
+|\ \  
+| * | 22c123c Add new datasets for Titanic and Diabetes health data
+| * | 32cc29d Fix formatting issues in dataset_controls_module.R
+| * | 626aa36 Add real-world datasets to README
+* | | 26ae844 Merge pull request #2 from Rocedg/beaskjr123-sys-patch-1
+|\| | 
+| * | 735e7d8 Add CSV template download functionality
+|/ /  
+* | 87c144c Add custom styles for data buttons and upload button(he posat els botons del mateix tamany) )
+| * b66c901 Change border color of math-box class
+| * 8c43242 Update layout of theory panel in model theory module
+| * 286affc Add responsive layout for theory panel grid
+| * b23a013 Refine Logistic Regression details in model theory panel
+| * 6616876 Add styles for math box component
+| * b8ee963 Refactor model theory panel for centralized configuration
+|/  
+* d8a4b60 Add download button for CSV template
+* 564b36d fix: stabilize first classifier run
+* 6692977 fix: simplify iteration navigation to manual controls
+* 6cd2b3e refactor: extract plot and playback helpers for readability
+* 0055284 refactor: limit training to logistic regression
+* 0fd8c47 refactor: split app helpers into dedicated files
+* 22ba311 feat: first working MVP of ML visualizer app

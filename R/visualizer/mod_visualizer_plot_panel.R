@@ -44,7 +44,7 @@ mod_visualizer_plot_panel_ui <- function(id) {
       )
     ),
     div(
-      class = "app-card iteration-control-card",
+      class = "iteration-control-card",
       div(
         class = "iteration-control-header",
         div(class = "status-chip status-chip-primary", textOutput(ns("iteration_status_text"), inline = TRUE))
@@ -59,6 +59,11 @@ mod_visualizer_plot_panel_ui <- function(id) {
             class = "ml-button ml-button-secondary half-width-button"
           ),
           actionButton(
+            inputId = ns("play_pause_button"),
+            label = "Play",
+            class = "ml-button ml-button-secondary half-width-button"
+          ),
+          actionButton(
             inputId = ns("step_forward_button"),
             label = "Step Forward",
             class = "ml-button ml-button-secondary half-width-button"
@@ -67,9 +72,9 @@ mod_visualizer_plot_panel_ui <- function(id) {
         sliderInput(
           inputId = ns("iteration_slider"),
           label = NULL,
-          min = 1,
-          max = 1,
-          value = 1,
+          min = 0,
+          max = 0,
+          value = 0,
           step = 1,
           width = "100%"
         )
@@ -151,9 +156,12 @@ mod_visualizer_plot_panel_server <- function(id,
     # the child module is created.
     internal_model_reactive <- reactiveVal(NULL)
 
-    # current_iteration is local display state. It controls which saved
-    # logistic training step is rendered without retraining the model.
-    current_iteration <- reactiveVal(1)
+    # current_iteration is local display state using 0-based indexing (0 to max_iterations).
+    # It controls which saved logistic training step is rendered without retraining the model.
+    current_iteration <- reactiveVal(0)
+
+    # is_playing tracks whether the Play button is active
+    is_playing <- reactiveVal(FALSE)
 
     set_model_reactive <- function(model_reactive_expression) {
       internal_model_reactive(model_reactive_expression)
@@ -188,34 +196,36 @@ mod_visualizer_plot_panel_server <- function(id,
       get_active_iteration_results(model_results, iteration_history, current_iteration())
     })
 
-    # A new model run resets playback to the first saved state and resizes the
-    # slider to match the number of stored iterations.
+    # A new model run resets playback to the first saved state (iteration 0) and
+    # resizes the slider to match the number of stored iterations.
+    # With 60 iterations requested, we have 61 saved states (0 through 60),
+    # so slider max is 60.
     observeEvent(safe_model_results(), {
       model_results <- safe_model_results()
 
-      current_iteration(1)
+      current_iteration(0)
+      is_playing(FALSE)
 
       if (model_supports_logistic_playback(model_results)) {
         updateSliderInput(
           session = session,
           inputId = "iteration_slider",
-          min = 1,
-          max = length(model_results$iterations),
-          value = 1
+          min = 0,
+          max = length(model_results$iterations) - 1,
+          value = 0
         )
       } else {
         updateSliderInput(
           session = session,
           inputId = "iteration_slider",
-          min = 1,
-          max = 1,
-          value = 1
+          min = 0,
+          max = 0,
+          value = 0
         )
       }
     }, ignoreInit = TRUE)
 
-    # Moving the slider selects a saved iteration. The helper keeps the index
-    # inside the available history range.
+    # Moving the slider selects a saved iteration using 0-based indexing.
     observeEvent(input$iteration_slider, {
       total_iterations <- total_iteration_count()
       if (total_iterations == 0 || is.null(input$iteration_slider)) {
@@ -225,29 +235,67 @@ mod_visualizer_plot_panel_server <- function(id,
       bounded_iteration <- bound_iteration_index(input$iteration_slider, total_iterations)
       if (!identical(as.integer(current_iteration()), as.integer(bounded_iteration))) {
         current_iteration(bounded_iteration)
+        is_playing(FALSE)
       }
     }, ignoreInit = TRUE)
 
-    # Step buttons adjust the same current_iteration value used by the slider.
+    # Step Forward: advance by 1, cannot go above max_iterations
     observeEvent(input$step_forward_button, {
       total_iterations <- total_iteration_count()
       if (total_iterations == 0) {
         return(NULL)
       }
 
-      current_iteration(min(current_iteration() + 1, total_iterations))
+      max_iteration <- total_iterations - 1
+      current_iteration(min(current_iteration() + 1, max_iteration))
+      is_playing(FALSE)
     })
 
+    # Step Back: go back by 1, cannot go below 0
     observeEvent(input$step_backward_button, {
       if (total_iteration_count() == 0) {
         return(NULL)
       }
 
-      current_iteration(max(current_iteration() - 1, 1))
+      current_iteration(max(current_iteration() - 1, 0))
+      is_playing(FALSE)
     })
 
-    # Keep the slider handle synchronized when step buttons change the active
-    # iteration.
+    # Play/Pause button: toggle auto-advance
+    observeEvent(input$play_pause_button, {
+      if (total_iteration_count() == 0) {
+        return(NULL)
+      }
+
+      is_playing(!is_playing())
+    })
+
+    # Auto-advance when playing: move forward every 1 second, stop at max
+    observe({
+      if (!is_playing()) {
+        return()
+      }
+
+      invalidateLater(1000)
+
+      total_iterations <- total_iteration_count()
+      if (total_iterations == 0) {
+        is_playing(FALSE)
+        return()
+      }
+
+      max_iteration <- total_iterations - 1
+      new_iteration <- current_iteration() + 1
+
+      if (new_iteration > max_iteration) {
+        is_playing(FALSE)
+        current_iteration(max_iteration)
+      } else {
+        current_iteration(new_iteration)
+      }
+    })
+
+    # Keep the slider handle synchronized when step buttons change the active iteration.
     observe({
       if (total_iteration_count() == 0) {
         return(NULL)
@@ -264,6 +312,16 @@ mod_visualizer_plot_panel_server <- function(id,
         session = session,
         inputId = "iteration_slider",
         value = iteration_value
+      )
+    })
+
+    # Update Play/Pause button label to reflect current state
+    observe({
+      label <- if (is_playing()) "Pause" else "Play"
+      shiny::updateActionButton(
+        session = session,
+        inputId = "play_pause_button",
+        label = label
       )
     })
 

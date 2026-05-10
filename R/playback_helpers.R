@@ -35,12 +35,13 @@ get_iteration_count <- function(iteration_history) {
 # bound_iteration_index()
 # Purpose:
 #   Clamp a requested iteration so it always points to an existing saved state.
+#   Uses 0-based indexing: valid range is [0, iteration_count - 1]
 bound_iteration_index <- function(iteration_index, iteration_count) {
   if (is.null(iteration_index) || is.null(iteration_count) || iteration_count < 1) {
-    return(1)
+    return(0)
   }
 
-  min(max(iteration_index, 1), iteration_count)
+  min(max(iteration_index, 0), iteration_count - 1)
 }
 
 
@@ -50,6 +51,9 @@ bound_iteration_index <- function(iteration_index, iteration_count) {
 # Output:
 #   NULL before training, full model results for non-playback models, or one
 #   saved logistic iteration for the current playback position.
+# Note:
+#   current_iteration uses 0-based indexing in the UI. We convert it to 1-based
+#   for the R list: iteration_history[[current_iteration + 1]]
 get_active_iteration_results <- function(model_results, iteration_history, current_iteration) {
   if (is.null(model_results)) {
     return(NULL)
@@ -64,13 +68,14 @@ get_active_iteration_results <- function(model_results, iteration_history, curre
   }
 
   bounded_iteration <- bound_iteration_index(current_iteration, length(iteration_history))
-  iteration_history[[bounded_iteration]]
+  iteration_history[[bounded_iteration + 1]]
 }
 
 
 # format_iteration_status_text()
 # Purpose:
 #   Build the small status label that tells users which iteration is displayed.
+#   Displays 0-based UI numbering: 0 to (count - 1)
 format_iteration_status_text <- function(model_results, current_iteration, total_iterations) {
   if (!model_supports_logistic_playback(model_results)) {
     return("Iteration navigation ready after Logistic Regression")
@@ -81,11 +86,11 @@ format_iteration_status_text <- function(model_results, current_iteration, total
     return("Iteration navigation ready after Logistic Regression")
   }
 
-  bounded_iteration <- bound_iteration_index(current_iteration, length(iteration_history))
-  active_iteration <- iteration_history[[bounded_iteration]]
-  final_iteration <- iteration_history[[length(iteration_history)]]
+  # current_iteration is 0-based UI index
+  # total_iterations tells us how many states we have
+  max_ui_iteration <- total_iterations - 1
 
-  paste("Iteration:", active_iteration$iteration_index, "/", final_iteration$iteration_index)
+  paste("Iteration:", current_iteration, "/", max_ui_iteration)
 }
 
 

@@ -1,0 +1,7 @@
+﻿  improving-visualizer-graphics
+  main
+* refactor/module-file-names
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/improving-visualizer-graphics
+  remotes/origin/main
+  remotes/origin/modul_theory_panel
