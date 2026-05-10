@@ -1,5 +1,13 @@
 # Data helper functions for the ML Visualizer app.
 
+# create_indexed_dataset()
+# Purpose:
+#   Build the standard two-class data frame used throughout the app.
+# Inputs:
+#   - x_values, y_values: numeric coordinates for points on the plot
+#   - class_labels: labels that identify each point as Class A or Class B
+# Output:
+#   A data frame with stable row indexes, rounded coordinates, and class factors.
 create_indexed_dataset <- function(x_values, y_values, class_labels) {
   classification_data <- data.frame(
     index = seq_along(x_values),
@@ -13,6 +21,11 @@ create_indexed_dataset <- function(x_values, y_values, class_labels) {
 }
 
 
+# create_empty_classification_data()
+# Purpose:
+#   Return an empty data frame with the same columns as a real dataset.
+# Used by:
+#   Drawing controls, where custom points may start empty and grow over time.
 create_empty_classification_data <- function() {
   data.frame(
     index = integer(0),
@@ -24,6 +37,14 @@ create_empty_classification_data <- function() {
 }
 
 
+# generate_preset_dataset()
+# Purpose:
+#   Create reproducible example datasets for the visualizer sidebar.
+# Inputs:
+#   - dataset_name: selected preset name from the UI
+#   - points_per_class: maximum number of examples to sample per class
+# Output:
+#   A standardized Class A / Class B dataset created by create_indexed_dataset().
 generate_preset_dataset <- function(dataset_name, points_per_class = 40) {
   seed_lookup <- c(
     "Gaussian clusters" = 101,
@@ -41,6 +62,8 @@ generate_preset_dataset <- function(dataset_name, points_per_class = 40) {
 
   set.seed(seed_lookup[[dataset_name]])
 
+  # Synthetic presets are generated directly from random distributions.
+  # The fixed seed above keeps each preset stable between app sessions.
   if (dataset_name == "Gaussian clusters") {
     class_a_x <- rnorm(points_per_class, mean = -2.3, sd = 1.0)
     class_a_y <- rnorm(points_per_class, mean = 2.4, sd = 1.1)
@@ -131,6 +154,8 @@ generate_preset_dataset <- function(dataset_name, points_per_class = 40) {
 
     selected_data <- titanic_data[c(selected_class_a, selected_class_b), ]
 
+    # The visualizer is two-dimensional, so the Titanic preset maps
+    # passenger age to x and log fare to y.
     x_values <- selected_data$Age
     y_values <- log1p(selected_data$Fare)
     class_labels <- selected_data$class_label
@@ -168,6 +193,7 @@ generate_preset_dataset <- function(dataset_name, points_per_class = 40) {
 
     selected_data <- diabetes_data[c(selected_class_a, selected_class_b), ]
 
+    # The diabetes preset uses glucose and body mass as the two plot axes.
     x_values <- selected_data$glucose
     y_values <- selected_data$mass
     class_labels <- selected_data$class_label
@@ -176,6 +202,13 @@ generate_preset_dataset <- function(dataset_name, points_per_class = 40) {
   create_indexed_dataset(x_values, y_values, class_labels)
 }
 
+# convert_uploaded_csv_to_dataset()
+# Purpose:
+#   Validate and standardize a user-uploaded CSV.
+# Inputs:
+#   - uploaded_table: data frame read from a CSV file
+# Output:
+#   A clean two-class dataset with required x, y, and class columns.
 convert_uploaded_csv_to_dataset <- function(uploaded_table) {
   cleaned_names <- tolower(names(uploaded_table))
   names(uploaded_table) <- cleaned_names
@@ -203,6 +236,8 @@ convert_uploaded_csv_to_dataset <- function(uploaded_table) {
     stop("Uploaded CSV must contain exactly two distinct class labels.")
   }
 
+  # Uploaded labels can use any two names. The app standardizes the first
+  # observed class to Class A and the second observed class to Class B.
   standardized_class_labels <- ifelse(
     as.character(cleaned_table$class) == unique_classes[1],
     "Class A",
@@ -213,6 +248,14 @@ convert_uploaded_csv_to_dataset <- function(uploaded_table) {
 }
 
 
+# build_prediction_grid()
+# Purpose:
+#   Create the rectangular set of x/y locations where the model is evaluated.
+# Inputs:
+#   - classification_data: current plot data used to size the grid
+#   - grid_points: number of sampled positions along each axis
+# Output:
+#   A data frame of grid coordinates. Training code adds probabilities later.
 build_prediction_grid <- function(classification_data, grid_points = 140) {
   x_range <- range(classification_data$x)
   y_range <- range(classification_data$y)
@@ -222,6 +265,8 @@ build_prediction_grid <- function(classification_data, grid_points = 140) {
 
   if (largest_span == 0) largest_span <- 2
 
+  # The grid is square so the probability heatmap lines up with the square
+  # plot area and covers a padded region around the data.
   half_plot_span <- largest_span * 0.68
   x_limits <- x_center + c(-half_plot_span, half_plot_span)
   y_limits <- y_center + c(-half_plot_span, half_plot_span)

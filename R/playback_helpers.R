@@ -1,10 +1,16 @@
 # Iteration navigation helper functions for the ML Visualizer app.
 
+# model_supports_logistic_playback()
+# Purpose:
+#   Tell the UI whether a model result contains logistic iteration history.
 model_supports_logistic_playback <- function(model_results) {
   !is.null(model_results) && identical(model_results$algorithm_key, "logistic_regression")
 }
 
 
+# get_logistic_iteration_history()
+# Purpose:
+#   Extract the saved training states used by slider and step-button playback.
 get_logistic_iteration_history <- function(model_results) {
   if (!model_supports_logistic_playback(model_results)) {
     return(NULL)
@@ -14,6 +20,9 @@ get_logistic_iteration_history <- function(model_results) {
 }
 
 
+# get_iteration_count()
+# Purpose:
+#   Return how many saved states are available for playback.
 get_iteration_count <- function(iteration_history) {
   if (is.null(iteration_history)) {
     return(0)
@@ -23,6 +32,9 @@ get_iteration_count <- function(iteration_history) {
 }
 
 
+# bound_iteration_index()
+# Purpose:
+#   Clamp a requested iteration so it always points to an existing saved state.
 bound_iteration_index <- function(iteration_index, iteration_count) {
   if (is.null(iteration_index) || is.null(iteration_count) || iteration_count < 1) {
     return(1)
@@ -32,6 +44,12 @@ bound_iteration_index <- function(iteration_index, iteration_count) {
 }
 
 
+# get_active_iteration_results()
+# Purpose:
+#   Select the model view that should drive the heatmap, metrics, and diagnostics.
+# Output:
+#   NULL before training, full model results for non-playback models, or one
+#   saved logistic iteration for the current playback position.
 get_active_iteration_results <- function(model_results, iteration_history, current_iteration) {
   if (is.null(model_results)) {
     return(NULL)
@@ -50,6 +68,9 @@ get_active_iteration_results <- function(model_results, iteration_history, curre
 }
 
 
+# format_iteration_status_text()
+# Purpose:
+#   Build the small status label that tells users which iteration is displayed.
 format_iteration_status_text <- function(model_results, current_iteration, total_iterations) {
   if (!model_supports_logistic_playback(model_results)) {
     return("Iteration navigation ready after Logistic Regression")
@@ -68,6 +89,9 @@ format_iteration_status_text <- function(model_results, current_iteration, total
 }
 
 
+# format_iteration_navigation_status_text()
+# Purpose:
+#   Build helper text for the manual iteration controls.
 format_iteration_navigation_status_text <- function(model_results) {
   if (!model_supports_logistic_playback(model_results)) {
     return("Manual navigation ready after Logistic Regression")
@@ -77,6 +101,9 @@ format_iteration_navigation_status_text <- function(model_results) {
 }
 
 
+# format_playback_helper_text()
+# Purpose:
+#   Explain the currently selected training state in compact UI text.
 format_playback_helper_text <- function(model_results, active_iteration) {
   if (is.null(model_results)) {
     return("Run Logistic Regression to inspect the training iterations.")

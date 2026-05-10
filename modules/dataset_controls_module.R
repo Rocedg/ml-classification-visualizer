@@ -132,9 +132,13 @@ dataset_controls_module_ui <- function(id) {
 
 dataset_controls_module_server <- function(id) {
   moduleServer(id, function(input, output, session) {
+    # These reactive values are returned to the parent visualizer module.
+    # The parent decides how they affect the shared dataset.
     drawing_mode_active <- reactiveVal(FALSE)
     uploaded_dataset <- reactiveVal(NULL)
     
+    # Draw mode is a toggle: each click switches between collecting plot clicks
+    # and ignoring them.
     observeEvent(input$draw_data_button, {
       drawing_mode_active(!drawing_mode_active())
     })
@@ -182,6 +186,8 @@ dataset_controls_module_server <- function(id) {
       )
       
       if (!is.null(cleaned_dataset)) {
+        # Store the cleaned dataset so the parent module can replace the
+        # current base data with it.
         uploaded_dataset(cleaned_dataset)
         showNotification(
           "CSV uploaded successfully. The visualizer is now using your custom dataset.",
@@ -199,6 +205,8 @@ dataset_controls_module_server <- function(id) {
     })
     
     list(
+      # Expose plain reactives instead of raw input values so the parent module
+      # does not need to know about this module's internal input IDs.
       selected_dataset_name = reactive(input$preset_dataset),
       uploaded_dataset = reactive(uploaded_dataset()),
       drawing_mode_active = reactive(drawing_mode_active()),

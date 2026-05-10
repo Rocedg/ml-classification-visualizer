@@ -86,9 +86,12 @@ ui <- fluidPage(
 # ----------------------------- Application Server ----------------------------
 
 server <- function(input, output, session) {
+  # current_page drives both the hidden tabset and the active navbar styling.
   current_page <- reactiveVal("home")
 
   output$top_navbar <- renderUI({
+    # Build navbar links on the server so the active page can be styled from
+    # the same current_page state used for navigation.
     nav_link <- function(link_id, label, page_value) {
       active_class <- if (identical(current_page(), page_value)) "top-nav-link is-active" else "top-nav-link"
       actionLink(inputId = link_id, label = label, class = active_class)
@@ -134,6 +137,7 @@ server <- function(input, output, session) {
   })
 
   observe({
+    # The hidden tabset is the actual page router for the app.
     updateTabsetPanel(session, inputId = "main_navigation", selected = current_page())
   })
 }

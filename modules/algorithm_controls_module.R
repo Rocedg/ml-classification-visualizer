@@ -66,7 +66,11 @@ algorithm_controls_module_ui <- function(id) {
 
 algorithm_controls_module_server <- function(id) {
   moduleServer(id, function(input, output, session) {
+    # The app currently trains Logistic Regression only, but this value keeps
+    # the UI/server contract ready for additional algorithms.
     selected_algorithm_key <- reactiveVal("logistic_regression")
+
+    # Defaults are used when Shiny inputs have not initialized yet.
     default_logistic_learning_rate <- 0.12
     default_logistic_max_iter <- 60
     default_decision_threshold <- 0.50
@@ -80,6 +84,8 @@ algorithm_controls_module_server <- function(id) {
     })
 
     output$algorithm_cards_ui <- renderUI({
+      # Cards are generated server-side so the active class can follow the
+      # selected algorithm key.
       create_algorithm_card <- function(button_id, title_text, description_text, helper_badge, algorithm_key, is_available = TRUE) {
         active_class <- if (identical(selected_algorithm_key(), algorithm_key)) "algorithm-selection-card is-active" else "algorithm-selection-card"
 
@@ -136,6 +142,8 @@ algorithm_controls_module_server <- function(id) {
     })
 
     output$parameter_controls_ui <- renderUI({
+      # Parameter controls are algorithm-specific. The returned values are read
+      # by visualizer_module_server() only when Run Classifier is clicked.
       if (selected_algorithm_key() == "logistic_regression") {
         tagList(
           tags$p(class = "parameter-note", "Training"),
@@ -218,6 +226,7 @@ algorithm_controls_module_server <- function(id) {
             logistic_fit_intercept <- default_logistic_fit_intercept
           }
 
+          # Package UI values into the names expected by train_classification_model().
           list(
             logistic_learning_rate = logistic_learning_rate,
             logistic_max_iter = logistic_max_iter,

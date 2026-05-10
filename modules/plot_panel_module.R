@@ -147,13 +147,20 @@ plot_panel_module_server <- function(id,
                                      selected_class_label,
                                      run_model_clicked) {
   moduleServer(id, function(input, output, session) {
+    # The parent module supplies the trained model through this setter after
+    # the child module is created.
     internal_model_reactive <- reactiveVal(NULL)
+
+    # current_iteration is local display state. It controls which saved
+    # logistic training step is rendered without retraining the model.
     current_iteration <- reactiveVal(1)
 
     set_model_reactive <- function(model_reactive_expression) {
       internal_model_reactive(model_reactive_expression)
     }
 
+    # Before the Run Classifier button has been clicked, the plot displays only
+    # data points. After a run, this reactive unwraps the latest model bundle.
     safe_model_results <- reactive({
       model_reactive_expression <- internal_model_reactive()
 
@@ -181,6 +188,8 @@ plot_panel_module_server <- function(id,
       get_active_iteration_results(model_results, iteration_history, current_iteration())
     })
 
+    # A new model run resets playback to the first saved state and resizes the
+    # slider to match the number of stored iterations.
     observeEvent(safe_model_results(), {
       model_results <- safe_model_results()
 
@@ -205,6 +214,8 @@ plot_panel_module_server <- function(id,
       }
     }, ignoreInit = TRUE)
 
+    # Moving the slider selects a saved iteration. The helper keeps the index
+    # inside the available history range.
     observeEvent(input$iteration_slider, {
       total_iterations <- total_iteration_count()
       if (total_iterations == 0 || is.null(input$iteration_slider)) {
@@ -217,6 +228,7 @@ plot_panel_module_server <- function(id,
       }
     }, ignoreInit = TRUE)
 
+    # Step buttons adjust the same current_iteration value used by the slider.
     observeEvent(input$step_forward_button, {
       total_iterations <- total_iteration_count()
       if (total_iterations == 0) {
@@ -234,6 +246,8 @@ plot_panel_module_server <- function(id,
       current_iteration(max(current_iteration() - 1, 1))
     })
 
+    # Keep the slider handle synchronized when step buttons change the active
+    # iteration.
     observe({
       if (total_iteration_count() == 0) {
         return(NULL)
@@ -291,6 +305,8 @@ plot_panel_module_server <- function(id,
       current_classification_data <- classification_data()
       active_model_view <- active_iteration_results()
 
+      # active_model_view is either NULL or one saved training iteration. The
+      # plot helper uses it to decide whether to draw the probability heatmap.
       build_classification_plot(current_classification_data, active_model_view)
     }, res = 110)
 
@@ -321,6 +337,9 @@ plot_panel_module_server <- function(id,
     })
     outputOptions(output, "show_3d_parameter_diagnostic", suspendWhenHidden = FALSE)
 
+    # With a learned intercept, the parameter path is 3D: weight_x, weight_y,
+    # and bias. When fit_intercept is off, bias is fixed at 0, so a 2D loss
+    # landscape over the two weights is shown instead.
     output$parameter_diagnostic_title <- renderText({
       if (model_uses_fit_intercept()) {
         "3D parameter trajectory"

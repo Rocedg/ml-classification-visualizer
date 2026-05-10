@@ -1,9 +1,18 @@
 # Metrics helper functions for the ML Visualizer app.
 
+# calculate_classification_metrics()
+# Purpose:
+#   Compare true class labels with model predictions and summarize performance.
+# Inputs:
+#   - actual_labels: known Class A / Class B labels from the dataset
+#   - predicted_labels: model output after applying the decision threshold
+# Output:
+#   Rounded accuracy, precision, recall, and F1 score values for the UI cards.
 calculate_classification_metrics <- function(actual_labels, predicted_labels) {
   actual_labels <- factor(actual_labels, levels = c("Class A", "Class B"))
   predicted_labels <- factor(predicted_labels, levels = c("Class A", "Class B"))
 
+  # Class B is treated as the positive class for precision, recall, and F1.
   true_positive <- sum(actual_labels == "Class B" & predicted_labels == "Class B")
   true_negative <- sum(actual_labels == "Class A" & predicted_labels == "Class A")
   false_positive <- sum(actual_labels == "Class A" & predicted_labels == "Class B")

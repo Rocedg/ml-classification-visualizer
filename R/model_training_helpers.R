@@ -1,10 +1,30 @@
 # Model training helper functions for the ML Visualizer app.
 
+# sigmoid_probability()
+# Purpose:
+#   Convert linear model scores into probabilities between 0 and 1.
+# Input:
+#   - linear_values: bias + weight_x * x + weight_y * y scores
+# Output:
+#   Probability values interpreted here as Class B probability.
 sigmoid_probability <- function(linear_values) {
   1 / (1 + exp(-linear_values))
 }
 
 
+# train_logistic_regression_iterations()
+# Purpose:
+#   Train a simple logistic regression model while saving every iteration.
+# Inputs:
+#   - classification_data: current Class A / Class B training points
+#   - prediction_grid: x/y locations used to draw the probability heatmap
+#   - prediction_threshold: probability cutoff for Class B predictions
+#   - regularization_c, l1_ratio: regularization controls
+#   - fit_intercept: whether the bias/intercept term is learned
+#   - learning_rate, max_iter, tolerance: gradient descent controls
+# Output:
+#   A model bundle containing final parameters, metrics, prediction grid,
+#   iteration history, and per-iteration metric data for visualization.
 train_logistic_regression_iterations <- function(classification_data,
                                                  prediction_grid,
                                                  prediction_threshold,
@@ -14,6 +34,7 @@ train_logistic_regression_iterations <- function(classification_data,
                                                  learning_rate = 0.12,
                                                  max_iter = 60,
                                                  tolerance = 0.001) {
+  # The training math uses 1 for Class B and 0 for Class A.
   binary_target <- ifelse(classification_data$class == "Class B", 1, 0)
 
   # These fixed settings keep the training loop simple and readable
@@ -25,6 +46,8 @@ train_logistic_regression_iterations <- function(classification_data,
   total_iterations <- max(1, as.integer(max_iter))
   tolerance <- max(tolerance, 0)
 
+  # weight_x and weight_y control the tilt of the decision surface.
+  # bias is the intercept term, which shifts the boundary when it is learned.
   weight_x <- 0
   weight_y <- 0
   bias <- 0
@@ -36,7 +59,12 @@ train_logistic_regression_iterations <- function(classification_data,
   loss_history <- numeric(total_iterations + 1)
   accuracy_history <- numeric(total_iterations + 1)
 
+  # build_saved_iteration() packages one model state for playback.
+  # It evaluates both training points and the full prediction grid so the UI
+  # can redraw the heatmap and metrics at any saved iteration.
   build_saved_iteration <- function(iteration_index, current_weight_x, current_weight_y, current_bias) {
+    # A logistic model first creates a linear score, then passes it through
+    # the sigmoid curve to get a Class B probability.
     current_training_probabilities <- sigmoid_probability(
       current_bias + current_weight_x * classification_data$x + current_weight_y * classification_data$y
     )
@@ -56,6 +84,8 @@ train_logistic_regression_iterations <- function(classification_data,
       "Class A"
     )
 
+    # Probabilities are clamped only for the log calculation so log(0) never
+    # occurs; the unclamped probabilities remain available for visualization.
     safe_training_probabilities <- pmin(pmax(current_training_probabilities, 1e-6), 1 - 1e-6)
     log_loss <- -mean(
       binary_target * log(safe_training_probabilities) +
@@ -72,6 +102,8 @@ train_logistic_regression_iterations <- function(classification_data,
     )
 
     iteration_prediction_grid <- prediction_grid
+    # The grid stores one predicted class and one probability per location.
+    # build_classification_plot() later maps this grid to the heatmap.
     iteration_prediction_grid$predicted_class <- factor(
       grid_predictions,
       levels = c("Class A", "Class B")
@@ -95,6 +127,8 @@ train_logistic_regression_iterations <- function(classification_data,
     )
   }
 
+  # Save iteration 0 before any update so playback can show the model starting
+  # from zero weights and zero bias.
   initial_iteration <- build_saved_iteration(
     iteration_index = 0,
     current_weight_x = weight_x,
@@ -125,14 +159,18 @@ train_logistic_regression_iterations <- function(classification_data,
     l1_gradient_x <- l1_ratio * regularization_strength * sign(weight_x)
     l1_gradient_y <- l1_ratio * regularization_strength * sign(weight_y)
 
+    # Regularization is folded into the weight gradients so the update balances
+    # fitting the data with keeping the weights from growing too large.
     gradient_weight_x <- gradient_weight_x + l2_gradient_x + l1_gradient_x
     gradient_weight_y <- gradient_weight_y + l2_gradient_y + l1_gradient_y
 
+    # Gradient descent moves each parameter opposite the direction of error.
     weight_x <- weight_x - learning_rate * gradient_weight_x
     weight_y <- weight_y - learning_rate * gradient_weight_y
     if (fit_intercept) {
       bias <- bias - learning_rate * gradient_bias
     } else {
+      # With fit_intercept off, the boundary is forced through the origin.
       bias <- 0
     }
 
@@ -151,6 +189,7 @@ train_logistic_regression_iterations <- function(classification_data,
     actual_iteration_count <- iteration_index
     current_loss <- saved_iteration$loss
 
+    # Stop early when loss changes by less than the requested tolerance.
     if (abs(previous_loss - current_loss) < tolerance) {
       break
     }
@@ -164,6 +203,7 @@ train_logistic_regression_iterations <- function(classification_data,
 
   final_iteration <- iteration_history[[saved_iteration_count]]
 
+  # The returned structure is shared by plotting, metric cards, and playback.
   list(
     model_object = list(
       weight_x = final_iteration$weight_x,
@@ -191,6 +231,15 @@ train_logistic_regression_iterations <- function(classification_data,
 }
 
 
+# train_classification_model()
+# Purpose:
+#   Validate user data, build the prediction grid, and dispatch training.
+# Inputs:
+#   - classification_data: current preset/uploaded/drawn dataset
+#   - algorithm_name: selected algorithm key from the sidebar
+#   - parameter_values: current algorithm controls from the sidebar
+# Output:
+#   A model result list consumed by plot, metrics, playback, and theory modules.
 train_classification_model <- function(classification_data, algorithm_name, parameter_values) {
   if (nrow(classification_data) < 6) {
     stop("Please provide at least 6 data points before training a classifier.")
@@ -200,6 +249,8 @@ train_classification_model <- function(classification_data, algorithm_name, para
     stop("The dataset must contain both Class A and Class B.")
   }
 
+  # The grid is created once for this run. Every saved iteration writes its
+  # probabilities into the same coordinate layout.
   prediction_grid <- build_prediction_grid(classification_data)
 
   if (algorithm_name == "logistic_regression") {
@@ -238,6 +289,8 @@ train_classification_model <- function(classification_data, algorithm_name, para
     }
     logistic_fit_intercept <- isTRUE(logistic_fit_intercept)
 
+    # Parameter checks keep invalid UI or programmatic values from entering
+    # the training loop.
     if (!is.numeric(decision_threshold) || length(decision_threshold) != 1 || is.na(decision_threshold)) {
       stop("Decision threshold must be a single numeric value.")
     }

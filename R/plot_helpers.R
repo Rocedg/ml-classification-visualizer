@@ -1,5 +1,13 @@
 # Plot helper functions for the ML Visualizer app.
 
+# build_square_plot_limits()
+# Purpose:
+#   Compute equal-width x and y ranges so scatter plots render as squares.
+# Inputs:
+#   - x_values, y_values: coordinates that should fit inside the plot
+#   - padding_fraction: extra space around the largest data span
+# Output:
+#   A list with x and y limits for coord_equal().
 build_square_plot_limits <- function(x_values, y_values, padding_fraction = 0.18) {
   x_range <- range(x_values)
   y_range <- range(y_values)
@@ -18,6 +26,14 @@ build_square_plot_limits <- function(x_values, y_values, padding_fraction = 0.18
 }
 
 
+# build_classification_plot()
+# Purpose:
+#   Draw the main classifier plot: axes, optional probability heatmap, and data.
+# Inputs:
+#   - classification_data: current points from preset/upload/drawing workflows
+#   - active_model_view: NULL before training, or one saved model iteration
+# Output:
+#   A ggplot object rendered by the plot panel module.
 build_classification_plot <- function(classification_data, active_model_view) {
   plot_object <- ggplot()
   square_plot_limits <- build_square_plot_limits(classification_data$x, classification_data$y)
@@ -26,11 +42,16 @@ build_classification_plot <- function(classification_data, active_model_view) {
 
   if (!is.null(active_model_view)) {
     prediction_grid <- active_model_view$prediction_grid
+    # Training stores Class B probabilities. The background scale is expressed
+    # as Class A probability so blue means more likely Class A and orange means
+    # more likely Class B.
     prediction_grid$class_a_probability <- 1 - prediction_grid$class_b_probability
     plot_x_limits <- range(prediction_grid$x)
     plot_y_limits <- range(prediction_grid$y)
 
     plot_object <- plot_object +
+      # Each grid cell becomes one heatmap tile. Rounding to 0.05 steps keeps
+      # the probability field visually readable while still showing transitions.
       geom_raster(
         data = prediction_grid,
         aes(x = x, y = y, fill = round(class_a_probability / 0.05) * 0.05),
@@ -100,6 +121,11 @@ build_classification_plot <- function(classification_data, active_model_view) {
 }
 
 
+# draw_empty_iteration_metric_plot()
+# Purpose:
+#   Show a placeholder where the loss-over-time chart will appear.
+# Output:
+#   A ggplot placeholder used before Logistic Regression has been trained.
 draw_empty_iteration_metric_plot <- function() {
   placeholder_data <- data.frame(
     x = 1,
@@ -120,6 +146,14 @@ draw_empty_iteration_metric_plot <- function() {
 }
 
 
+# build_iteration_metric_plot()
+# Purpose:
+#   Plot loss across saved training iterations and highlight the active step.
+# Inputs:
+#   - metric_history: per-iteration loss and accuracy from training
+#   - current_iteration: selected playback index from the plot panel
+# Output:
+#   A ggplot line chart for the diagnostic area.
 build_iteration_metric_plot <- function(metric_history, current_iteration) {
   highlighted_iteration <- min(max(current_iteration, 1), nrow(metric_history))
   highlighted_metric <- metric_history[highlighted_iteration, , drop = FALSE]
@@ -154,6 +188,13 @@ build_iteration_metric_plot <- function(metric_history, current_iteration) {
 }
 
 
+# build_parameter_trajectory_data()
+# Purpose:
+#   Convert saved logistic iterations into one data frame of parameters.
+# Input:
+#   - iteration_history: list of saved model states
+# Output:
+#   Data frame with iteration, weight_x, weight_y, and bias columns.
 build_parameter_trajectory_data <- function(iteration_history) {
   if (is.null(iteration_history) || length(iteration_history) == 0) {
     return(NULL)
@@ -180,6 +221,9 @@ build_parameter_trajectory_data <- function(iteration_history) {
 }
 
 
+# build_empty_parameter_trajectory_3d_plot()
+# Purpose:
+#   Provide a placeholder Plotly object before a 3D trajectory can be shown.
 build_empty_parameter_trajectory_3d_plot <- function() {
   empty_plot <- plotly::plot_ly()
 
@@ -204,6 +248,14 @@ build_empty_parameter_trajectory_3d_plot <- function() {
 }
 
 
+# build_parameter_trajectory_3d_plot()
+# Purpose:
+#   Visualize how weight_x, weight_y, and bias move during training.
+# Inputs:
+#   - iteration_history: saved logistic states from the model result
+#   - current_iteration: active playback index to emphasize
+# Output:
+#   A Plotly 3D path with Start, Current, and Final parameter markers.
 build_parameter_trajectory_3d_plot <- function(iteration_history, current_iteration) {
   trajectory_data <- build_parameter_trajectory_data(iteration_history)
 
@@ -214,6 +266,7 @@ build_parameter_trajectory_3d_plot <- function(iteration_history, current_iterat
   if (is.null(current_iteration) || !is.numeric(current_iteration) || length(current_iteration) != 1 || is.na(current_iteration)) {
     current_iteration <- 1
   }
+  # Playback indexes are bounded so the plot always points at a stored state.
   bounded_iteration <- min(max(current_iteration, 1), nrow(trajectory_data))
 
   trajectory_data$tooltip <- paste0(
@@ -295,6 +348,13 @@ build_parameter_trajectory_3d_plot <- function(iteration_history, current_iterat
 }
 
 
+# calculate_logistic_objective()
+# Purpose:
+#   Compute the regularized logistic loss for a candidate parameter set.
+# Used by:
+#   The 2D loss landscape shown when fit_intercept is off.
+# Output:
+#   One numeric loss value for weight_x, weight_y, and bias.
 calculate_logistic_objective <- function(weight_x, weight_y, bias, classification_data, model_object = NULL) {
   binary_target <- ifelse(classification_data$class == "Class B", 1, 0)
   linear_scores <- bias + weight_x * classification_data$x + weight_y * classification_data$y
@@ -306,6 +366,7 @@ calculate_logistic_objective <- function(weight_x, weight_y, bias, classificatio
       (1 - binary_target) * log(1 - safe_probabilities)
   )
 
+  # Match the same regularization settings used during training when available.
   regularization_c <- 1
   l1_ratio <- 0
 
@@ -325,6 +386,16 @@ calculate_logistic_objective <- function(weight_x, weight_y, bias, classificatio
 }
 
 
+# build_bias_fixed_loss_landscape_plot()
+# Purpose:
+#   Draw a 2D loss surface over weight_x and weight_y when bias is fixed to 0.
+# Inputs:
+#   - classification_data: current training data
+#   - iteration_history: saved logistic states for the parameter path
+#   - current_iteration: selected playback index
+#   - model_object: final model settings, including regularization controls
+# Output:
+#   A ggplot showing the loss landscape and parameter trajectory.
 build_bias_fixed_loss_landscape_plot <- function(classification_data,
                                                  iteration_history,
                                                  current_iteration,
@@ -357,6 +428,8 @@ build_bias_fixed_loss_landscape_plot <- function(classification_data,
   }
   bounded_iteration <- min(max(current_iteration, 1), nrow(trajectory_data))
 
+  # The landscape is sampled around the observed training path so the visible
+  # surface focuses on the area the optimizer actually traveled through.
   x_range <- range(trajectory_data$weight_x)
   y_range <- range(trajectory_data$weight_y)
   x_padding <- max(diff(x_range) * 0.45, 0.35)
@@ -380,6 +453,8 @@ build_bias_fixed_loss_landscape_plot <- function(classification_data,
     },
     numeric(1)
   )
+  # Very large losses are capped for display so the color scale keeps useful
+  # contrast near the training path.
   weight_grid$loss_display <- pmin(weight_grid$loss_value, stats::quantile(weight_grid$loss_value, 0.95))
 
   marker_data <- rbind(

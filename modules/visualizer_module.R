@@ -65,15 +65,19 @@ visualizer_module_server <- function(id) {
     dataset_controls <- dataset_controls_module_server("dataset_controls")
     algorithm_controls <- algorithm_controls_module_server("algorithm_controls")
 
+    # The visualizer keeps preset/uploaded data separate from user-drawn
+    # points so drawing can be cleared without losing the selected base dataset.
     base_classification_data <- reactiveVal(generate_preset_dataset("Gaussian clusters"))
     drawn_classification_data <- reactiveVal(create_empty_classification_data())
 
+    # Choosing a preset replaces the base dataset and resets any drawn points.
     observeEvent(dataset_controls$selected_dataset_name(), {
       new_preset_data <- generate_preset_dataset(dataset_controls$selected_dataset_name())
       base_classification_data(new_preset_data)
       drawn_classification_data(create_empty_classification_data())
     }, ignoreInit = FALSE)
 
+    # Uploads are already validated by dataset_controls_module_server().
     observeEvent(dataset_controls$uploaded_dataset(), {
       uploaded_classification_data <- dataset_controls$uploaded_dataset()
 
@@ -97,6 +101,8 @@ visualizer_module_server <- function(id) {
       }
     })
 
+    # current_classification_data() is the single dataset passed to training,
+    # plotting, and the raw data table.
     current_classification_data <- reactive({
       base_data <- base_classification_data()
       drawn_data <- drawn_classification_data()
@@ -127,6 +133,8 @@ visualizer_module_server <- function(id) {
       combined_data
     })
 
+    # The plot panel owns the visible plot and iteration controls. The parent
+    # passes reactive data/control state in and receives plot clicks back.
     plot_panel <- plot_panel_module_server(
       id = "plot_panel",
       classification_data = current_classification_data,
@@ -135,6 +143,7 @@ visualizer_module_server <- function(id) {
       run_model_clicked = algorithm_controls$run_model_clicks
     )
 
+    # Plot clicks add custom points only while draw mode is enabled.
     observeEvent(plot_panel$plot_click_coordinates(), {
       if (!dataset_controls$drawing_mode_active()) {
         return(NULL)
@@ -163,6 +172,8 @@ visualizer_module_server <- function(id) {
 
     trained_model_bundle <- reactiveVal(NULL)
 
+    # The Run Classifier button is the training trigger. Parameter changes do
+    # not retrain automatically; they are read only when this event fires.
     observeEvent(algorithm_controls$run_model_clicks(), {
       trained_model_results <- tryCatch(
         train_classification_model(
@@ -181,6 +192,8 @@ visualizer_module_server <- function(id) {
 
     plot_panel$set_model_reactive(trained_model_bundle)
 
+    # Child modules receive the same reactive sources, so their displays stay
+    # synchronized with the current data and latest trained model.
     raw_data_module_server(
       id = "raw_data_panel",
       classification_data = current_classification_data
