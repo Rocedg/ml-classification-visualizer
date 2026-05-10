@@ -70,10 +70,10 @@ These datasets are simplified for visualization. The original datasets contain m
 Install these packages in R before running the app:
 
 ```r
-install.packages(c("shiny", "ggplot2", "e1071", "titanic", "mlbench"))
+install.packages(c("shiny", "ggplot2", "e1071"))
 ```
 
-The `class` package is normally included with R, and it is used for k-NN.
+The Titanic and diabetes presets are bundled as local static CSV files. The `class` package is normally included with R, and it is used for k-NN.
 
 ## How to run the app
 
