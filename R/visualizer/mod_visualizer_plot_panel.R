@@ -60,7 +60,7 @@ mod_visualizer_plot_panel_ui <- function(id) {
           ),
           actionButton(
             inputId = ns("play_pause_button"),
-            label = "Play",
+            label = "▶",
             class = "ml-button ml-button-secondary half-width-button"
           ),
           actionButton(
@@ -226,6 +226,8 @@ mod_visualizer_plot_panel_server <- function(id,
     }, ignoreInit = TRUE)
 
     # Moving the slider selects a saved iteration using 0-based indexing.
+    # Only update current_iteration if user actually moved the slider (not from updateSliderInput).
+    # Detect user change: if input value differs from current_iteration, user moved it.
     observeEvent(input$iteration_slider, {
       total_iterations <- total_iteration_count()
       if (total_iterations == 0 || is.null(input$iteration_slider)) {
@@ -233,7 +235,11 @@ mod_visualizer_plot_panel_server <- function(id,
       }
 
       bounded_iteration <- bound_iteration_index(input$iteration_slider, total_iterations)
-      if (!identical(as.integer(current_iteration()), as.integer(bounded_iteration))) {
+      current_val <- isolate(current_iteration())
+      
+      # Only respond if slider value differs from our current iteration
+      # (Indicates user moved it, not our updateSliderInput call)
+      if (!identical(as.integer(input$iteration_slider), as.integer(current_val))) {
         current_iteration(bounded_iteration)
         is_playing(FALSE)
       }
@@ -271,12 +277,10 @@ mod_visualizer_plot_panel_server <- function(id,
     })
 
     # Auto-advance when playing: move forward every 1 second, stop at max
+    # Uses isolate() on current_iteration read to break reactive dependency loop
     observe({
-      if (!is_playing()) {
-        return()
-      }
-
-      invalidateLater(1000)
+      req(is_playing())
+      invalidateLater(1000, session)
 
       total_iterations <- total_iteration_count()
       if (total_iterations == 0) {
@@ -285,28 +289,23 @@ mod_visualizer_plot_panel_server <- function(id,
       }
 
       max_iteration <- total_iterations - 1
-      new_iteration <- current_iteration() + 1
+      new_iteration <- isolate(current_iteration()) + 1
 
       if (new_iteration > max_iteration) {
         is_playing(FALSE)
-        current_iteration(max_iteration)
       } else {
         current_iteration(new_iteration)
       }
     })
 
-    # Keep the slider handle synchronized when step buttons change the active iteration.
+    # Keep the slider handle synchronized when current_iteration changes (single source of truth).
+    # Always update to ensure slider stays in sync, even if values seem to match.
     observe({
       if (total_iteration_count() == 0) {
         return(NULL)
       }
 
-      slider_value <- input$iteration_slider
       iteration_value <- current_iteration()
-
-      if (!is.null(slider_value) && identical(as.integer(slider_value), as.integer(iteration_value))) {
-        return(NULL)
-      }
 
       updateSliderInput(
         session = session,
@@ -315,9 +314,9 @@ mod_visualizer_plot_panel_server <- function(id,
       )
     })
 
-    # Update Play/Pause button label to reflect current state
+    # Update Play/Pause button label with Unicode icons
     observe({
-      label <- if (is_playing()) "Pause" else "Play"
+      label <- if (is_playing()) "⏸" else "▶"
       shiny::updateActionButton(
         session = session,
         inputId = "play_pause_button",
@@ -376,7 +375,7 @@ mod_visualizer_plot_panel_server <- function(id,
       }
 
       metric_history <- model_results$iteration_metrics
-      build_iteration_metric_plot(metric_history, current_iteration())
+      build_iteration_metric_plot(metric_history, current_iteration() + 1)
     }, res = 110)
 
     model_uses_fit_intercept <- reactive({
@@ -420,7 +419,7 @@ mod_visualizer_plot_panel_server <- function(id,
 
       build_parameter_trajectory_3d_plot(
         iteration_history = iteration_history,
-        current_iteration = current_iteration()
+        current_iteration = current_iteration() + 1
       )
     })
 
@@ -433,7 +432,7 @@ mod_visualizer_plot_panel_server <- function(id,
           build_bias_fixed_loss_landscape_plot(
             classification_data = classification_data(),
             iteration_history = NULL,
-            current_iteration = current_iteration()
+            current_iteration = current_iteration() + 1
           )
         )
       }
@@ -443,7 +442,7 @@ mod_visualizer_plot_panel_server <- function(id,
           build_bias_fixed_loss_landscape_plot(
             classification_data = classification_data(),
             iteration_history = NULL,
-            current_iteration = current_iteration()
+            current_iteration = current_iteration() + 1
           )
         )
       }
@@ -451,7 +450,7 @@ mod_visualizer_plot_panel_server <- function(id,
       build_bias_fixed_loss_landscape_plot(
         classification_data = classification_data(),
         iteration_history = iteration_history,
-        current_iteration = current_iteration(),
+        current_iteration = current_iteration() + 1,
         model_object = model_results$model_object
       )
     }, res = 110)
