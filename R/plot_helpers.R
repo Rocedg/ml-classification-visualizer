@@ -36,7 +36,13 @@ build_square_plot_limits <- function(x_values, y_values, padding_fraction = 0.18
 #   A ggplot object rendered by the plot panel module.
 build_classification_plot <- function(classification_data, active_model_view) {
   plot_object <- ggplot()
-  square_plot_limits <- build_square_plot_limits(classification_data$x, classification_data$y)
+  point_data <- classification_data
+
+  if (!is.null(active_model_view) && !is.null(active_model_view$classification_data)) {
+    point_data <- active_model_view$classification_data
+  }
+
+  square_plot_limits <- build_square_plot_limits(point_data$x, point_data$y)
   plot_x_limits <- square_plot_limits$x
   plot_y_limits <- square_plot_limits$y
 
@@ -82,23 +88,61 @@ build_classification_plot <- function(classification_data, active_model_view) {
       )
   }
 
+  if ("split" %in% names(point_data)) {
+    point_data$split <- factor(as.character(point_data$split), levels = c("train", "test"))
+    train_point_data <- point_data[point_data$split == "train", , drop = FALSE]
+    test_point_data <- point_data[point_data$split == "test", , drop = FALSE]
+
+    point_layers <- list(
+      geom_point(
+        data = point_data,
+        aes(x = x, y = y),
+        color = "#ffffff",
+        size = 3.8,
+        alpha = 0.9
+      ),
+      geom_point(
+        data = train_point_data,
+        aes(x = x, y = y, color = class),
+        size = 2.6,
+        alpha = 0.98,
+        shape = 16
+      ),
+      geom_point(
+        data = test_point_data,
+        aes(x = x, y = y, color = class),
+        fill = "#ffffff",
+        size = 3.0,
+        alpha = 0.98,
+        shape = 21,
+        stroke = 1.2
+      ),
+      scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d"), guide = "none"),
+      labs(caption = "Filled points = train | hollow points = test")
+    )
+  } else {
+    point_layers <- list(
+      geom_point(
+        data = point_data,
+        aes(x = x, y = y),
+        color = "#ffffff",
+        size = 3.4,
+        alpha = 0.9
+      ),
+      geom_point(
+        data = point_data,
+        aes(x = x, y = y, color = class),
+        size = 2.55,
+        alpha = 0.98
+      ),
+      scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d"), guide = "none")
+    )
+  }
+
   plot_object +
     geom_hline(yintercept = 0, color = "#d6dfe8", linewidth = 0.6) +
     geom_vline(xintercept = 0, color = "#d6dfe8", linewidth = 0.6) +
-    geom_point(
-      data = classification_data,
-      aes(x = x, y = y),
-      color = "#ffffff",
-      size = 3.4,
-      alpha = 0.9
-    ) +
-    geom_point(
-      data = classification_data,
-      aes(x = x, y = y, color = class),
-      size = 2.55,
-      alpha = 0.98
-    ) +
-    scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d"), guide = "none") +
+    point_layers +
     coord_equal(xlim = plot_x_limits, ylim = plot_y_limits, expand = FALSE) +
     labs(
       x = "X",
@@ -115,6 +159,7 @@ build_classification_plot <- function(classification_data, active_model_view) {
       panel.grid.major = element_line(color = "#eef3f7", linewidth = 0.55),
       axis.title = element_text(color = "#47627b", size = 10, face = "bold"),
       axis.text = element_text(color = "#6d8196", size = 9),
+      plot.caption = element_text(color = "#6d8196", size = 8.5, hjust = 0),
       plot.background = element_rect(fill = "#ffffff", color = NA),
       panel.background = element_rect(fill = "#ffffff", color = NA)
     )
@@ -189,7 +234,7 @@ build_iteration_metric_plot <- function(metric_history, current_iteration, conve
     labs(
       x = "Iteration",
       y = "Binary Cross-Entropy Loss",
-      subtitle = paste("Accuracy at this step:", highlighted_metric$accuracy)
+      subtitle = paste("Training accuracy at this step:", highlighted_metric$accuracy)
     ) +
     theme_minimal(base_family = "Manrope") +
     theme(

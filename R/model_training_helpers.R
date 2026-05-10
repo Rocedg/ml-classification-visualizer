@@ -12,11 +12,102 @@ sigmoid_probability <- function(linear_values) {
 }
 
 
+# create_train_test_split()
+# Purpose:
+#   Mark the current run data with a reproducible 70/30 train/test split.
+# Inputs:
+#   - classification_data: current Class A / Class B points
+#   - train_fraction: share of points used to fit the model
+#   - seed: fixed seed so the same run data gets the same split
+# Output:
+#   The same data with a split column containing "train" or "test".
+create_train_test_split <- function(classification_data, train_fraction = 0.70, seed = 42) {
+  split_data <- classification_data
+  split_data$split <- factor(rep("train", nrow(split_data)), levels = c("train", "test"))
+
+  if (nrow(split_data) < 2) {
+    return(split_data)
+  }
+
+  train_fraction <- min(max(train_fraction, 0.01), 0.99)
+
+  old_seed_exists <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  if (old_seed_exists) {
+    old_seed <- get(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
+  }
+  on.exit({
+    if (old_seed_exists) {
+      assign(".Random.seed", old_seed, envir = .GlobalEnv)
+    } else if (exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)) {
+      rm(".Random.seed", envir = .GlobalEnv)
+    }
+  }, add = TRUE)
+
+  set.seed(seed)
+
+  train_indices <- integer(0)
+  test_indices <- integer(0)
+  observed_classes <- unique(as.character(split_data$class))
+
+  for (class_label in observed_classes) {
+    class_indices <- which(as.character(split_data$class) == class_label)
+    class_count <- length(class_indices)
+
+    if (class_count == 0) {
+      next
+    }
+
+    if (class_count == 1) {
+      train_indices <- c(train_indices, class_indices)
+      next
+    }
+
+    class_train_count <- floor(class_count * train_fraction)
+    class_train_count <- min(max(class_train_count, 1), class_count - 1)
+    class_train_indices <- sample(class_indices, size = class_train_count)
+
+    train_indices <- c(train_indices, class_train_indices)
+    test_indices <- c(test_indices, setdiff(class_indices, class_train_indices))
+  }
+
+  missing_train_classes <- setdiff(
+    observed_classes,
+    unique(as.character(split_data$class[train_indices]))
+  )
+
+  for (class_label in missing_train_classes) {
+    candidate_index <- test_indices[as.character(split_data$class[test_indices]) == class_label][1]
+
+    if (!is.na(candidate_index)) {
+      train_indices <- c(train_indices, candidate_index)
+      test_indices <- setdiff(test_indices, candidate_index)
+    }
+  }
+
+  if (length(test_indices) == 0 && length(train_indices) > 1) {
+    train_class_counts <- table(as.character(split_data$class[train_indices]))
+    movable_classes <- names(train_class_counts[train_class_counts > 1])
+
+    if (length(movable_classes) > 0) {
+      movable_index <- train_indices[as.character(split_data$class[train_indices]) == movable_classes[1]][1]
+      train_indices <- setdiff(train_indices, movable_index)
+      test_indices <- c(test_indices, movable_index)
+    }
+  }
+
+  split_data$split <- factor(rep("test", nrow(split_data)), levels = c("train", "test"))
+  split_data$split[train_indices] <- "train"
+  split_data$split <- factor(as.character(split_data$split), levels = c("train", "test"))
+  split_data
+}
+
+
 # train_logistic_regression_iterations()
 # Purpose:
 #   Train a simple logistic regression model while saving every iteration.
 # Inputs:
-#   - classification_data: current Class A / Class B training points
+#   - classification_data: train split rows used for gradient descent
+#   - evaluation_data: full run data, including train/test split labels
 #   - prediction_grid: x/y locations used to draw the probability heatmap
 #   - prediction_threshold: probability cutoff for Class B predictions
 #   - fit_intercept: whether the bias/intercept term is learned
@@ -29,7 +120,8 @@ train_logistic_regression_iterations <- function(classification_data,
                                                  prediction_threshold,
                                                  fit_intercept = TRUE,
                                                  learning_rate = 0.12,
-                                                 max_iter = 60) {
+                                                 max_iter = 60,
+                                                 evaluation_data = classification_data) {
   # The training math uses 1 for Class B and 0 for Class A.
   binary_target <- ifelse(classification_data$class == "Class B", 1, 0)
 
@@ -37,6 +129,12 @@ train_logistic_regression_iterations <- function(classification_data,
   # while still showing a visible learning process.
   learning_rate <- max(learning_rate, 0.001)
   total_iterations <- max(1, as.integer(max_iter))
+
+  if (!"split" %in% names(evaluation_data)) {
+    evaluation_data$split <- factor(rep("train", nrow(evaluation_data)), levels = c("train", "test"))
+  } else {
+    evaluation_data$split <- factor(as.character(evaluation_data$split), levels = c("train", "test"))
+  }
 
   # weight_x and weight_y control the tilt of the decision surface.
   # bias is the intercept term, which shifts the boundary when it is learned.
@@ -51,8 +149,8 @@ train_logistic_regression_iterations <- function(classification_data,
   accuracy_history <- numeric(total_iterations + 1)
 
   # build_saved_iteration() packages one model state for playback.
-  # It evaluates both training points and the full prediction grid so the UI
-  # can redraw the heatmap and metrics at any saved iteration.
+  # It evaluates train/test points and the full prediction grid so the UI can
+  # redraw the heatmap and metrics at any saved iteration.
   build_saved_iteration <- function(iteration_index, current_weight_x, current_weight_y, current_bias) {
     # A logistic model first creates a linear score, then passes it through
     # the sigmoid curve to get a Class B probability.
@@ -61,6 +159,9 @@ train_logistic_regression_iterations <- function(classification_data,
     )
     current_grid_probabilities <- sigmoid_probability(
       current_bias + current_weight_x * prediction_grid$x + current_weight_y * prediction_grid$y
+    )
+    current_evaluation_probabilities <- sigmoid_probability(
+      current_bias + current_weight_x * evaluation_data$x + current_weight_y * evaluation_data$y
     )
 
     training_predictions <- ifelse(
@@ -71,6 +172,11 @@ train_logistic_regression_iterations <- function(classification_data,
 
     grid_predictions <- ifelse(
       current_grid_probabilities >= prediction_threshold,
+      "Class B",
+      "Class A"
+    )
+    evaluation_predictions <- ifelse(
+      current_evaluation_probabilities >= prediction_threshold,
       "Class B",
       "Class A"
     )
@@ -88,6 +194,24 @@ train_logistic_regression_iterations <- function(classification_data,
     current_metrics <- calculate_classification_metrics(
       actual_labels = classification_data$class,
       predicted_labels = training_predictions
+    )
+
+    iteration_evaluation_data <- evaluation_data
+    iteration_evaluation_data$predicted_class <- factor(
+      evaluation_predictions,
+      levels = c("Class A", "Class B")
+    )
+    iteration_evaluation_data$class_b_probability <- current_evaluation_probabilities
+
+    train_evaluation_data <- iteration_evaluation_data[iteration_evaluation_data$split == "train", , drop = FALSE]
+    test_evaluation_data <- iteration_evaluation_data[iteration_evaluation_data$split == "test", , drop = FALSE]
+    train_metrics <- calculate_classification_metrics(
+      actual_labels = train_evaluation_data$class,
+      predicted_labels = train_evaluation_data$predicted_class
+    )
+    test_metrics <- calculate_classification_metrics(
+      actual_labels = test_evaluation_data$class,
+      predicted_labels = test_evaluation_data$predicted_class
     )
 
     iteration_prediction_grid <- prediction_grid
@@ -109,9 +233,12 @@ train_logistic_regression_iterations <- function(classification_data,
         bias = current_bias,
         training_probabilities = current_training_probabilities,
         training_predictions = training_predictions,
+        classification_data = iteration_evaluation_data,
         prediction_grid = iteration_prediction_grid,
         loss_value = round(current_loss, 4),
-        metrics = current_metrics
+        metrics = current_metrics,
+        train_metrics = train_metrics,
+        test_metrics = test_metrics
       )
     )
   }
@@ -188,7 +315,16 @@ train_logistic_regression_iterations <- function(classification_data,
     ),
     prediction_grid = final_iteration$prediction_grid,
     training_predictions = final_iteration$training_predictions,
-    metrics = final_iteration$metrics,
+    classification_data = final_iteration$classification_data,
+    train_data = classification_data,
+    test_data = evaluation_data[evaluation_data$split == "test", , drop = FALSE],
+    metrics = final_iteration$train_metrics,
+    train_metrics = final_iteration$train_metrics,
+    test_metrics = final_iteration$test_metrics,
+    split_counts = list(
+      train = sum(evaluation_data$split == "train"),
+      test = sum(evaluation_data$split == "test")
+    ),
     iterations = iteration_history,
     iteration_metrics = data.frame(
       iteration = vapply(iteration_history, function(iteration_step) iteration_step$iteration_index, numeric(1)),
@@ -217,9 +353,20 @@ train_classification_model <- function(classification_data, algorithm_name, para
     stop("The dataset must contain both Class A and Class B.")
   }
 
-  # The grid is created once for this run. Every saved iteration writes its
-  # probabilities into the same coordinate layout.
-  prediction_grid <- build_prediction_grid(classification_data)
+  split_classification_data <- create_train_test_split(classification_data)
+  train_classification_data <- split_classification_data[split_classification_data$split == "train", , drop = FALSE]
+
+  if (nrow(train_classification_data) < 2) {
+    stop("The training split needs at least 2 data points. Add more data before running the classifier.")
+  }
+
+  if (length(unique(train_classification_data$class)) < 2) {
+    stop("The training split must contain both Class A and Class B. Add more balanced data before running the classifier.")
+  }
+
+  # The grid is created once for this run from all points. Every saved
+  # iteration writes its probabilities into the same coordinate layout.
+  prediction_grid <- build_prediction_grid(split_classification_data)
 
   if (algorithm_name == "logistic_regression") {
     if (is.null(parameter_values)) {
@@ -272,12 +419,13 @@ train_classification_model <- function(classification_data, algorithm_name, para
     }
 
     logistic_training_results <- train_logistic_regression_iterations(
-      classification_data = classification_data,
+      classification_data = train_classification_data,
       prediction_grid = prediction_grid,
       prediction_threshold = decision_threshold,
       fit_intercept = logistic_fit_intercept,
       learning_rate = logistic_learning_rate,
-      max_iter = logistic_max_iter
+      max_iter = logistic_max_iter,
+      evaluation_data = split_classification_data
     )
 
     algorithm_label <- "Logistic Regression"
@@ -291,6 +439,9 @@ train_classification_model <- function(classification_data, algorithm_name, para
   prediction_grid <- logistic_training_results$prediction_grid
   training_predictions <- logistic_training_results$training_predictions
   metrics <- logistic_training_results$metrics
+  train_metrics <- logistic_training_results$train_metrics
+  test_metrics <- logistic_training_results$test_metrics
+  split_counts <- logistic_training_results$split_counts
   iteration_history <- logistic_training_results$iterations
   iteration_metrics <- logistic_training_results$iteration_metrics
 
@@ -298,9 +449,15 @@ train_classification_model <- function(classification_data, algorithm_name, para
     algorithm_key = algorithm_name,
     algorithm_label = algorithm_label,
     model_object = trained_model,
+    classification_data = logistic_training_results$classification_data,
+    train_data = logistic_training_results$train_data,
+    test_data = logistic_training_results$test_data,
+    split_counts = split_counts,
     prediction_grid = prediction_grid,
     training_predictions = training_predictions,
     metrics = metrics,
+    train_metrics = train_metrics,
+    test_metrics = test_metrics,
     iterations = iteration_history,
     iteration_metrics = iteration_metrics
   )

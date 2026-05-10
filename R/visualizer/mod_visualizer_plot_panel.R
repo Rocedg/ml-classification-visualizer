@@ -141,35 +141,13 @@ mod_visualizer_plot_panel_ui <- function(id) {
         uiOutput(ns("current_run_summary"))
       ),
       div(
-        class = "metric-card-grid",
-        div(class = "app-card metric-card",
-          tags$span(class = "metric-label", "Accuracy"),
-          tags$span(
-            class = "metric-value",
-            textOutput(ns("accuracy_value"), inline = TRUE)
-          )
+        class = "app-card metrics-comparison-card",
+        div(
+          class = "metrics-comparison-header",
+          tags$span("Metrics"),
+          help_icon("Training points fit the model. Test points are held out and used only to evaluate it.")
         ),
-        div(class = "app-card metric-card",
-          tags$span(class = "metric-label", "Precision"),
-          tags$span(
-            class = "metric-value",
-            textOutput(ns("precision_value"), inline = TRUE)
-          )
-        ),
-        div(class = "app-card metric-card",
-          tags$span(class = "metric-label", "Recall"),
-          tags$span(
-            class = "metric-value",
-            textOutput(ns("recall_value"), inline = TRUE)
-          )
-        ),
-        div(class = "app-card metric-card",
-          tags$span(class = "metric-label", "F1 Score"),
-          tags$span(
-            class = "metric-value",
-            textOutput(ns("f1_value"), inline = TRUE)
-          )
-        )
+        uiOutput(ns("metrics_summary_ui"))
       )
     )
   )
@@ -306,6 +284,20 @@ mod_visualizer_plot_panel_server <- function(id,
       formatC(numeric_value, format = "f", digits = digits)
     }
 
+    format_metric_value <- function(metrics, metric_name) {
+      if (is.null(metrics) || is.null(metrics[[metric_name]])) {
+        return("—")
+      }
+
+      metric_value <- suppressWarnings(as.numeric(metrics[[metric_name]]))
+
+      if (length(metric_value) != 1 || is.na(metric_value) || !is.finite(metric_value)) {
+        return("—")
+      }
+
+      formatC(metric_value, format = "f", digits = 3)
+    }
+
     format_current_run_text <- function(value) {
       if (is.null(value) || length(value) != 1 || is.na(value) || !nzchar(as.character(value))) {
         return("—")
@@ -336,6 +328,21 @@ mod_visualizer_plot_panel_server <- function(id,
       if (isTRUE(fit_intercept)) "ON" else "OFF"
     }
 
+    format_split_summary <- function(model_results) {
+      if (is.null(model_results) || is.null(model_results$split_counts)) {
+        return("70% train / 30% test")
+      }
+
+      train_count <- model_results$split_counts$train
+      test_count <- model_results$split_counts$test
+
+      if (is.null(train_count) || is.null(test_count)) {
+        return("70% train / 30% test")
+      }
+
+      paste0("70/30 (", train_count, " train / ", test_count, " test)")
+    }
+
     # Before the Run Classifier button has been clicked, the plot displays only
     # data points. After a run, this reactive unwraps the latest model bundle.
     safe_model_results <- reactive({
@@ -363,6 +370,16 @@ mod_visualizer_plot_panel_server <- function(id,
       model_results <- safe_model_results()
       iteration_history <- logistic_iteration_history()
       get_active_iteration_results(model_results, iteration_history, current_iteration())
+    })
+
+    training_data_for_diagnostics <- reactive({
+      model_results <- safe_model_results()
+
+      if (model_supports_logistic_playback(model_results) && !is.null(model_results$train_data)) {
+        return(model_results$train_data)
+      }
+
+      classification_data()
     })
 
     # A new model run resets playback to the first saved state (iteration 0) and
@@ -565,6 +582,7 @@ mod_visualizer_plot_panel_server <- function(id,
 
     output$current_run_summary <- renderUI({
       parameter_values <- algorithm_parameters()
+      model_results <- safe_model_results()
 
       if (is.null(parameter_values)) {
         parameter_values <- list()
@@ -588,9 +606,38 @@ mod_visualizer_plot_panel_server <- function(id,
         summary_row("Dataset", format_current_run_text(selected_dataset_label())),
         summary_row("Model", format_algorithm_label(selected_algorithm_key())),
         summary_row("Iteration", iteration_text),
+        summary_row("Split", format_split_summary(model_results)),
         summary_row("Learning rate", format_current_run_number(parameter_values$logistic_learning_rate)),
         summary_row("Threshold", format_current_run_number(parameter_values$decision_threshold)),
         summary_row("Intercept", format_intercept_label(parameter_values$logistic_fit_intercept))
+      )
+    })
+
+    output$metrics_summary_ui <- renderUI({
+      active_model_view <- active_iteration_results()
+      train_metrics <- if (is.null(active_model_view)) NULL else active_model_view$train_metrics
+      test_metrics <- if (is.null(active_model_view)) NULL else active_model_view$test_metrics
+
+      metric_row <- function(label_text, metric_name) {
+        div(
+          class = "metrics-comparison-row",
+          tags$span(class = "metrics-comparison-label", label_text),
+          tags$span(class = "metrics-comparison-value", format_metric_value(train_metrics, metric_name)),
+          tags$span(class = "metrics-comparison-value", format_metric_value(test_metrics, metric_name))
+        )
+      }
+
+      tagList(
+        div(
+          class = "metrics-comparison-row metrics-comparison-row-heading",
+          tags$span("Metric"),
+          tags$span("Train"),
+          tags$span("Test")
+        ),
+        metric_row("Accuracy", "accuracy"),
+        metric_row("Precision", "precision"),
+        metric_row("Recall", "recall"),
+        metric_row("F1", "f1_score")
       )
     })
 
@@ -671,7 +718,7 @@ mod_visualizer_plot_panel_server <- function(id,
       if (!model_supports_logistic_playback(model_results)) {
         return(
           build_bias_fixed_loss_landscape_plot(
-            classification_data = classification_data(),
+            classification_data = training_data_for_diagnostics(),
             iteration_history = NULL,
             current_iteration = current_iteration() + 1
           )
@@ -681,7 +728,7 @@ mod_visualizer_plot_panel_server <- function(id,
       if (model_uses_fit_intercept()) {
         return(
           build_bias_fixed_loss_landscape_plot(
-            classification_data = classification_data(),
+            classification_data = training_data_for_diagnostics(),
             iteration_history = NULL,
             current_iteration = current_iteration() + 1
           )
@@ -689,35 +736,11 @@ mod_visualizer_plot_panel_server <- function(id,
       }
 
       build_bias_fixed_loss_landscape_plot(
-        classification_data = classification_data(),
+        classification_data = training_data_for_diagnostics(),
         iteration_history = iteration_history,
         current_iteration = current_iteration() + 1
       )
     }, res = 110)
-
-    output$accuracy_value <- renderText({
-      active_model_view <- active_iteration_results()
-      if (is.null(active_model_view)) return("Run model")
-      active_model_view$metrics$accuracy
-    })
-
-    output$precision_value <- renderText({
-      active_model_view <- active_iteration_results()
-      if (is.null(active_model_view)) return("Run model")
-      active_model_view$metrics$precision
-    })
-
-    output$recall_value <- renderText({
-      active_model_view <- active_iteration_results()
-      if (is.null(active_model_view)) return("Run model")
-      active_model_view$metrics$recall
-    })
-
-    output$f1_value <- renderText({
-      active_model_view <- active_iteration_results()
-      if (is.null(active_model_view)) return("Run model")
-      active_model_view$metrics$f1_score
-    })
 
     list(
       plot_click_coordinates = reactive(input$plot_click),

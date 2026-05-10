@@ -11,6 +11,18 @@
 calculate_classification_metrics <- function(actual_labels, predicted_labels) {
   actual_labels <- factor(actual_labels, levels = c("Class A", "Class B"))
   predicted_labels <- factor(predicted_labels, levels = c("Class A", "Class B"))
+  valid_rows <- !is.na(actual_labels) & !is.na(predicted_labels)
+  actual_labels <- actual_labels[valid_rows]
+  predicted_labels <- predicted_labels[valid_rows]
+
+  if (length(actual_labels) == 0) {
+    return(list(
+      accuracy = NA_real_,
+      precision = NA_real_,
+      recall = NA_real_,
+      f1_score = NA_real_
+    ))
+  }
 
   # Class B is treated as the positive class for precision, recall, and F1.
   true_positive <- sum(actual_labels == "Class B" & predicted_labels == "Class B")

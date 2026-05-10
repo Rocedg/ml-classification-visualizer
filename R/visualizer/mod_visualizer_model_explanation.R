@@ -27,6 +27,19 @@ mod_visualizer_model_explanation_ui <- function(id) {
 
 mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, trained_model_bundle) {
   moduleServer(id, function(input, output, session) {
+    format_metric_value <- function(metrics, metric_name) {
+      if (is.null(metrics) || is.null(metrics[[metric_name]])) {
+        return("—")
+      }
+
+      metric_value <- suppressWarnings(as.numeric(metrics[[metric_name]]))
+
+      if (length(metric_value) != 1 || is.na(metric_value) || !is.finite(metric_value)) {
+        return("—")
+      }
+
+      formatC(metric_value, format = "f", digits = 3)
+    }
 
     # Centralized model explanation content for the Visualizer's internal panel.
     model_explanation_content <- list(
@@ -117,10 +130,10 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, 
           class = "app-card theory-summary-card",
           tags$h4("Current Run Summary"),
           tags$p(paste("Algorithm:", model_results$algorithm_label)),
-          tags$p(paste("Accuracy:", model_results$metrics$accuracy)),
-          tags$p(paste("Precision:", model_results$metrics$precision)),
-          tags$p(paste("Recall:", model_results$metrics$recall)),
-          tags$p(paste("F1 Score:", model_results$metrics$f1_score))
+          tags$p(paste("Train accuracy:", format_metric_value(model_results$train_metrics, "accuracy"))),
+          tags$p(paste("Test accuracy:", format_metric_value(model_results$test_metrics, "accuracy"))),
+          tags$p(paste("Train F1:", format_metric_value(model_results$train_metrics, "f1_score"))),
+          tags$p(paste("Test F1:", format_metric_value(model_results$test_metrics, "f1_score")))
         )
       }
 
