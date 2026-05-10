@@ -308,10 +308,18 @@ build_parameter_trajectory_3d_plot <- function(iteration_history, current_iterat
     name = "Training path",
     text = ~tooltip,
     hoverinfo = "text",
-    color = ~iteration,
-    colors = c("#b9ddd5", "#5db5a2", "#243b57"),
     line = list(color = "#5db5a2", width = 5),
-    marker = list(size = 3, colorbar = list(title = "Iteration"))
+    marker = list(
+      size = 3,
+      color = trajectory_data$iteration,
+      colorscale = list(
+        list(0, "#b9ddd5"),
+        list(0.5, "#5db5a2"),
+        list(1, "#243b57")
+      ),
+      showscale = TRUE,
+      colorbar = list(title = "Iteration")
+    )
   )
 
   marker_styles <- list(
