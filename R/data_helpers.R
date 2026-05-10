@@ -250,7 +250,7 @@ convert_uploaded_csv_to_dataset <- function(uploaded_table) {
 
 # build_prediction_grid()
 # Purpose:
-#   Create the rectangular set of x/y locations where the model is evaluated.
+#   Create the squared set of x/y locations where the model is evaluated.
 # Inputs:
 #   - classification_data: current plot data used to size the grid
 #   - grid_points: number of sampled positions along each axis
