@@ -11,6 +11,7 @@
 #
 # Functions:
 #   - mod_visualizer_plot_panel_ui(): Build the plot tab layout.
+#   - mod_visualizer_training_insights_ui(): Build the training diagnostics tab.
 #   - mod_visualizer_plot_panel_server(): Render the plot, metric cards,
 #     and expose click coordinates.
 #
@@ -85,37 +86,6 @@ mod_visualizer_plot_panel_ui <- function(id) {
       )
     ),
     div(
-      class = "diagnostic-grid",
-      div(
-        class = "plot-canvas-shell diagnostic-plot-shell",
-        plotOutput(
-          outputId = ns("iteration_metric_plot"),
-          height = "280px"
-        )
-      ),
-      div(
-        class = "app-card theory-summary-card diagnostic-plot-shell parameter-diagnostic-card",
-        div(
-          class = "plot-top-status-row",
-          div(class = "status-chip status-chip-primary", textOutput(ns("parameter_diagnostic_title"), inline = TRUE))
-        ),
-        conditionalPanel(
-          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'true'"),
-          plotly::plotlyOutput(
-            outputId = ns("parameter_trajectory_3d_plot"),
-            height = "280px"
-          )
-        ),
-        conditionalPanel(
-          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'false'"),
-          plotOutput(
-            outputId = ns("bias_fixed_loss_landscape_plot"),
-            height = "280px"
-          )
-        )
-      )
-    ),
-    div(
       class = "metric-card-grid",
       div(class = "app-card metric-card",
         tags$span(class = "metric-label", "Accuracy"),
@@ -143,6 +113,51 @@ mod_visualizer_plot_panel_ui <- function(id) {
         tags$span(
           class = "metric-value",
           textOutput(ns("f1_value"), inline = TRUE)
+        )
+      )
+    )
+  )
+}
+
+
+mod_visualizer_training_insights_ui <- function(id) {
+  ns <- NS(id)
+
+  div(
+    class = "training-insights-tab-layout",
+    div(
+      class = "training-insights-header",
+      tags$h3("Training insights"),
+      tags$p("See how the loss and model parameters evolve during training.")
+    ),
+    div(
+      class = "training-insights-grid",
+      div(
+        class = "plot-canvas-shell diagnostic-plot-shell",
+        plotOutput(
+          outputId = ns("iteration_metric_plot"),
+          height = "300px"
+        )
+      ),
+      div(
+        class = "app-card theory-summary-card diagnostic-plot-shell parameter-diagnostic-card",
+        div(
+          class = "plot-top-status-row",
+          div(class = "status-chip status-chip-primary", textOutput(ns("parameter_diagnostic_title"), inline = TRUE))
+        ),
+        conditionalPanel(
+          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'true'"),
+          plotly::plotlyOutput(
+            outputId = ns("parameter_trajectory_3d_plot"),
+            height = "320px"
+          )
+        ),
+        conditionalPanel(
+          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'false'"),
+          plotOutput(
+            outputId = ns("bias_fixed_loss_landscape_plot"),
+            height = "320px"
+          )
         )
       )
     )

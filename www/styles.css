@@ -321,7 +321,31 @@ a { text-decoration: none; }
 .main-panel-card .tab-content { min-height: calc(100vh - 180px); padding: 8px 12px 12px; background: var(--white); }
 
 /* Plot panel, table, and content blocks */
-.plot-tab-layout, .raw-data-tab-layout, .theory-panel-layout { display: flex; flex-direction: column; gap: 10px; }
+.visualizer-primary-view {
+  padding: 12px;
+  background: #f8fbfd;
+  border-bottom: 1px solid var(--border);
+}
+
+.visualizer-secondary-tabs { padding: 0 12px 12px; }
+.visualizer-secondary-tabs .nav-tabs { padding: 10px 0 0; }
+.visualizer-secondary-tabs .tab-content {
+  min-height: 0;
+  padding: 12px 0 0;
+}
+
+.plot-tab-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  grid-template-areas:
+    "status metrics"
+    "plot metrics"
+    "controls controls";
+  align-items: start;
+  gap: 10px;
+}
+
+.raw-data-tab-layout, .theory-panel-layout { display: flex; flex-direction: column; gap: 10px; }
 .plot-top-status-row { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .status-chip {
@@ -338,7 +362,9 @@ a { text-decoration: none; }
 
 .status-chip-primary { background: var(--mint-soft); color: var(--mint-dark); }
 .plot-canvas-shell { padding: 8px; }
+.plot-tab-layout > .plot-top-status-row { grid-area: status; }
 .main-feature-plot-shell {
+  grid-area: plot;
   width: min(100%, 620px);
   aspect-ratio: 1 / 1;
   margin: 0 auto;
@@ -349,7 +375,7 @@ a { text-decoration: none; }
   height: 100% !important;
 }
 
-.iteration-control-card { padding: 10px 12px; }
+.iteration-control-card { grid-area: controls; padding: 10px 12px; }
 .iteration-control-header { display: flex; align-items: center; margin-bottom: 8px; }
 .iteration-control-body {
   display: grid;
@@ -423,7 +449,26 @@ a { text-decoration: none; }
   background: var(--mint-soft);
   border-color: var(--mint-dark);
 }
-.diagnostic-grid {
+.training-insights-tab-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.training-insights-header h3 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.training-insights-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.training-insights-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
@@ -433,8 +478,15 @@ a { text-decoration: none; }
 .diagnostic-plot-shell { min-height: 320px; }
 .parameter-diagnostic-card { padding: 10px; }
 .parameter-diagnostic-card .plot-top-status-row { margin-bottom: 6px; }
+.plot-tab-layout .metric-card-grid {
+  grid-area: metrics;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  align-self: stretch;
+}
+
 .metric-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-.metric-card { padding: 18px; }
+.metric-card { padding: 14px; }
 .theory-detail-card, .theory-summary-card, .about-card, .theory-card { padding: 24px; }
 
 .metric-label {
@@ -522,6 +574,16 @@ a { text-decoration: none; }
   .about-card-grid,
   .theory-card-grid { grid-template-columns: 1fr; }
 
+  .plot-tab-layout {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "status"
+      "plot"
+      "controls"
+      "metrics";
+  }
+
+  .plot-tab-layout .metric-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .visualizer-sidebar { border-right: none; border-bottom: 1px solid var(--border); }
 }
 
@@ -543,6 +605,9 @@ a { text-decoration: none; }
   .hero-description { font-size: 18px; }
   .button-row { flex-direction: column; }
   .main-panel-card .tab-content { padding: 14px; }
+  .visualizer-secondary-tabs .tab-content { padding: 12px 0 0; }
+  .plot-tab-layout .metric-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .iteration-button-row { flex-direction: row; }
 }
 
 .math-box {

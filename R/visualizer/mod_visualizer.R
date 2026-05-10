@@ -36,21 +36,28 @@ mod_visualizer_ui <- function(id) {
         class = "visualizer-main-column",
         div(
           class = "app-card main-panel-card",
-          tabsetPanel(
-            id = ns("visualizer_tabs"),
-            type = "tabs",
-            selected = "Interactive Plot",
-            tabPanel(
-              title = "Interactive Plot",
-              mod_visualizer_plot_panel_ui(ns("plot_panel"))
-            ),
-            tabPanel(
-              title = "Model Explanation",
-              mod_visualizer_model_explanation_ui(ns("model_explanation_panel"))
-            ),
-            tabPanel(
-              title = "Raw Data",
-              mod_visualizer_raw_data_ui(ns("raw_data_panel"))
+          div(
+            class = "visualizer-primary-view",
+            mod_visualizer_plot_panel_ui(ns("plot_panel"))
+          ),
+          div(
+            class = "visualizer-secondary-tabs",
+            tabsetPanel(
+              id = ns("visualizer_tabs"),
+              type = "tabs",
+              selected = "Training insights",
+              tabPanel(
+                title = "Training insights",
+                mod_visualizer_training_insights_ui(ns("plot_panel"))
+              ),
+              tabPanel(
+                title = "Model Explanation",
+                mod_visualizer_model_explanation_ui(ns("model_explanation_panel"))
+              ),
+              tabPanel(
+                title = "Raw Data",
+                mod_visualizer_raw_data_ui(ns("raw_data_panel"))
+              )
             )
           )
         )
