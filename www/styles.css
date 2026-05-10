@@ -361,6 +361,8 @@ a { text-decoration: none; }
 .iteration-button-row {
   align-items: center;
   gap: 8px;
+  position: relative;
+  z-index: 2;
 }
 
 .iteration-button-row .iteration-icon-button {
@@ -386,6 +388,14 @@ a { text-decoration: none; }
 
 .iteration-control-card .form-group { margin-bottom: 0; }
 .iteration-control-card .irs { margin-top: -6px; margin-bottom: -6px; }
+.iteration-control-card .irs-single,
+.iteration-control-card .irs-from,
+.iteration-control-card .irs-to,
+.iteration-control-card .irs-min,
+.iteration-control-card .irs-max {
+  pointer-events: none;
+}
+
 .iteration-control-card .irs--shiny .irs-bar,
 .iteration-control-card .irs--shiny .irs-bar-edge {
   background: var(--mint);
