@@ -32,7 +32,7 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
       ),
       tags$p(
         class = "sidebar-helper-text",
-        "Choose the classifier you want to run. Logistic Regression is highlighted first because it is often the easiest model to interpret."
+        "Choose the classifier to run."
       ),
       uiOutput(ns("algorithm_cards_ui"))
     ),
@@ -46,13 +46,14 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
       ),
       tags$p(
         class = "sidebar-helper-text",
-        "Each algorithm shows only the controls that matter for it."
+        "Tune the selected algorithm."
       ),
       uiOutput(ns("parameter_controls_ui")),
       actionButton(
         inputId = ns("run_classifier_button"),
         label = "Run Classifier",
-        class = "ml-button ml-button-primary ml-button-full"
+        class = "ml-button ml-button-primary ml-button-full",
+        title = "Train the selected classifier and update the plot, metrics, and training views."
       ),
       div(class = "sidebar-run-note", "Complete steps above to run"),
       div(
@@ -66,6 +67,18 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
 
 mod_visualizer_algorithm_controls_server <- function(id) {
   moduleServer(id, function(input, output, session) {
+    help_icon <- function(help_text) {
+      tags$span(
+        class = "help-tooltip",
+        title = help_text,
+        `aria-label` = help_text,
+        "?"
+      )
+    }
+    help_label <- function(label_text, help_text) {
+      tagList(tags$span(label_text), help_icon(help_text))
+    }
+
     # The app currently trains Logistic Regression only, but this value keeps
     # the UI/server contract ready for additional algorithms.
     selected_algorithm_key <- reactiveVal("logistic_regression")
@@ -83,28 +96,33 @@ mod_visualizer_algorithm_controls_server <- function(id) {
     output$algorithm_cards_ui <- renderUI({
       # Cards are generated server-side so the active class can follow the
       # selected algorithm key.
-      create_algorithm_card <- function(button_id, title_text, description_text, helper_badge, algorithm_key, is_available = TRUE) {
+      create_algorithm_card <- function(button_id, title_text, description_text, helper_badge, algorithm_key, tooltip_text, is_available = TRUE) {
         active_class <- if (identical(selected_algorithm_key(), algorithm_key)) "algorithm-selection-card is-active" else "algorithm-selection-card"
 
-        card_contents <- HTML(
-          paste0(
-            "<div class='algorithm-card-title-row'>",
-            "<span>", title_text, "</span>",
-            "<span class='inline-status-badge subtle'>", helper_badge, "</span>",
-            "</div>",
-            "<p>", description_text, "</p>"
-          )
+        card_contents <- tagList(
+          div(
+            class = "algorithm-card-title-row",
+            tags$span(title_text),
+            div(
+              class = "algorithm-card-meta",
+              tags$span(class = "inline-status-badge subtle", helper_badge),
+              help_icon(tooltip_text)
+            )
+          ),
+          tags$p(description_text)
         )
 
         if (is_available) {
           actionLink(
             inputId = session$ns(button_id),
             label = card_contents,
-            class = active_class
+            class = active_class,
+            title = tooltip_text
           )
         } else {
           div(
             class = paste(active_class, "is-coming-soon"),
+            title = tooltip_text,
             card_contents
           )
         }
@@ -115,24 +133,27 @@ mod_visualizer_algorithm_controls_server <- function(id) {
         create_algorithm_card(
           button_id = "choose_logistic_regression",
           title_text = "Logistic Regression",
-          description_text = "Fits a probability-based linear boundary that is easy to interpret.",
+          description_text = "Probability-based linear boundary.",
           helper_badge = "Recommended",
-          algorithm_key = "logistic_regression"
+          algorithm_key = "logistic_regression",
+          tooltip_text = "A linear classifier that estimates class probabilities and learns a decision boundary."
         ),
         create_algorithm_card(
           button_id = "choose_svm",
           title_text = "SVM",
-          description_text = "Learns a boundary with margin maximization and can model nonlinear regions.",
+          description_text = "Margin-based boundary.",
           helper_badge = "Coming soon",
           algorithm_key = "svm",
+          tooltip_text = "Finds a separating boundary with the widest possible margin between classes.",
           is_available = FALSE
         ),
         create_algorithm_card(
           button_id = "choose_knn",
           title_text = "k-NN",
-          description_text = "Classifies by local neighbor voting and is useful for comparison.",
+          description_text = "Local neighbor voting.",
           helper_badge = "Coming soon",
           algorithm_key = "knn",
+          tooltip_text = "Classifies a point based on the majority class of its nearest neighbors.",
           is_available = FALSE
         )
       )
@@ -146,7 +167,10 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           tags$p(class = "parameter-note", "Training"),
           sliderInput(
             inputId = session$ns("logistic_learning_rate"),
-            label = "Learning rate",
+            label = help_label(
+              "Learning rate",
+              "Controls how large each training update is. Higher values learn faster but may become unstable."
+            ),
             min = 0.01,
             max = 0.30,
             value = 0.12,
@@ -154,7 +178,10 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           ),
           sliderInput(
             inputId = session$ns("logistic_max_iter"),
-            label = "Iterations",
+            label = help_label(
+              "Iterations",
+              "Maximum number of training steps shown in the visualization."
+            ),
             min = 10,
             max = 200,
             value = 60,
@@ -163,7 +190,10 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           tags$p(class = "parameter-note", "Prediction"),
           sliderInput(
             inputId = session$ns("decision_threshold"),
-            label = "Threshold",
+            label = help_label(
+              "Threshold",
+              "Probability cutoff used to assign a predicted class."
+            ),
             min = 0.30,
             max = 0.70,
             value = 0.50,
@@ -172,12 +202,15 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           tags$p(class = "parameter-note", "Model form"),
           checkboxInput(
             inputId = session$ns("logistic_fit_intercept"),
-            label = "Fit intercept (learn bias term)",
+            label = help_label(
+              "Fit intercept",
+              "Allows the decision boundary to shift by learning a bias term."
+            ),
             value = TRUE
           ),
           tags$p(
             class = "parameter-note",
-            "ON: the model learns an offset term so the boundary can shift freely. OFF: the intercept is fixed to 0, which simplifies the model and enables a 2D loss-surface view."
+            "OFF fixes the bias at 0 and enables the 2D loss-surface view."
           )
         )
       } else {
@@ -192,7 +225,7 @@ mod_visualizer_algorithm_controls_server <- function(id) {
 
     output$run_helper_text <- renderText({
       if (selected_algorithm_key() == "logistic_regression") {
-        "Run the classifier to draw a linear probability boundary and compute the training metrics."
+        "Run to update the boundary, metrics, and training views."
       } else {
         "This algorithm is coming soon. Choose Logistic Regression to run the classifier."
       }

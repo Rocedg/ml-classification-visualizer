@@ -29,6 +29,17 @@
 
 mod_visualizer_dataset_controls_ui <- function(id) {
   ns <- NS(id)
+  help_icon <- function(help_text) {
+    tags$span(
+      class = "help-tooltip",
+      title = help_text,
+      `aria-label` = help_text,
+      "?"
+    )
+  }
+  help_label <- function(label_text, help_text) {
+    tagList(tags$span(label_text), help_icon(help_text))
+  }
   
   tagList(
     div(
@@ -47,10 +58,13 @@ mod_visualizer_dataset_controls_ui <- function(id) {
       
       tags$p(
         class = "sidebar-helper-text",
-        "Choose a preset dataset, upload a CSV, download a template, or draw data directly on the plot."
+        "Use a preset, upload a CSV, or draw points."
       ),
       
-      tags$label(class = "sidebar-input-label", "Preset Datasets"),
+      tags$label(
+        class = "sidebar-input-label",
+        help_label("Preset Datasets", "Start with a predefined dataset to quickly explore classification behavior.")
+      ),
       
       selectInput(
         inputId = ns("preset_dataset"),
@@ -76,11 +90,13 @@ mod_visualizer_dataset_controls_ui <- function(id) {
         actionButton(
           inputId = ns("draw_data_button"),
           label = "Draw Data",
-          class = "ml-button ml-button-secondary custom-data-button"
+          class = "ml-button ml-button-secondary custom-data-button",
+          title = "Manually place points on the plot for Class A or Class B."
         ),
         
         div(
           class = "custom-upload-button",
+          title = "Upload your own dataset with two feature columns and one class column.",
           fileInput(
             inputId = ns("dataset_upload"),
             label = NULL,
@@ -93,7 +109,8 @@ mod_visualizer_dataset_controls_ui <- function(id) {
         downloadButton(
           outputId = ns("download_example_csv"),
           label = "Template",
-          class = "ml-button ml-button-secondary custom-data-button"
+          class = "ml-button ml-button-secondary custom-data-button",
+          title = "Download a CSV template with the expected format."
         )
       ),
       
@@ -102,7 +119,10 @@ mod_visualizer_dataset_controls_ui <- function(id) {
         textOutput(ns("drawing_mode_status"))
       ),
       
-      tags$label(class = "sidebar-input-label", "Select Class For Drawing"),
+      tags$label(
+        class = "sidebar-input-label",
+        help_label("Select Class For Drawing", "Choose which class newly drawn points should belong to.")
+      ),
       
       radioButtons(
         inputId = ns("drawing_class"),
@@ -198,9 +218,9 @@ mod_visualizer_dataset_controls_server <- function(id) {
     
     output$drawing_mode_status <- renderText({
       if (drawing_mode_active()) {
-        paste("Drawing mode is ON. Click inside the plot to add", input$drawing_class, "points.")
+        paste("Drawing:", input$drawing_class)
       } else {
-        "Drawing mode is OFF. Press 'Draw Data' to start placing points on the plot."
+        "Drawing mode off"
       }
     })
     

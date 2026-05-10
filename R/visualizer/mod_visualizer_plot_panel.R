@@ -28,16 +28,30 @@
 
 mod_visualizer_plot_panel_ui <- function(id) {
   ns <- NS(id)
+  help_icon <- function(help_text) {
+    tags$span(
+      class = "help-tooltip",
+      title = help_text,
+      `aria-label` = help_text,
+      "?"
+    )
+  }
 
   div(
     class = "plot-tab-layout",
     div(
       class = "plot-top-status-row",
-      div(class = "status-chip status-chip-primary", textOutput(ns("plot_status_text"), inline = TRUE)),
+      div(
+        class = "status-chip status-chip-primary",
+        title = "Background color shows predicted class probability across the feature space.",
+        textOutput(ns("plot_status_text"), inline = TRUE),
+        help_icon("Background color shows predicted class probability across the feature space.")
+      ),
       div(class = "status-chip", textOutput(ns("drawing_status_text"), inline = TRUE))
     ),
     div(
       class = "plot-canvas-shell main-feature-plot-card",
+      title = "Background color shows predicted class probability across the feature space.",
       div(
         class = "main-feature-plot-shell",
         plotOutput(
@@ -50,7 +64,12 @@ mod_visualizer_plot_panel_ui <- function(id) {
         condition = paste0("output['", ns("probability_guide_visible"), "'] == 'true'"),
         div(
           class = "probability-guide-panel",
-          tags$div(class = "probability-guide-title", "Probability guide"),
+          title = "Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.",
+          tags$div(
+            class = "probability-guide-title",
+            tags$span("Probability guide"),
+            help_icon("Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.")
+          ),
           tags$div(
             class = "probability-guide-body",
             tags$div(class = "probability-guide-gradient"),
@@ -70,7 +89,11 @@ mod_visualizer_plot_panel_ui <- function(id) {
       class = "iteration-control-card",
       div(
         class = "iteration-control-header",
-        div(class = "status-chip status-chip-primary", textOutput(ns("iteration_status_text"), inline = TRUE))
+        div(
+          class = "status-chip status-chip-primary",
+          title = "Use the playback controls or slider to inspect saved training iterations.",
+          textOutput(ns("iteration_status_text"), inline = TRUE)
+        )
       ),
       div(
         class = "iteration-control-body",
@@ -144,18 +167,33 @@ mod_visualizer_plot_panel_ui <- function(id) {
 
 mod_visualizer_training_insights_ui <- function(id) {
   ns <- NS(id)
+  help_icon <- function(help_text) {
+    tags$span(
+      class = "help-tooltip",
+      title = help_text,
+      `aria-label` = help_text,
+      "?"
+    )
+  }
 
   div(
     class = "training-insights-tab-layout",
     div(
       class = "training-insights-header",
-      tags$h3("Training insights"),
-      tags$p("See how the loss and model parameters evolve during training.")
+      title = "Shows how the loss and model parameters evolve during training.",
+      tags$h3(tags$span("Training insights"), help_icon("Shows how the loss and model parameters evolve during training.")),
+      tags$p("Track loss and parameter movement.")
     ),
     div(
       class = "training-insights-grid",
       div(
         class = "plot-canvas-shell diagnostic-plot-shell",
+        title = "Shows how prediction error changes over training iterations.",
+        div(
+          class = "diagnostic-section-header",
+          tags$span("Loss curve"),
+          help_icon("Shows how prediction error changes over training iterations.")
+        ),
         plotOutput(
           outputId = ns("iteration_metric_plot"),
           height = "300px"
@@ -165,7 +203,12 @@ mod_visualizer_training_insights_ui <- function(id) {
         class = "app-card theory-summary-card diagnostic-plot-shell parameter-diagnostic-card",
         div(
           class = "plot-top-status-row",
-          div(class = "status-chip status-chip-primary", textOutput(ns("parameter_diagnostic_title"), inline = TRUE))
+          div(
+            class = "status-chip status-chip-primary",
+            title = "Shows how the learned model parameters move during optimization.",
+            textOutput(ns("parameter_diagnostic_title"), inline = TRUE),
+            help_icon("Shows how the learned model parameters move during optimization.")
+          )
         ),
         conditionalPanel(
           condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'true'"),
