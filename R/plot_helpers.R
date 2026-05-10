@@ -152,26 +152,30 @@ draw_empty_iteration_metric_plot <- function() {
 # Inputs:
 #   - metric_history: per-iteration loss and accuracy from training
 #   - current_iteration: selected playback index from the plot panel
+#   - convergence_epsilon: visual-only threshold for marking tiny loss changes
 # Output:
 #   A ggplot line chart for the diagnostic area.
-build_iteration_metric_plot <- function(metric_history, current_iteration) {
+build_iteration_metric_plot <- function(metric_history, current_iteration, convergence_epsilon = 0.001) {
   highlighted_iteration <- min(max(current_iteration, 1), nrow(metric_history))
   highlighted_metric <- metric_history[highlighted_iteration, , drop = FALSE]
-  final_metric <- metric_history[nrow(metric_history), , drop = FALSE]
 
-  ggplot(metric_history, aes(x = iteration, y = loss)) +
+  convergence_metric <- NULL
+  if (nrow(metric_history) >= 2) {
+    previous_loss <- metric_history$loss[-nrow(metric_history)]
+    current_loss <- metric_history$loss[-1]
+    valid_loss_pair <- is.finite(previous_loss) & is.finite(current_loss)
+    loss_change <- abs(current_loss - previous_loss)
+    convergence_candidates <- which(valid_loss_pair & loss_change < convergence_epsilon)
+
+    if (length(convergence_candidates) > 0) {
+      convergence_metric <- metric_history[convergence_candidates[1] + 1, , drop = FALSE]
+      convergence_metric$label <- paste0("loss change < ", convergence_epsilon)
+    }
+  }
+
+  loss_plot <- ggplot(metric_history, aes(x = iteration, y = loss)) +
     geom_line(color = "#5db5a2", linewidth = 1) +
     geom_point(color = "#d7ebe6", size = 1.8) +
-    geom_point(
-      data = final_metric,
-      aes(x = iteration, y = loss),
-      color = "#7c2d12",
-      fill = "#ff8b3d",
-      size = 3.4,
-      shape = 24,
-      stroke = 0.9,
-      inherit.aes = FALSE
-    ) +
     geom_point(
       data = highlighted_metric,
       aes(x = iteration, y = loss),
@@ -198,6 +202,43 @@ build_iteration_metric_plot <- function(metric_history, current_iteration) {
       plot.background = element_rect(fill = "#ffffff", color = NA),
       panel.background = element_rect(fill = "#ffffff", color = NA)
     )
+
+  if (!is.null(convergence_metric)) {
+    convergence_label_hjust <- if (convergence_metric$iteration > stats::median(metric_history$iteration)) 1.05 else -0.05
+
+    loss_plot <- loss_plot +
+      geom_vline(
+        xintercept = convergence_metric$iteration,
+        color = "#ff8b3d",
+        linewidth = 0.55,
+        linetype = "dashed",
+        alpha = 0.75
+      ) +
+      geom_point(
+        data = convergence_metric,
+        aes(x = iteration, y = loss),
+        color = "#7c2d12",
+        fill = "#ffb36f",
+        size = 3.2,
+        shape = 23,
+        stroke = 0.8,
+        inherit.aes = FALSE
+      ) +
+      geom_label(
+        data = convergence_metric,
+        aes(x = iteration, y = loss, label = label),
+        hjust = convergence_label_hjust,
+        vjust = -0.8,
+        color = "#7c2d12",
+        fill = "#fff7ed",
+        linewidth = 0.2,
+        label.padding = grid::unit(3, "pt"),
+        size = 3,
+        inherit.aes = FALSE
+      )
+  }
+
+  loss_plot
 }
 
 
