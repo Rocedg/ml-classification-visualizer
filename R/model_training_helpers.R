@@ -335,6 +335,214 @@ train_logistic_regression_iterations <- function(classification_data,
 }
 
 
+# cap_knn_k()
+# Purpose:
+#   Convert the requested k value into a safe neighbor count for the available
+#   training rows.
+cap_knn_k <- function(k_value, training_point_count) {
+  if (is.null(k_value) || length(k_value) != 1 || is.na(k_value)) {
+    k_value <- 5
+  }
+
+  numeric_k <- suppressWarnings(as.numeric(k_value))
+
+  if (is.na(numeric_k) || !is.finite(numeric_k)) {
+    numeric_k <- 5
+  }
+
+  if (is.null(training_point_count) || length(training_point_count) != 1 || is.na(training_point_count)) {
+    training_point_count <- 0
+  }
+
+  training_point_count <- max(0, as.integer(training_point_count))
+
+  if (training_point_count == 0) {
+    return(0)
+  }
+
+  min(max(1, as.integer(round(numeric_k))), training_point_count)
+}
+
+
+# predict_knn_points()
+# Purpose:
+#   Predict labels and class probabilities for arbitrary x/y points using
+#   nearest-neighbor voting from the training subset only.
+# Inputs:
+#   - training_data: rows allowed to vote as neighbors
+#   - prediction_points: x/y rows to classify
+#   - k: requested number of neighbors
+# Output:
+#   A list with predicted classes, Class A/Class B probabilities, and effective k.
+predict_knn_points <- function(training_data, prediction_points, k = 5) {
+  class_levels <- c("Class A", "Class B")
+  prediction_count <- nrow(prediction_points)
+
+  predicted_classes <- rep(NA_character_, prediction_count)
+  class_a_probabilities <- rep(NA_real_, prediction_count)
+
+  if (prediction_count == 0) {
+    return(list(
+      predicted_class = factor(predicted_classes, levels = class_levels),
+      class_a_probability = class_a_probabilities,
+      class_b_probability = class_a_probabilities,
+      effective_k = 0
+    ))
+  }
+
+  required_training_columns <- c("x", "y", "class")
+  required_prediction_columns <- c("x", "y")
+
+  if (!all(required_training_columns %in% names(training_data)) ||
+      !all(required_prediction_columns %in% names(prediction_points))) {
+    return(list(
+      predicted_class = factor(predicted_classes, levels = class_levels),
+      class_a_probability = class_a_probabilities,
+      class_b_probability = class_a_probabilities,
+      effective_k = 0
+    ))
+  }
+
+  valid_training_rows <- stats::complete.cases(training_data[, required_training_columns, drop = FALSE])
+  neighbor_data <- training_data[valid_training_rows, required_training_columns, drop = FALSE]
+  neighbor_data$class <- factor(as.character(neighbor_data$class), levels = class_levels)
+  neighbor_data <- neighbor_data[!is.na(neighbor_data$class), , drop = FALSE]
+
+  effective_k <- cap_knn_k(k, nrow(neighbor_data))
+
+  if (effective_k == 0) {
+    return(list(
+      predicted_class = factor(predicted_classes, levels = class_levels),
+      class_a_probability = class_a_probabilities,
+      class_b_probability = class_a_probabilities,
+      effective_k = effective_k
+    ))
+  }
+
+  for (point_index in seq_len(prediction_count)) {
+    point_x <- prediction_points$x[point_index]
+    point_y <- prediction_points$y[point_index]
+
+    if (is.na(point_x) || is.na(point_y)) {
+      next
+    }
+
+    distances <- sqrt((neighbor_data$x - point_x)^2 + (neighbor_data$y - point_y)^2)
+    ordered_neighbor_indices <- order(distances, seq_along(distances), na.last = NA)
+
+    if (length(ordered_neighbor_indices) == 0) {
+      next
+    }
+
+    nearest_indices <- head(ordered_neighbor_indices, effective_k)
+    nearest_classes <- as.character(neighbor_data$class[nearest_indices])
+    vote_counts <- table(factor(nearest_classes, levels = class_levels))
+    class_a_probabilities[point_index] <- as.numeric(vote_counts[["Class A"]]) / effective_k
+
+    highest_vote_count <- max(vote_counts)
+    tied_classes <- names(vote_counts[vote_counts == highest_vote_count])
+    tied_classes <- tied_classes[tied_classes %in% nearest_classes]
+
+    if (length(tied_classes) == 1) {
+      predicted_classes[point_index] <- tied_classes
+    } else if (length(tied_classes) > 1) {
+      closest_tied_class <- nearest_classes[nearest_classes %in% tied_classes][1]
+      predicted_classes[point_index] <- closest_tied_class
+    }
+  }
+
+  list(
+    predicted_class = factor(predicted_classes, levels = class_levels),
+    class_a_probability = class_a_probabilities,
+    class_b_probability = 1 - class_a_probabilities,
+    effective_k = effective_k
+  )
+}
+
+
+# train_knn_classifier()
+# Purpose:
+#   Store the training points and evaluate k-NN predictions for train/test rows
+#   and the main prediction grid.
+train_knn_classifier <- function(classification_data,
+                                 prediction_grid,
+                                 k = 5,
+                                 evaluation_data = classification_data) {
+  if (!"split" %in% names(evaluation_data)) {
+    evaluation_data$split <- factor(rep("train", nrow(evaluation_data)), levels = c("train", "test"))
+  } else {
+    evaluation_data$split <- factor(as.character(evaluation_data$split), levels = c("train", "test"))
+  }
+
+  valid_training_rows <- stats::complete.cases(classification_data[, c("x", "y", "class"), drop = FALSE])
+
+  if (sum(valid_training_rows) == 0) {
+    stop("k-NN needs at least one complete training point.")
+  }
+
+  knn_grid_predictions <- predict_knn_points(
+    training_data = classification_data,
+    prediction_points = prediction_grid,
+    k = k
+  )
+  knn_evaluation_predictions <- predict_knn_points(
+    training_data = classification_data,
+    prediction_points = evaluation_data,
+    k = k
+  )
+  knn_training_predictions <- predict_knn_points(
+    training_data = classification_data,
+    prediction_points = classification_data,
+    k = k
+  )
+
+  evaluation_results <- evaluation_data
+  evaluation_results$predicted_class <- knn_evaluation_predictions$predicted_class
+  evaluation_results$class_a_probability <- knn_evaluation_predictions$class_a_probability
+  evaluation_results$class_b_probability <- knn_evaluation_predictions$class_b_probability
+
+  train_evaluation_data <- evaluation_results[evaluation_results$split == "train", , drop = FALSE]
+  test_evaluation_data <- evaluation_results[evaluation_results$split == "test", , drop = FALSE]
+
+  train_metrics <- calculate_classification_metrics(
+    actual_labels = train_evaluation_data$class,
+    predicted_labels = train_evaluation_data$predicted_class
+  )
+  test_metrics <- calculate_classification_metrics(
+    actual_labels = test_evaluation_data$class,
+    predicted_labels = test_evaluation_data$predicted_class
+  )
+
+  grid_results <- prediction_grid
+  grid_results$predicted_class <- knn_grid_predictions$predicted_class
+  grid_results$class_a_probability <- knn_grid_predictions$class_a_probability
+  grid_results$class_b_probability <- knn_grid_predictions$class_b_probability
+
+  list(
+    model_object = list(
+      requested_k = k,
+      effective_k = knn_grid_predictions$effective_k,
+      training_point_count = sum(valid_training_rows),
+      class_counts = table(factor(classification_data$class, levels = c("Class A", "Class B")))
+    ),
+    prediction_grid = grid_results,
+    training_predictions = knn_training_predictions$predicted_class,
+    classification_data = evaluation_results,
+    train_data = classification_data,
+    test_data = evaluation_data[evaluation_data$split == "test", , drop = FALSE],
+    metrics = train_metrics,
+    train_metrics = train_metrics,
+    test_metrics = test_metrics,
+    split_counts = list(
+      train = sum(evaluation_data$split == "train"),
+      test = sum(evaluation_data$split == "test")
+    ),
+    iterations = NULL,
+    iteration_metrics = NULL
+  )
+}
+
+
 # train_classification_model()
 # Purpose:
 #   Validate user data, build the prediction grid, and dispatch training.
@@ -345,6 +553,10 @@ train_logistic_regression_iterations <- function(classification_data,
 # Output:
 #   A model result list consumed by plot, metrics, playback, and theory modules.
 train_classification_model <- function(classification_data, algorithm_name, parameter_values) {
+  if (is.null(parameter_values)) {
+    parameter_values <- list()
+  }
+
   if (nrow(classification_data) < 6) {
     stop("Please provide at least 6 data points before training a classifier.")
   }
@@ -356,21 +568,17 @@ train_classification_model <- function(classification_data, algorithm_name, para
   split_classification_data <- create_train_test_split(classification_data)
   train_classification_data <- split_classification_data[split_classification_data$split == "train", , drop = FALSE]
 
-  if (nrow(train_classification_data) < 2) {
-    stop("The training split needs at least 2 data points. Add more data before running the classifier.")
-  }
-
-  if (length(unique(train_classification_data$class)) < 2) {
-    stop("The training split must contain both Class A and Class B. Add more balanced data before running the classifier.")
-  }
-
   # The grid is created once for this run from all points. Every saved
   # iteration writes its probabilities into the same coordinate layout.
   prediction_grid <- build_prediction_grid(split_classification_data)
 
   if (algorithm_name == "logistic_regression") {
-    if (is.null(parameter_values)) {
-      parameter_values <- list()
+    if (nrow(train_classification_data) < 2) {
+      stop("The training split needs at least 2 data points. Add more data before running the classifier.")
+    }
+
+    if (length(unique(train_classification_data$class)) < 2) {
+      stop("The training split must contain both Class A and Class B. Add more balanced data before running the classifier.")
     }
 
     decision_threshold <- parameter_values$decision_threshold
@@ -429,29 +637,52 @@ train_classification_model <- function(classification_data, algorithm_name, para
     )
 
     algorithm_label <- "Logistic Regression"
+    algorithm_training_results <- logistic_training_results
+  } else if (algorithm_name == "knn") {
+    requested_k <- parameter_values$knn_k
+
+    if (is.null(requested_k)) {
+      requested_k <- 5
+    }
+
+    if (!is.numeric(requested_k) || length(requested_k) != 1 || is.na(requested_k)) {
+      stop("k neighbors must be a single numeric value.")
+    }
+
+    if (requested_k < 1) {
+      stop("k neighbors must be at least 1.")
+    }
+
+    knn_training_results <- train_knn_classifier(
+      classification_data = train_classification_data,
+      prediction_grid = prediction_grid,
+      k = requested_k,
+      evaluation_data = split_classification_data
+    )
+
+    algorithm_label <- "k-NN"
+    algorithm_training_results <- knn_training_results
   } else {
-    stop("Only Logistic Regression is currently available for training.")
+    stop("Only Logistic Regression and k-NN are currently available for training.")
   }
 
-  # SVM and k-NN training branches can be restored here when those
-  # algorithms are ready to be enabled again in the UI.
-  trained_model <- logistic_training_results$model_object
-  prediction_grid <- logistic_training_results$prediction_grid
-  training_predictions <- logistic_training_results$training_predictions
-  metrics <- logistic_training_results$metrics
-  train_metrics <- logistic_training_results$train_metrics
-  test_metrics <- logistic_training_results$test_metrics
-  split_counts <- logistic_training_results$split_counts
-  iteration_history <- logistic_training_results$iterations
-  iteration_metrics <- logistic_training_results$iteration_metrics
+  trained_model <- algorithm_training_results$model_object
+  prediction_grid <- algorithm_training_results$prediction_grid
+  training_predictions <- algorithm_training_results$training_predictions
+  metrics <- algorithm_training_results$metrics
+  train_metrics <- algorithm_training_results$train_metrics
+  test_metrics <- algorithm_training_results$test_metrics
+  split_counts <- algorithm_training_results$split_counts
+  iteration_history <- algorithm_training_results$iterations
+  iteration_metrics <- algorithm_training_results$iteration_metrics
 
   list(
     algorithm_key = algorithm_name,
     algorithm_label = algorithm_label,
     model_object = trained_model,
-    classification_data = logistic_training_results$classification_data,
-    train_data = logistic_training_results$train_data,
-    test_data = logistic_training_results$test_data,
+    classification_data = algorithm_training_results$classification_data,
+    train_data = algorithm_training_results$train_data,
+    test_data = algorithm_training_results$test_data,
     split_counts = split_counts,
     prediction_grid = prediction_grid,
     training_predictions = training_predictions,
