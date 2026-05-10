@@ -508,7 +508,7 @@ a { text-decoration: none; }
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
   grid-template-areas:
-    "status metrics"
+    "status status"
     "plot metrics"
     "controls controls";
   align-items: start;
@@ -769,6 +769,14 @@ a { text-decoration: none; }
 
 .visualizer-sidebar .irs-grid-pol {
   background: #cfece5;
+}
+
+.visualizer-sidebar .irs-grid {
+  display: none;
+}
+
+.visualizer-sidebar .irs-with-grid {
+  height: 44px;
 }
 
 .visualizer-sidebar .irs-grid-text,
