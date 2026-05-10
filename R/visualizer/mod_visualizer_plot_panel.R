@@ -344,6 +344,20 @@ mod_visualizer_plot_panel_server <- function(id,
       if (isTRUE(fit_intercept)) "ON" else "OFF"
     }
 
+    format_current_run_integer <- function(value) {
+      if (is.null(value) || length(value) != 1 || is.na(value)) {
+        return("â€”")
+      }
+
+      numeric_value <- suppressWarnings(as.numeric(value))
+
+      if (is.na(numeric_value) || !is.finite(numeric_value)) {
+        return("â€”")
+      }
+
+      as.character(as.integer(round(numeric_value)))
+    }
+
     format_split_summary <- function(model_results) {
       if (is.null(model_results) || is.null(model_results$split_counts)) {
         return("70 / 30")
@@ -618,14 +632,33 @@ mod_visualizer_plot_panel_server <- function(id,
         )
       }
 
+      algorithm_key <- selected_algorithm_key()
+
+      if (identical(algorithm_key, "knn")) {
+        return(tagList(
+          summary_row("Dataset", format_current_run_text(selected_dataset_label())),
+          summary_row("Model", format_algorithm_label(algorithm_key)),
+          summary_row("Split 70/30", format_split_summary(model_results)),
+          summary_row("k neighbors", format_current_run_integer(parameter_values$knn_k))
+        ))
+      }
+
+      if (identical(algorithm_key, "logistic_regression")) {
+        return(tagList(
+          summary_row("Dataset", format_current_run_text(selected_dataset_label())),
+          summary_row("Model", format_algorithm_label(algorithm_key)),
+          summary_row("Iteration", iteration_text),
+          summary_row("Split 70/30", format_split_summary(model_results)),
+          summary_row("Learning rate", format_current_run_number(parameter_values$logistic_learning_rate)),
+          summary_row("Threshold", format_current_run_number(parameter_values$decision_threshold)),
+          summary_row("Intercept", format_intercept_label(parameter_values$logistic_fit_intercept))
+        ))
+      }
+
       tagList(
         summary_row("Dataset", format_current_run_text(selected_dataset_label())),
-        summary_row("Model", format_algorithm_label(selected_algorithm_key())),
-        summary_row("Iteration", iteration_text),
-        summary_row("Split 70/30", format_split_summary(model_results)),
-        summary_row("Learning rate", format_current_run_number(parameter_values$logistic_learning_rate)),
-        summary_row("Threshold", format_current_run_number(parameter_values$decision_threshold)),
-        summary_row("Intercept", format_intercept_label(parameter_values$logistic_fit_intercept))
+        summary_row("Model", format_algorithm_label(algorithm_key)),
+        summary_row("Split 70/30", format_split_summary(model_results))
       )
     })
 

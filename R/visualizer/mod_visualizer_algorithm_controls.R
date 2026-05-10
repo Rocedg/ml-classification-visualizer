@@ -77,8 +77,8 @@ mod_visualizer_algorithm_controls_server <- function(id) {
       tagList(tags$span(label_text), help_icon(help_text))
     }
 
-    # The app currently trains Logistic Regression only, but this value keeps
-    # the UI/server contract ready for additional algorithms.
+    # The selected key controls both the visible parameter inputs and the
+    # training branch used when Run Classifier is clicked.
     selected_algorithm_key <- reactiveVal("logistic_regression")
 
     # Defaults are used when Shiny inputs have not initialized yet.
@@ -86,9 +86,14 @@ mod_visualizer_algorithm_controls_server <- function(id) {
     default_logistic_max_iter <- 60
     default_decision_threshold <- 0.50
     default_logistic_fit_intercept <- TRUE
+    default_knn_k <- 5
 
     observeEvent(input$choose_logistic_regression, {
       selected_algorithm_key("logistic_regression")
+    })
+
+    observeEvent(input$choose_knn, {
+      selected_algorithm_key("knn")
     })
 
     output$algorithm_cards_ui <- renderUI({
@@ -140,8 +145,7 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           button_id = "choose_knn",
           title_text = "k-NN",
           algorithm_key = "knn",
-          tooltip_text = "Classifies a point based on the majority class of its nearest neighbors.",
-          is_available = FALSE
+          tooltip_text = "Classifies a point based on the majority class of its nearest neighbors."
         )
       )
     })
@@ -193,6 +197,20 @@ mod_visualizer_algorithm_controls_server <- function(id) {
             value = TRUE
           )
         )
+      } else if (selected_algorithm_key() == "knn") {
+        tagList(
+          sliderInput(
+            inputId = session$ns("knn_k"),
+            label = help_label(
+              "k neighbors",
+              "Number of nearest training points used to vote for the predicted class."
+            ),
+            min = 1,
+            max = 25,
+            value = 5,
+            step = 1
+          )
+        )
       } else {
         tagList(
           div(
@@ -207,6 +225,8 @@ mod_visualizer_algorithm_controls_server <- function(id) {
     output$run_helper_text <- renderText({
       if (selected_algorithm_key() == "logistic_regression") {
         "Run to update the boundary, metrics, and training views."
+      } else if (selected_algorithm_key() == "knn") {
+        "Run to update k-NN decision regions and metrics."
       } else {
         "This algorithm is coming soon. Choose Logistic Regression to run the classifier."
       }
@@ -240,6 +260,16 @@ mod_visualizer_algorithm_controls_server <- function(id) {
             logistic_max_iter = logistic_max_iter,
             decision_threshold = decision_threshold,
             logistic_fit_intercept = logistic_fit_intercept
+          )
+        } else if (selected_algorithm_key() == "knn") {
+          knn_k <- input$knn_k
+
+          if (is.null(knn_k)) {
+            knn_k <- default_knn_k
+          }
+
+          list(
+            knn_k = knn_k
           )
         } else {
           list()
