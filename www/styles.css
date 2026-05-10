@@ -353,15 +353,35 @@ a { text-decoration: none; }
 .iteration-control-header { display: flex; align-items: center; margin-bottom: 8px; }
 .iteration-control-body {
   display: grid;
-  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
   gap: 12px;
 }
 
-.iteration-button-row .ml-button-secondary {
+.iteration-button-row {
+  align-items: center;
+  gap: 8px;
+}
+
+.iteration-button-row .iteration-icon-button {
+  display: inline-flex;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
   min-height: 34px;
-  padding: 8px 10px;
-  font-size: 12px;
+  padding: 0;
+  border-radius: 999px;
+  color: var(--navy);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.iteration-button-row .iteration-icon-button:hover,
+.iteration-button-row .iteration-icon-button:focus {
+  background: var(--mint-soft);
+  border-color: #c8e9e1;
+  color: var(--mint-dark);
 }
 
 .iteration-control-card .form-group { margin-bottom: 0; }

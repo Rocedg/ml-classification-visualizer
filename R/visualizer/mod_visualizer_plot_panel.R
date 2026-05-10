@@ -55,18 +55,18 @@ mod_visualizer_plot_panel_ui <- function(id) {
           class = "button-row iteration-button-row",
           actionButton(
             inputId = ns("step_backward_button"),
-            label = "Step Back",
-            class = "ml-button ml-button-secondary half-width-button"
+            label = "←",
+            class = "ml-button ml-button-secondary iteration-icon-button"
           ),
           actionButton(
             inputId = ns("play_pause_button"),
             label = "▶",
-            class = "ml-button ml-button-secondary half-width-button"
+            class = "ml-button ml-button-secondary iteration-icon-button"
           ),
           actionButton(
             inputId = ns("step_forward_button"),
-            label = "Step Forward",
-            class = "ml-button ml-button-secondary half-width-button"
+            label = "→",
+            class = "ml-button ml-button-secondary iteration-icon-button"
           )
         ),
         sliderInput(
