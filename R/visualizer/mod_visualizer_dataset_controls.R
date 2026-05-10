@@ -56,11 +56,6 @@ mod_visualizer_dataset_controls_ui <- function(id) {
         tags$span("Choose or Create Data")
       ),
       
-      tags$p(
-        class = "sidebar-helper-text",
-        "Use a preset, upload a CSV, or draw points."
-      ),
-      
       tags$label(
         class = "sidebar-input-label",
         help_label("Preset Datasets", "Start with a predefined dataset to quickly explore classification behavior.")

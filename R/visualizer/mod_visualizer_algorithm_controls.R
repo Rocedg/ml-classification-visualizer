@@ -30,10 +30,6 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
         div(class = "sidebar-step-pill", "2"),
         tags$span("Select Algorithm")
       ),
-      tags$p(
-        class = "sidebar-helper-text",
-        "Choose the classifier to run."
-      ),
       uiOutput(ns("algorithm_cards_ui"))
     ),
 
@@ -44,21 +40,12 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
         div(class = "sidebar-step-pill", "3"),
         tags$span("Configure Parameters")
       ),
-      tags$p(
-        class = "sidebar-helper-text",
-        "Tune the selected algorithm."
-      ),
       uiOutput(ns("parameter_controls_ui")),
       actionButton(
         inputId = ns("run_classifier_button"),
         label = "Run Classifier",
         class = "ml-button ml-button-primary ml-button-full",
         title = "Train the selected classifier and update the plot, metrics, and training views."
-      ),
-      div(class = "sidebar-run-note", "Complete steps above to run"),
-      div(
-        class = "run-helper-text",
-        textOutput(ns("run_helper_text"))
       )
     )
   )
@@ -96,20 +83,15 @@ mod_visualizer_algorithm_controls_server <- function(id) {
     output$algorithm_cards_ui <- renderUI({
       # Cards are generated server-side so the active class can follow the
       # selected algorithm key.
-      create_algorithm_card <- function(button_id, title_text, description_text, helper_badge, algorithm_key, tooltip_text, is_available = TRUE) {
+      create_algorithm_card <- function(button_id, title_text, algorithm_key, tooltip_text, is_available = TRUE) {
         active_class <- if (identical(selected_algorithm_key(), algorithm_key)) "algorithm-selection-card is-active" else "algorithm-selection-card"
 
         card_contents <- tagList(
           div(
             class = "algorithm-card-title-row",
             tags$span(title_text),
-            div(
-              class = "algorithm-card-meta",
-              tags$span(class = "inline-status-badge subtle", helper_badge),
-              help_icon(tooltip_text)
-            )
-          ),
-          tags$p(description_text)
+            help_icon(tooltip_text)
+          )
         )
 
         if (is_available) {
@@ -133,16 +115,12 @@ mod_visualizer_algorithm_controls_server <- function(id) {
         create_algorithm_card(
           button_id = "choose_logistic_regression",
           title_text = "Logistic Regression",
-          description_text = "Probability-based linear boundary.",
-          helper_badge = "Recommended",
           algorithm_key = "logistic_regression",
           tooltip_text = "A linear classifier that estimates class probabilities and learns a decision boundary."
         ),
         create_algorithm_card(
           button_id = "choose_svm",
           title_text = "SVM",
-          description_text = "Margin-based boundary.",
-          helper_badge = "Coming soon",
           algorithm_key = "svm",
           tooltip_text = "Finds a separating boundary with the widest possible margin between classes.",
           is_available = FALSE
@@ -150,8 +128,6 @@ mod_visualizer_algorithm_controls_server <- function(id) {
         create_algorithm_card(
           button_id = "choose_knn",
           title_text = "k-NN",
-          description_text = "Local neighbor voting.",
-          helper_badge = "Coming soon",
           algorithm_key = "knn",
           tooltip_text = "Classifies a point based on the majority class of its nearest neighbors.",
           is_available = FALSE
@@ -164,7 +140,6 @@ mod_visualizer_algorithm_controls_server <- function(id) {
       # by mod_visualizer_server() only when Run Classifier is clicked.
       if (selected_algorithm_key() == "logistic_regression") {
         tagList(
-          tags$p(class = "parameter-note", "Training"),
           sliderInput(
             inputId = session$ns("logistic_learning_rate"),
             label = help_label(
@@ -187,7 +162,6 @@ mod_visualizer_algorithm_controls_server <- function(id) {
             value = 60,
             step = 10
           ),
-          tags$p(class = "parameter-note", "Prediction"),
           sliderInput(
             inputId = session$ns("decision_threshold"),
             label = help_label(
@@ -199,7 +173,6 @@ mod_visualizer_algorithm_controls_server <- function(id) {
             value = 0.50,
             step = 0.01
           ),
-          tags$p(class = "parameter-note", "Model form"),
           checkboxInput(
             inputId = session$ns("logistic_fit_intercept"),
             label = help_label(
@@ -207,10 +180,6 @@ mod_visualizer_algorithm_controls_server <- function(id) {
               "Allows the decision boundary to shift by learning a bias term."
             ),
             value = TRUE
-          ),
-          tags$p(
-            class = "parameter-note",
-            "OFF fixes the bias at 0 and enables the 2D loss-surface view."
           )
         )
       } else {
