@@ -112,6 +112,8 @@ mod_visualizer_plot_panel_ui <- function(id) {
       ),
       div(
         class = "iteration-control-body",
+        conditionalPanel(
+          condition = paste0("output['", ns("show_logistic_playback_controls"), "'] == 'true'"),
         div(
           class = "button-row iteration-button-row",
           actionButton(
@@ -142,6 +144,14 @@ mod_visualizer_plot_panel_ui <- function(id) {
           value = 0,
           step = 1,
           width = "100%"
+        )
+        ),
+        conditionalPanel(
+          condition = paste0("output['", ns("show_knn_iteration_note"), "'] == 'true'"),
+          tags$p(
+            class = "metrics-comparison-note",
+            "k-NN has no training iterations. Predictions update when k changes."
+          )
         )
       )
     ),
@@ -184,10 +194,12 @@ mod_visualizer_training_insights_ui <- function(id) {
     class = "training-insights-tab-layout",
     div(
       class = "training-insights-header",
-      title = "Shows how the loss and model parameters evolve during training.",
-      tags$h3(tags$span("Training insights"), help_icon("Shows how the loss and model parameters evolve during training.")),
-      tags$p("Track loss and parameter movement.")
+      title = "Shows model-specific training details.",
+      tags$h3(tags$span("Training insights"), help_icon("Shows model-specific training details.")),
+      tags$p(textOutput(ns("training_insights_subtitle"), inline = TRUE))
     ),
+    conditionalPanel(
+      condition = paste0("output['", ns("training_insights_algorithm"), "'] == 'logistic_regression'"),
     div(
       class = "training-insights-grid",
       div(
@@ -228,6 +240,16 @@ mod_visualizer_training_insights_ui <- function(id) {
             height = "320px"
           )
         )
+      )
+    )
+    ),
+    conditionalPanel(
+      condition = paste0("output['", ns("training_insights_algorithm"), "'] == 'knn'"),
+      div(
+        class = "app-card theory-summary-card",
+        tags$h3("How k-NN predicts"),
+        tags$p("k-NN does not learn parameters through iterations. It classifies each point by looking at the k nearest training points and using majority vote."),
+        tags$p("Smaller k can create more flexible boundaries; larger k usually creates smoother boundaries.")
       )
     )
   )
@@ -373,6 +395,39 @@ mod_visualizer_plot_panel_server <- function(id,
       paste0(train_count, " / ", test_count)
     }
 
+    selected_algorithm_text <- reactive({
+      algorithm_key <- selected_algorithm_key()
+
+      if (is.null(algorithm_key) || length(algorithm_key) != 1 || is.na(algorithm_key)) {
+        return("logistic_regression")
+      }
+
+      as.character(algorithm_key)
+    })
+
+    output$show_logistic_playback_controls <- renderText({
+      if (identical(selected_algorithm_text(), "logistic_regression")) "true" else "false"
+    })
+    outputOptions(output, "show_logistic_playback_controls", suspendWhenHidden = FALSE)
+
+    output$show_knn_iteration_note <- renderText({
+      if (identical(selected_algorithm_text(), "knn")) "true" else "false"
+    })
+    outputOptions(output, "show_knn_iteration_note", suspendWhenHidden = FALSE)
+
+    output$training_insights_algorithm <- renderText({
+      selected_algorithm_text()
+    })
+    outputOptions(output, "training_insights_algorithm", suspendWhenHidden = FALSE)
+
+    output$training_insights_subtitle <- renderText({
+      if (identical(selected_algorithm_text(), "knn")) {
+        "Review how nearest-neighbor voting makes predictions."
+      } else {
+        "Track loss and parameter movement."
+      }
+    })
+
     # Before the Run Classifier button has been clicked, the plot displays only
     # data points. After a run, this reactive unwraps the latest model bundle.
     safe_model_results <- reactive({
@@ -441,6 +496,13 @@ mod_visualizer_plot_panel_server <- function(id,
           max = 0,
           value = 0
         )
+      }
+    }, ignoreInit = TRUE)
+
+    observeEvent(selected_algorithm_text(), {
+      if (!identical(selected_algorithm_text(), "logistic_regression")) {
+        advance_playback_generation()
+        is_playing(FALSE)
       }
     }, ignoreInit = TRUE)
 
@@ -587,6 +649,10 @@ mod_visualizer_plot_panel_server <- function(id,
     })
 
     output$iteration_status_text <- renderText({
+      if (identical(selected_algorithm_text(), "knn")) {
+        return("No training iterations")
+      }
+
       model_results <- safe_model_results()
       format_iteration_status_text(model_results, current_iteration(), total_iteration_count())
     })
