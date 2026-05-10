@@ -106,7 +106,7 @@ build_classification_plot <- function(classification_data, active_model_view) {
     ) +
     theme_minimal(base_family = "Manrope") +
     theme(
-      legend.position = if (is.null(active_model_view)) "none" else "right",
+      legend.position = "none",
       legend.title = element_text(color = "#334155", size = 9, face = "bold", lineheight = 0.95),
       legend.text = element_text(color = "#475569", size = 8.5, lineheight = 0.95),
       legend.key.height = grid::unit(24, "pt"),
@@ -157,17 +157,30 @@ draw_empty_iteration_metric_plot <- function() {
 build_iteration_metric_plot <- function(metric_history, current_iteration) {
   highlighted_iteration <- min(max(current_iteration, 1), nrow(metric_history))
   highlighted_metric <- metric_history[highlighted_iteration, , drop = FALSE]
+  final_metric <- metric_history[nrow(metric_history), , drop = FALSE]
 
   ggplot(metric_history, aes(x = iteration, y = loss)) +
     geom_line(color = "#5db5a2", linewidth = 1) +
     geom_point(color = "#d7ebe6", size = 1.8) +
     geom_point(
+      data = final_metric,
+      aes(x = iteration, y = loss),
+      color = "#7c2d12",
+      fill = "#ff8b3d",
+      size = 3.4,
+      shape = 24,
+      stroke = 0.9,
+      inherit.aes = FALSE
+    ) +
+    geom_point(
       data = highlighted_metric,
+      aes(x = iteration, y = loss),
       color = "#243b57",
       fill = "#79c9b7",
-      size = 3,
+      size = 4.4,
       shape = 21,
-      stroke = 0.8
+      stroke = 1.2,
+      inherit.aes = FALSE
     ) +
     labs(
       x = "Iteration",

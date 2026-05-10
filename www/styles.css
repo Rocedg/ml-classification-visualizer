@@ -363,16 +363,69 @@ a { text-decoration: none; }
 .status-chip-primary { background: var(--mint-soft); color: var(--mint-dark); }
 .plot-canvas-shell { padding: 8px; }
 .plot-tab-layout > .plot-top-status-row { grid-area: status; }
-.main-feature-plot-shell {
+.main-feature-plot-card {
   grid-area: plot;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 780px);
+  margin: 0 auto;
+}
+
+.main-feature-plot-shell {
   width: min(100%, 620px);
   aspect-ratio: 1 / 1;
-  margin: 0 auto;
 }
 
 .main-feature-plot-shell .shiny-plot-output {
   width: 100% !important;
   height: 100% !important;
+}
+
+.probability-guide-panel {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 4px;
+}
+
+.probability-guide-title {
+  color: #334155;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.probability-guide-body {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  gap: 8px;
+  min-height: 190px;
+}
+
+.probability-guide-gradient {
+  min-height: 190px;
+  border: 1px solid #cbd5e1;
+  background: linear-gradient(
+    to bottom,
+    #74a9ff 0%,
+    #d8e8ff 25%,
+    #fff7ed 50%,
+    #ffe4d3 75%,
+    #ff9b6b 100%
+  );
+}
+
+.probability-guide-labels {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: #475569;
+  font-size: 10px;
+  line-height: 1.2;
 }
 
 .iteration-control-card { grid-area: controls; padding: 10px 12px; }
@@ -584,6 +637,7 @@ a { text-decoration: none; }
   }
 
   .plot-tab-layout .metric-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .main-feature-plot-card { width: min(100%, 760px); }
   .visualizer-sidebar { border-right: none; border-bottom: 1px solid var(--border); }
 }
 
@@ -608,6 +662,36 @@ a { text-decoration: none; }
   .visualizer-secondary-tabs .tab-content { padding: 12px 0 0; }
   .plot-tab-layout .metric-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .iteration-button-row { flex-direction: row; }
+  .main-feature-plot-card {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+  .main-feature-plot-shell { margin: 0 auto; }
+  .probability-guide-panel {
+    align-self: auto;
+    padding: 4px 0 0;
+  }
+  .probability-guide-body {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+  .probability-guide-gradient {
+    height: 12px;
+    min-height: 12px;
+    background: linear-gradient(
+      to right,
+      #74a9ff 0%,
+      #d8e8ff 25%,
+      #fff7ed 50%,
+      #ffe4d3 75%,
+      #ff9b6b 100%
+    );
+  }
+  .probability-guide-labels {
+    flex-direction: row;
+    gap: 8px;
+  }
+  .probability-guide-labels span:not(:first-child):not(:last-child) { display: none; }
 }
 
 .math-box {

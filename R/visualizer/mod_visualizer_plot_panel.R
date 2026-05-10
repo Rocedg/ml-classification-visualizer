@@ -37,11 +37,33 @@ mod_visualizer_plot_panel_ui <- function(id) {
       div(class = "status-chip", textOutput(ns("drawing_status_text"), inline = TRUE))
     ),
     div(
-      class = "plot-canvas-shell main-feature-plot-shell",
-      plotOutput(
-        outputId = ns("classification_plot"),
-        height = "100%",
-        click = ns("plot_click")
+      class = "plot-canvas-shell main-feature-plot-card",
+      div(
+        class = "main-feature-plot-shell",
+        plotOutput(
+          outputId = ns("classification_plot"),
+          height = "100%",
+          click = ns("plot_click")
+        )
+      ),
+      conditionalPanel(
+        condition = paste0("output['", ns("probability_guide_visible"), "'] == 'true'"),
+        div(
+          class = "probability-guide-panel",
+          tags$div(class = "probability-guide-title", "Probability guide"),
+          tags$div(
+            class = "probability-guide-body",
+            tags$div(class = "probability-guide-gradient"),
+            tags$div(
+              class = "probability-guide-labels",
+              tags$span("Class A probability = 1.0"),
+              tags$span("More likely Class A"),
+              tags$span("0.5 = uncertain"),
+              tags$span("More likely Class B"),
+              tags$span("Class B probability = 1.0")
+            )
+          )
+        )
       )
     ),
     div(
@@ -440,6 +462,11 @@ mod_visualizer_plot_panel_server <- function(id,
         "Drawing mode off"
       }
     })
+
+    output$probability_guide_visible <- renderText({
+      if (is.null(active_iteration_results())) "false" else "true"
+    })
+    outputOptions(output, "probability_guide_visible", suspendWhenHidden = FALSE)
 
     output$classification_plot <- renderPlot({
       current_classification_data <- classification_data()
