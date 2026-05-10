@@ -162,6 +162,34 @@ mod_visualizer_plot_panel_server <- function(id,
 
     # is_playing tracks whether the Play button is active
     is_playing <- reactiveVal(FALSE)
+    playback_generation <- reactiveVal(0)
+
+    # Programmatic slider updates can echo back through input$iteration_slider.
+    # Keep a small pending queue so those echoes cannot overwrite playback state.
+    pending_programmatic_slider_values <- reactiveVal(integer(0))
+
+    mark_programmatic_slider_update <- function(iteration_value) {
+      pending_programmatic_slider_values(c(
+        isolate(pending_programmatic_slider_values()),
+        as.integer(iteration_value)
+      ))
+    }
+
+    consume_programmatic_slider_update <- function(iteration_value) {
+      pending_values <- isolate(pending_programmatic_slider_values())
+      matched_position <- match(as.integer(iteration_value), pending_values)
+
+      if (is.na(matched_position)) {
+        return(FALSE)
+      }
+
+      pending_programmatic_slider_values(pending_values[-matched_position])
+      TRUE
+    }
+
+    advance_playback_generation <- function() {
+      playback_generation(isolate(playback_generation()) + 1)
+    }
 
     set_model_reactive <- function(model_reactive_expression) {
       internal_model_reactive(model_reactive_expression)
@@ -204,9 +232,11 @@ mod_visualizer_plot_panel_server <- function(id,
       model_results <- safe_model_results()
 
       current_iteration(0)
+      advance_playback_generation()
       is_playing(FALSE)
 
       if (model_supports_logistic_playback(model_results)) {
+        mark_programmatic_slider_update(0)
         updateSliderInput(
           session = session,
           inputId = "iteration_slider",
@@ -215,6 +245,7 @@ mod_visualizer_plot_panel_server <- function(id,
           value = 0
         )
       } else {
+        mark_programmatic_slider_update(0)
         updateSliderInput(
           session = session,
           inputId = "iteration_slider",
@@ -236,7 +267,11 @@ mod_visualizer_plot_panel_server <- function(id,
 
       bounded_iteration <- bound_iteration_index(input$iteration_slider, total_iterations)
       current_val <- isolate(current_iteration())
-      
+
+      if (consume_programmatic_slider_update(bounded_iteration)) {
+        return(NULL)
+      }
+
       # Only respond if slider value differs from our current iteration
       # (Indicates user moved it, not our updateSliderInput call)
       if (!identical(as.integer(input$iteration_slider), as.integer(current_val))) {
@@ -267,23 +302,42 @@ mod_visualizer_plot_panel_server <- function(id,
       is_playing(FALSE)
     })
 
-    # Play/Pause button: toggle auto-advance
+    # Play/Pause button: start from the current iteration, or pause immediately.
     observeEvent(input$play_pause_button, {
-      if (total_iteration_count() == 0) {
+      total_iterations <- total_iteration_count()
+      if (total_iterations == 0) {
         return(NULL)
       }
 
-      is_playing(!is_playing())
-    })
+      advance_playback_generation()
+
+      if (isTRUE(isolate(is_playing()))) {
+        is_playing(FALSE)
+        return(NULL)
+      }
+
+      if (isolate(current_iteration()) >= total_iterations - 1) {
+        return(NULL)
+      }
+
+      is_playing(TRUE)
+    }, ignoreInit = TRUE, priority = 100)
 
     # Auto-advance when playing: move forward every 1 second, stop at max
     # Uses isolate() on current_iteration read to break reactive dependency loop
     observe({
       req(is_playing())
+      current_playback_generation <- playback_generation()
       invalidateLater(1000, session)
 
-      total_iterations <- total_iteration_count()
+      if (!isTRUE(isolate(is_playing())) ||
+          !identical(current_playback_generation, isolate(playback_generation()))) {
+        return()
+      }
+
+      total_iterations <- isolate(total_iteration_count())
       if (total_iterations == 0) {
+        advance_playback_generation()
         is_playing(FALSE)
         return()
       }
@@ -292,9 +346,16 @@ mod_visualizer_plot_panel_server <- function(id,
       new_iteration <- isolate(current_iteration()) + 1
 
       if (new_iteration > max_iteration) {
+        advance_playback_generation()
         is_playing(FALSE)
       } else {
-        current_iteration(new_iteration)
+        bounded_iteration <- min(new_iteration, max_iteration)
+        current_iteration(bounded_iteration)
+
+        if (bounded_iteration >= max_iteration) {
+          advance_playback_generation()
+          is_playing(FALSE)
+        }
       }
     })
 
@@ -307,6 +368,7 @@ mod_visualizer_plot_panel_server <- function(id,
 
       iteration_value <- current_iteration()
 
+      mark_programmatic_slider_update(iteration_value)
       updateSliderInput(
         session = session,
         inputId = "iteration_slider",
