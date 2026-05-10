@@ -386,6 +386,33 @@ a { text-decoration: none; }
 
 .iteration-control-card .form-group { margin-bottom: 0; }
 .iteration-control-card .irs { margin-top: -6px; margin-bottom: -6px; }
+.iteration-control-card .irs--shiny .irs-bar,
+.iteration-control-card .irs--shiny .irs-bar-edge {
+  background: var(--mint);
+  border-color: var(--mint);
+}
+
+.iteration-control-card .irs--shiny .irs-single,
+.iteration-control-card .irs--shiny .irs-from,
+.iteration-control-card .irs--shiny .irs-to {
+  background: var(--mint-dark);
+}
+
+.iteration-control-card .irs--shiny .irs-single:before,
+.iteration-control-card .irs--shiny .irs-from:before,
+.iteration-control-card .irs--shiny .irs-to:before {
+  border-top-color: var(--mint-dark);
+}
+
+.iteration-control-card .irs--shiny .irs-handle {
+  border-color: var(--mint-dark);
+}
+
+.iteration-control-card .irs--shiny .irs-handle:hover,
+.iteration-control-card .irs--shiny .irs-handle.state_hover {
+  background: var(--mint-soft);
+  border-color: var(--mint-dark);
+}
 .diagnostic-grid {
   display: grid;
   grid-template-columns: 1fr;
