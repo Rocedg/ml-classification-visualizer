@@ -1,11 +1,11 @@
-# modules/about_module.R
+# R/pages/page_about.R
 # Purpose:
 #   Present a simple "About Us" page for the project.
 #   This page explains the goal of the tool and the kind of learner it serves.
 #
 # Functions:
-#   - about_module_ui(): Create the About Us page.
-#   - about_module_server(): Placeholder server for future content.
+#   - page_about_ui(): Create the About Us page.
+#   - page_about_server(): Placeholder server for future content.
 #
 # Inputs / Outputs:
 #   Inputs:
@@ -13,7 +13,7 @@
 #   Outputs:
 #     - Static informational content
 
-about_module_ui <- function(id) {
+page_about_ui <- function(id) {
   ns <- NS(id)
 
   div(
@@ -48,7 +48,7 @@ about_module_ui <- function(id) {
 }
 
 
-about_module_server <- function(id) {
+page_about_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     invisible(NULL)
   })

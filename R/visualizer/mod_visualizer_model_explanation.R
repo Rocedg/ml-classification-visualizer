@@ -1,11 +1,11 @@
-# modules/model_theory_panel_module.R
+# R/visualizer/mod_visualizer_model_explanation.R
 # Purpose:
 #   Display a beginner-friendly explanation of the currently selected model.
 #   This tab combines conceptual explanations with the latest metric values.
 #
 # Functions:
-#   - model_theory_panel_module_ui(): Build the Model Theory tab layout.
-#   - model_theory_panel_module_server(): Render algorithm-specific content.
+#   - mod_visualizer_model_explanation_ui(): Build the Model Explanation tab layout.
+#   - mod_visualizer_model_explanation_server(): Render algorithm-specific content.
 #
 # Inputs / Outputs:
 #   Inputs:
@@ -15,21 +15,21 @@
 #     - Styled explanatory content for the selected model
 
 
-model_theory_panel_module_ui <- function(id) {
+mod_visualizer_model_explanation_ui <- function(id) {
   ns <- NS(id)
 
   div(
     class = "theory-panel-layout",
-    uiOutput(ns("model_theory_content_ui"))
+    uiOutput(ns("model_explanation_content_ui"))
   )
 }
 
 
-model_theory_panel_module_server <- function(id, selected_algorithm_key, trained_model_bundle) {
+mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, trained_model_bundle) {
   moduleServer(id, function(input, output, session) {
 
-# Configuración centralizada por modelo
-    model_theory_content <- list(
+    # Centralized model explanation content for the Visualizer's internal panel.
+    model_explanation_content <- list(
 
       logistic_regression = list(
         title = "Logistic Regression",
@@ -93,15 +93,15 @@ model_theory_panel_module_server <- function(id, selected_algorithm_key, trained
       )
     )
 
-    output$model_theory_content_ui <- renderUI({
+    output$model_explanation_content_ui <- renderUI({
 
       algorithm_key <- selected_algorithm_key()
       model_results <- tryCatch(trained_model_bundle(), error = function(error_object) NULL)
 
-      #  Obtener configuración del modelo
-      model_info <- model_theory_content[[algorithm_key]]
+      # Get the explanation content for the selected model.
+      model_info <- model_explanation_content[[algorithm_key]]
 
-      # fallback si no existe
+      # Fallback if content has not been added for this algorithm.
       if (is.null(model_info)) {
         return(tags$p("No theory available for this model."))
       }

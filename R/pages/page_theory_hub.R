@@ -1,11 +1,11 @@
-# modules/theory_hub_module.R
+# R/pages/page_theory_hub.R
 # Purpose:
 #   Provide a beginner-friendly learning page that explains the supported
 #   classification algorithms and the overall workflow in plain language.
 #
 # Functions:
-#   - theory_hub_module_ui(): Create the Theory Hub page UI.
-#   - theory_hub_module_server(): Placeholder server for future expansion.
+#   - page_theory_hub_ui(): Create the Model Theory Hub page UI.
+#   - page_theory_hub_server(): Placeholder server for future expansion.
 #
 # Inputs / Outputs:
 #   Inputs:
@@ -13,7 +13,7 @@
 #   Outputs:
 #     - Static educational content cards
 
-theory_hub_module_ui <- function(id) {
+page_theory_hub_ui <- function(id) {
   ns <- NS(id)
 
   div(
@@ -74,7 +74,7 @@ theory_hub_module_ui <- function(id) {
 }
 
 
-theory_hub_module_server <- function(id) {
+page_theory_hub_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     invisible(NULL)
   })

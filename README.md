@@ -19,17 +19,20 @@ myDashboardApp/
 |   |-- metrics_helpers.R
 |   |-- model_training_helpers.R
 |   |-- playback_helpers.R
-|   `-- plot_helpers.R
-|-- modules/
-|   |-- home_module.R
-|   |-- visualizer_module.R
-|   |-- theory_hub_module.R
-|   |-- about_module.R
-|   |-- dataset_controls_module.R
-|   |-- algorithm_controls_module.R
-|   |-- plot_panel_module.R
-|   |-- raw_data_module.R
-|   `-- model_theory_panel_module.R
+|   |-- plot_helpers.R
+|   |-- pages/
+|   |   |-- page_home.R
+|   |   |-- page_theory_hub.R
+|   |   `-- page_about.R
+|   `-- visualizer/
+|       |-- mod_visualizer.R
+|       |-- mod_visualizer_dataset_controls.R
+|       |-- mod_visualizer_algorithm_controls.R
+|       |-- mod_visualizer_plot_panel.R
+|       |-- mod_visualizer_raw_data.R
+|       `-- mod_visualizer_model_explanation.R
+|-- docs/
+|   `-- architecture.md
 `-- www/
     `-- styles.css
 ```

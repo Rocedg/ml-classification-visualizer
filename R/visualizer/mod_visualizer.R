@@ -1,12 +1,12 @@
-# modules/visualizer_module.R
+# R/visualizer/mod_visualizer.R
 # Purpose:
 #   Coordinate the full classification workflow page.
 #   This module connects the sidebar controls, the interactive plot,
-#   the raw data tab, and the model theory tab.
+#   the raw data tab, and the model explanation tab.
 #
 # Functions:
-#   - visualizer_module_ui(): Build the two-column visualizer layout.
-#   - visualizer_module_server(): Manage dataset state, drawing state,
+#   - mod_visualizer_ui(): Build the two-column visualizer layout.
+#   - mod_visualizer_server(): Manage dataset state, drawing state,
 #     classifier training, and communication across child modules.
 #
 # Inputs / Outputs:
@@ -18,9 +18,9 @@
 #     - Trained model results
 #     - Updated classification plot
 #     - Raw data table
-#     - Model theory explanations
+#     - Model explanation content
 
-visualizer_module_ui <- function(id) {
+mod_visualizer_ui <- function(id) {
   ns <- NS(id)
 
   div(
@@ -29,8 +29,8 @@ visualizer_module_ui <- function(id) {
       class = "visualizer-layout",
       div(
         class = "visualizer-sidebar",
-        dataset_controls_module_ui(ns("dataset_controls")),
-        algorithm_controls_module_ui(ns("algorithm_controls"))
+        mod_visualizer_dataset_controls_ui(ns("dataset_controls")),
+        mod_visualizer_algorithm_controls_ui(ns("algorithm_controls"))
       ),
       div(
         class = "visualizer-main-column",
@@ -42,15 +42,15 @@ visualizer_module_ui <- function(id) {
             selected = "Interactive Plot",
             tabPanel(
               title = "Interactive Plot",
-              plot_panel_module_ui(ns("plot_panel"))
+              mod_visualizer_plot_panel_ui(ns("plot_panel"))
             ),
             tabPanel(
-              title = "Model Theory",
-              model_theory_panel_module_ui(ns("model_theory_panel"))
+              title = "Model Explanation",
+              mod_visualizer_model_explanation_ui(ns("model_explanation_panel"))
             ),
             tabPanel(
               title = "Raw Data",
-              raw_data_module_ui(ns("raw_data_panel"))
+              mod_visualizer_raw_data_ui(ns("raw_data_panel"))
             )
           )
         )
@@ -60,10 +60,10 @@ visualizer_module_ui <- function(id) {
 }
 
 
-visualizer_module_server <- function(id) {
+mod_visualizer_server <- function(id) {
   moduleServer(id, function(input, output, session) {
-    dataset_controls <- dataset_controls_module_server("dataset_controls")
-    algorithm_controls <- algorithm_controls_module_server("algorithm_controls")
+    dataset_controls <- mod_visualizer_dataset_controls_server("dataset_controls")
+    algorithm_controls <- mod_visualizer_algorithm_controls_server("algorithm_controls")
 
     # The visualizer keeps preset/uploaded data separate from user-drawn
     # points so drawing can be cleared without losing the selected base dataset.
@@ -77,7 +77,7 @@ visualizer_module_server <- function(id) {
       drawn_classification_data(create_empty_classification_data())
     }, ignoreInit = FALSE)
 
-    # Uploads are already validated by dataset_controls_module_server().
+    # Uploads are already validated by mod_visualizer_dataset_controls_server().
     observeEvent(dataset_controls$uploaded_dataset(), {
       uploaded_classification_data <- dataset_controls$uploaded_dataset()
 
@@ -135,7 +135,7 @@ visualizer_module_server <- function(id) {
 
     # The plot panel owns the visible plot and iteration controls. The parent
     # passes reactive data/control state in and receives plot clicks back.
-    plot_panel <- plot_panel_module_server(
+    plot_panel <- mod_visualizer_plot_panel_server(
       id = "plot_panel",
       classification_data = current_classification_data,
       drawing_mode_active = dataset_controls$drawing_mode_active,
@@ -194,13 +194,13 @@ visualizer_module_server <- function(id) {
 
     # Child modules receive the same reactive sources, so their displays stay
     # synchronized with the current data and latest trained model.
-    raw_data_module_server(
+    mod_visualizer_raw_data_server(
       id = "raw_data_panel",
       classification_data = current_classification_data
     )
 
-    model_theory_panel_module_server(
-      id = "model_theory_panel",
+    mod_visualizer_model_explanation_server(
+      id = "model_explanation_panel",
       selected_algorithm_key = algorithm_controls$selected_algorithm_key,
       trained_model_bundle = trained_model_bundle
     )

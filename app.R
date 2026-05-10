@@ -35,15 +35,15 @@ for (helper_file in helper_files) {
 # ----------------------------- Module Source Files ----------------------------
 
 module_files <- c(
-  "modules/home_module.R",
-  "modules/visualizer_module.R",
-  "modules/theory_hub_module.R",
-  "modules/about_module.R",
-  "modules/dataset_controls_module.R",
-  "modules/algorithm_controls_module.R",
-  "modules/plot_panel_module.R",
-  "modules/raw_data_module.R",
-  "modules/model_theory_panel_module.R"
+  "R/pages/page_home.R",
+  "R/pages/page_theory_hub.R",
+  "R/pages/page_about.R",
+  "R/visualizer/mod_visualizer_dataset_controls.R",
+  "R/visualizer/mod_visualizer_algorithm_controls.R",
+  "R/visualizer/mod_visualizer_plot_panel.R",
+  "R/visualizer/mod_visualizer_raw_data.R",
+  "R/visualizer/mod_visualizer_model_explanation.R",
+  "R/visualizer/mod_visualizer.R"
 )
 
 for (module_file in module_files) {
@@ -73,10 +73,10 @@ ui <- fluidPage(
         id = "main_navigation",
         type = "hidden",
         selected = "home",
-        tabPanel("home", home_module_ui("home_page")),
-        tabPanel("visualizer", visualizer_module_ui("visualizer_page")),
-        tabPanel("theory_hub", theory_hub_module_ui("theory_hub_page")),
-        tabPanel("about_us", about_module_ui("about_page"))
+        tabPanel("home", page_home_ui("home_page")),
+        tabPanel("visualizer", mod_visualizer_ui("visualizer_page")),
+        tabPanel("theory_hub", page_theory_hub_ui("theory_hub_page")),
+        tabPanel("about_us", page_about_ui("about_page"))
       )
     )
   )
@@ -111,10 +111,10 @@ server <- function(input, output, session) {
     )
   })
 
-  home_page <- home_module_server("home_page")
-  visualizer_module_server("visualizer_page")
-  theory_hub_module_server("theory_hub_page")
-  about_module_server("about_page")
+  home_page <- page_home_server("home_page")
+  mod_visualizer_server("visualizer_page")
+  page_theory_hub_server("theory_hub_page")
+  page_about_server("about_page")
 
   observeEvent(input$nav_home, {
     current_page("home")

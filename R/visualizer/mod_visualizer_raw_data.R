@@ -1,11 +1,11 @@
-# modules/raw_data_module.R
+# R/visualizer/mod_visualizer_raw_data.R
 # Purpose:
 #   Display the current classification dataset in a clean, styled table.
 #   The class column is rendered as colored badges to match the reference image.
 #
 # Functions:
-#   - raw_data_module_ui(): Build the Raw Data tab shell.
-#   - raw_data_module_server(): Render the HTML data table.
+#   - mod_visualizer_raw_data_ui(): Build the Raw Data tab shell.
+#   - mod_visualizer_raw_data_server(): Render the HTML data table.
 #
 # Inputs / Outputs:
 #   Inputs:
@@ -13,7 +13,7 @@
 #   Outputs:
 #     - Styled HTML table showing index, x, y, and class
 
-raw_data_module_ui <- function(id) {
+mod_visualizer_raw_data_ui <- function(id) {
   ns <- NS(id)
 
   div(
@@ -27,7 +27,7 @@ raw_data_module_ui <- function(id) {
 }
 
 
-raw_data_module_server <- function(id, classification_data) {
+mod_visualizer_raw_data_server <- function(id, classification_data) {
   moduleServer(id, function(input, output, session) {
     output$raw_data_table_ui <- renderUI({
       current_classification_data <- classification_data()

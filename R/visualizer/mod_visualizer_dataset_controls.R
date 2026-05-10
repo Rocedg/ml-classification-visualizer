@@ -1,4 +1,4 @@
-# modules/dataset_controls_module.R
+# R/visualizer/mod_visualizer_dataset_controls.R
 # Purpose:
 #   Create the left sidebar section for data setup.
 #   This module is responsible for:
@@ -9,8 +9,8 @@
 #   - choosing which class to draw
 #
 # Functions:
-#   - dataset_controls_module_ui(): Build the data section.
-#   - dataset_controls_module_server(): Expose the selected dataset,
+#   - mod_visualizer_dataset_controls_ui(): Build the data section.
+#   - mod_visualizer_dataset_controls_server(): Expose the selected dataset,
 #     uploaded data, draw mode state, and draw-related actions.
 #
 # Inputs / Outputs:
@@ -27,7 +27,7 @@
 #     - Reactive selected drawing class
 #     - Reactive undo / clear button clicks
 
-dataset_controls_module_ui <- function(id) {
+mod_visualizer_dataset_controls_ui <- function(id) {
   ns <- NS(id)
   
   tagList(
@@ -130,7 +130,7 @@ dataset_controls_module_ui <- function(id) {
 }
 
 
-dataset_controls_module_server <- function(id) {
+mod_visualizer_dataset_controls_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     # These reactive values are returned to the parent visualizer module.
     # The parent decides how they affect the shared dataset.

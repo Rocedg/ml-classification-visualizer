@@ -1,4 +1,4 @@
-# modules/plot_panel_module.R
+# R/visualizer/mod_visualizer_plot_panel.R
 # Purpose:
 #   Render the main interactive plot tab.
 #   This module draws:
@@ -10,8 +10,8 @@
 #   so users can draw their own points.
 #
 # Functions:
-#   - plot_panel_module_ui(): Build the plot tab layout.
-#   - plot_panel_module_server(): Render the plot, metric cards,
+#   - mod_visualizer_plot_panel_ui(): Build the plot tab layout.
+#   - mod_visualizer_plot_panel_server(): Render the plot, metric cards,
 #     and expose click coordinates.
 #
 # Inputs / Outputs:
@@ -25,7 +25,7 @@
 #     - Rendered classification plot
 #     - Rendered metric values
 
-plot_panel_module_ui <- function(id) {
+mod_visualizer_plot_panel_ui <- function(id) {
   ns <- NS(id)
 
   div(
@@ -141,11 +141,11 @@ plot_panel_module_ui <- function(id) {
 }
 
 
-plot_panel_module_server <- function(id,
-                                     classification_data,
-                                     drawing_mode_active,
-                                     selected_class_label,
-                                     run_model_clicked) {
+mod_visualizer_plot_panel_server <- function(id,
+                                             classification_data,
+                                             drawing_mode_active,
+                                             selected_class_label,
+                                             run_model_clicked) {
   moduleServer(id, function(input, output, session) {
     # The parent module supplies the trained model through this setter after
     # the child module is created.

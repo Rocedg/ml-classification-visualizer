@@ -1,12 +1,12 @@
-# modules/home_module.R
+# R/pages/page_home.R
 # Purpose:
 #   Build the landing page shown when the app first opens.
 #   This page mirrors the reference image with a top hero layout,
 #   feature cards underneath, and a footer at the bottom.
 #
 # Functions:
-#   - home_module_ui(): Create the home page user interface.
-#   - home_module_server(): Expose the hero button click to the main app.
+#   - page_home_ui(): Create the home page user interface.
+#   - page_home_server(): Expose the hero button click to the main app.
 #
 # Inputs / Outputs:
 #   Inputs:
@@ -15,7 +15,7 @@
 #     - Home page layout
 #     - Reactive signal used to switch to the visualizer page
 
-home_module_ui <- function(id) {
+page_home_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
@@ -107,7 +107,7 @@ home_module_ui <- function(id) {
 }
 
 
-home_module_server <- function(id) {
+page_home_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     list(
       launch_visualizer = reactive(input$launch_visualizer_button)

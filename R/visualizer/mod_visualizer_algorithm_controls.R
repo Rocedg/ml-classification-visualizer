@@ -1,12 +1,12 @@
-# modules/algorithm_controls_module.R
+# R/visualizer/mod_visualizer_algorithm_controls.R
 # Purpose:
 #   Create the sidebar sections for algorithm selection and parameter setup.
 #   This module also exposes the "Run Classifier" button click so the parent
 #   visualizer module can train the chosen model at the right time.
 #
 # Functions:
-#   - algorithm_controls_module_ui(): Build the algorithm and parameter sections.
-#   - algorithm_controls_module_server(): Track selected algorithm,
+#   - mod_visualizer_algorithm_controls_ui(): Build the algorithm and parameter sections.
+#   - mod_visualizer_algorithm_controls_server(): Track selected algorithm,
 #     render dynamic parameter inputs, and expose run events.
 #
 # Inputs / Outputs:
@@ -19,7 +19,7 @@
 #     - Reactive list of parameter values
 #     - Reactive run button click count
 
-algorithm_controls_module_ui <- function(id) {
+mod_visualizer_algorithm_controls_ui <- function(id) {
   ns <- NS(id)
 
   tagList(
@@ -64,7 +64,7 @@ algorithm_controls_module_ui <- function(id) {
 }
 
 
-algorithm_controls_module_server <- function(id) {
+mod_visualizer_algorithm_controls_server <- function(id) {
   moduleServer(id, function(input, output, session) {
     # The app currently trains Logistic Regression only, but this value keeps
     # the UI/server contract ready for additional algorithms.
@@ -143,7 +143,7 @@ algorithm_controls_module_server <- function(id) {
 
     output$parameter_controls_ui <- renderUI({
       # Parameter controls are algorithm-specific. The returned values are read
-      # by visualizer_module_server() only when Run Classifier is clicked.
+      # by mod_visualizer_server() only when Run Classifier is clicked.
       if (selected_algorithm_key() == "logistic_regression") {
         tagList(
           tags$p(class = "parameter-note", "Training"),
