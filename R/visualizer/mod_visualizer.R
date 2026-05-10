@@ -76,12 +76,14 @@ mod_visualizer_server <- function(id) {
     # points so drawing can be cleared without losing the selected base dataset.
     base_classification_data <- reactiveVal(generate_preset_dataset("Gaussian clusters"))
     drawn_classification_data <- reactiveVal(create_empty_classification_data())
+    current_base_dataset_label <- reactiveVal("Gaussian clusters")
 
     # Choosing a preset replaces the base dataset and resets any drawn points.
     observeEvent(dataset_controls$selected_dataset_name(), {
       new_preset_data <- generate_preset_dataset(dataset_controls$selected_dataset_name())
       base_classification_data(new_preset_data)
       drawn_classification_data(create_empty_classification_data())
+      current_base_dataset_label(dataset_controls$selected_dataset_name())
     }, ignoreInit = FALSE)
 
     # Uploads are already validated by mod_visualizer_dataset_controls_server().
@@ -91,6 +93,7 @@ mod_visualizer_server <- function(id) {
       if (!is.null(uploaded_classification_data)) {
         base_classification_data(uploaded_classification_data)
         drawn_classification_data(create_empty_classification_data())
+        current_base_dataset_label("Uploaded CSV")
       }
     }, ignoreNULL = TRUE)
 
@@ -140,6 +143,20 @@ mod_visualizer_server <- function(id) {
       combined_data
     })
 
+    current_dataset_summary_label <- reactive({
+      base_label <- current_base_dataset_label()
+
+      if (is.null(base_label) || length(base_label) != 1 || is.na(base_label) || !nzchar(base_label)) {
+        base_label <- "—"
+      }
+
+      if (nrow(drawn_classification_data()) > 0) {
+        paste(base_label, "+ drawn points")
+      } else {
+        base_label
+      }
+    })
+
     # The plot panel owns the visible plot and iteration controls. The parent
     # passes reactive data/control state in and receives plot clicks back.
     plot_panel <- mod_visualizer_plot_panel_server(
@@ -147,7 +164,10 @@ mod_visualizer_server <- function(id) {
       classification_data = current_classification_data,
       drawing_mode_active = dataset_controls$drawing_mode_active,
       selected_class_label = dataset_controls$selected_drawing_class,
-      run_model_clicked = algorithm_controls$run_model_clicks
+      run_model_clicked = algorithm_controls$run_model_clicks,
+      selected_dataset_label = current_dataset_summary_label,
+      selected_algorithm_key = algorithm_controls$selected_algorithm_key,
+      algorithm_parameters = algorithm_controls$algorithm_parameters
     )
 
     # Plot clicks add custom points only while draw mode is enabled.

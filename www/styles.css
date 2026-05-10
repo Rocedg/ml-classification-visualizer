@@ -356,6 +356,7 @@ a { text-decoration: none; }
 
 .algorithm-card-meta .help-tooltip,
 .status-chip .help-tooltip,
+.current-run-header .help-tooltip,
 .probability-guide-title .help-tooltip,
 .diagnostic-section-header .help-tooltip,
 .training-insights-header .help-tooltip {
@@ -690,6 +691,57 @@ a { text-decoration: none; }
 .diagnostic-plot-shell { min-height: 320px; }
 .parameter-diagnostic-card { padding: 10px; }
 .parameter-diagnostic-card .plot-top-status-row { margin-bottom: 6px; }
+.plot-side-panel {
+  grid-area: metrics;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-self: stretch;
+}
+
+.current-run-card {
+  padding: 12px;
+}
+
+.current-run-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.current-run-row {
+  display: grid;
+  grid-template-columns: minmax(86px, 0.9fr) minmax(0, 1.1fr);
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 0;
+  border-top: 1px solid #edf2f6;
+}
+
+.current-run-row:first-child {
+  border-top: none;
+}
+
+.current-run-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.current-run-value {
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
 .plot-tab-layout .metric-card-grid {
   grid-area: metrics;
   grid-template-columns: 1fr;

@@ -130,33 +130,45 @@ mod_visualizer_plot_panel_ui <- function(id) {
       )
     ),
     div(
-      class = "metric-card-grid",
-      div(class = "app-card metric-card",
-        tags$span(class = "metric-label", "Accuracy"),
-        tags$span(
-          class = "metric-value",
-          textOutput(ns("accuracy_value"), inline = TRUE)
-        )
+      class = "plot-side-panel",
+      div(
+        class = "app-card current-run-card",
+        div(
+          class = "current-run-header",
+          tags$span("Current run"),
+          help_icon("Summary of the dataset, model, and parameters used in the current visualization.")
+        ),
+        uiOutput(ns("current_run_summary"))
       ),
-      div(class = "app-card metric-card",
-        tags$span(class = "metric-label", "Precision"),
-        tags$span(
-          class = "metric-value",
-          textOutput(ns("precision_value"), inline = TRUE)
-        )
-      ),
-      div(class = "app-card metric-card",
-        tags$span(class = "metric-label", "Recall"),
-        tags$span(
-          class = "metric-value",
-          textOutput(ns("recall_value"), inline = TRUE)
-        )
-      ),
-      div(class = "app-card metric-card",
-        tags$span(class = "metric-label", "F1 Score"),
-        tags$span(
-          class = "metric-value",
-          textOutput(ns("f1_value"), inline = TRUE)
+      div(
+        class = "metric-card-grid",
+        div(class = "app-card metric-card",
+          tags$span(class = "metric-label", "Accuracy"),
+          tags$span(
+            class = "metric-value",
+            textOutput(ns("accuracy_value"), inline = TRUE)
+          )
+        ),
+        div(class = "app-card metric-card",
+          tags$span(class = "metric-label", "Precision"),
+          tags$span(
+            class = "metric-value",
+            textOutput(ns("precision_value"), inline = TRUE)
+          )
+        ),
+        div(class = "app-card metric-card",
+          tags$span(class = "metric-label", "Recall"),
+          tags$span(
+            class = "metric-value",
+            textOutput(ns("recall_value"), inline = TRUE)
+          )
+        ),
+        div(class = "app-card metric-card",
+          tags$span(class = "metric-label", "F1 Score"),
+          tags$span(
+            class = "metric-value",
+            textOutput(ns("f1_value"), inline = TRUE)
+          )
         )
       )
     )
@@ -232,7 +244,10 @@ mod_visualizer_plot_panel_server <- function(id,
                                              classification_data,
                                              drawing_mode_active,
                                              selected_class_label,
-                                             run_model_clicked) {
+                                             run_model_clicked,
+                                             selected_dataset_label = reactive("—"),
+                                             selected_algorithm_key = reactive("logistic_regression"),
+                                             algorithm_parameters = reactive(list())) {
   moduleServer(id, function(input, output, session) {
     # The parent module supplies the trained model through this setter after
     # the child module is created.
@@ -275,6 +290,50 @@ mod_visualizer_plot_panel_server <- function(id,
 
     set_model_reactive <- function(model_reactive_expression) {
       internal_model_reactive(model_reactive_expression)
+    }
+
+    format_current_run_number <- function(value, digits = 2) {
+      if (is.null(value) || length(value) != 1 || is.na(value)) {
+        return("—")
+      }
+
+      numeric_value <- suppressWarnings(as.numeric(value))
+
+      if (is.na(numeric_value)) {
+        return("—")
+      }
+
+      formatC(numeric_value, format = "f", digits = digits)
+    }
+
+    format_current_run_text <- function(value) {
+      if (is.null(value) || length(value) != 1 || is.na(value) || !nzchar(as.character(value))) {
+        return("—")
+      }
+
+      as.character(value)
+    }
+
+    format_algorithm_label <- function(algorithm_key) {
+      if (is.null(algorithm_key) || length(algorithm_key) != 1 || is.na(algorithm_key)) {
+        return("—")
+      }
+
+      switch(
+        as.character(algorithm_key),
+        logistic_regression = "Logistic Regression",
+        svm = "SVM",
+        knn = "k-NN",
+        as.character(algorithm_key)
+      )
+    }
+
+    format_intercept_label <- function(fit_intercept) {
+      if (is.null(fit_intercept) || length(fit_intercept) != 1 || is.na(fit_intercept)) {
+        return("—")
+      }
+
+      if (isTRUE(fit_intercept)) "ON" else "OFF"
     }
 
     # Before the Run Classifier button has been clicked, the plot displays only
@@ -502,6 +561,37 @@ mod_visualizer_plot_panel_server <- function(id,
       } else {
         "Drawing mode off"
       }
+    })
+
+    output$current_run_summary <- renderUI({
+      parameter_values <- algorithm_parameters()
+
+      if (is.null(parameter_values)) {
+        parameter_values <- list()
+      }
+
+      iteration_text <- if (total_iteration_count() > 0) {
+        paste(current_iteration(), "/", total_iteration_count() - 1)
+      } else {
+        "Not started"
+      }
+
+      summary_row <- function(label_text, value_text) {
+        div(
+          class = "current-run-row",
+          tags$span(class = "current-run-label", label_text),
+          tags$span(class = "current-run-value", value_text)
+        )
+      }
+
+      tagList(
+        summary_row("Dataset", format_current_run_text(selected_dataset_label())),
+        summary_row("Model", format_algorithm_label(selected_algorithm_key())),
+        summary_row("Iteration", iteration_text),
+        summary_row("Learning rate", format_current_run_number(parameter_values$logistic_learning_rate)),
+        summary_row("Threshold", format_current_run_number(parameter_values$decision_threshold)),
+        summary_row("Intercept", format_intercept_label(parameter_values$logistic_fit_intercept))
+      )
     })
 
     output$probability_guide_visible <- renderText({
