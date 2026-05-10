@@ -225,7 +225,22 @@ build_parameter_trajectory_data <- function(iteration_history) {
 # Purpose:
 #   Provide a placeholder Plotly object before a 3D trajectory can be shown.
 build_empty_parameter_trajectory_3d_plot <- function() {
-  empty_plot <- plotly::plot_ly()
+  empty_trajectory_data <- data.frame(
+    weight_x = numeric(0),
+    weight_y = numeric(0),
+    bias = numeric(0)
+  )
+
+  empty_plot <- plotly::plot_ly(
+    data = empty_trajectory_data,
+    x = ~weight_x,
+    y = ~weight_y,
+    z = ~bias,
+    type = "scatter3d",
+    mode = "markers",
+    hoverinfo = "none",
+    showlegend = FALSE
+  )
 
   plotly::layout(
     empty_plot,
@@ -283,9 +298,7 @@ build_parameter_trajectory_3d_plot <- function(iteration_history, current_iterat
   )
   marker_data$marker <- factor(marker_data$marker, levels = c("Start", "Current", "Final"))
 
-  trajectory_plot <- plotly::plot_ly()
-  trajectory_plot <- plotly::add_trace(
-    trajectory_plot,
+  trajectory_plot <- plotly::plot_ly(
     data = trajectory_data,
     x = ~weight_x,
     y = ~weight_y,
