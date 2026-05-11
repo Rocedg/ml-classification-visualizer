@@ -21,8 +21,12 @@ library(plotly)
 # Source helper files before modules so their functions are available everywhere.
 helper_files <- c(
   "R/data_helpers.R",
+  "R/data/train_test_split.R",
+  "R/data/real_datasets.R",
+  "R/data/synthetic_datasets.R",
+  "R/data/preset_datasets.R",
+  "R/data/uploaded_datasets.R",
   "R/metrics_helpers.R",
-  "R/model_training_helpers.R",
   "R/models/logistic_regression.R",
   "R/models/knn.R",
   "R/model_dispatch_helpers.R",
