@@ -228,8 +228,7 @@ mod_visualizer_server <- function(id) {
 
     mod_visualizer_model_explanation_server(
       id = "model_explanation_panel",
-      selected_algorithm_key = algorithm_controls$selected_algorithm_key,
-      trained_model_bundle = trained_model_bundle
+      selected_algorithm_key = algorithm_controls$selected_algorithm_key
     )
   })
 }
