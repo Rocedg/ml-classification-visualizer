@@ -205,7 +205,13 @@ mod_visualizer_plot_panel_server <- function(id,
         return(NULL)
       }
 
-      model_reactive_expression()
+      model_results <- model_reactive_expression()
+
+      if (is.null(model_results) || !identical(model_results$algorithm_key, selected_algorithm_text())) {
+        return(NULL)
+      }
+
+      model_results
     })
 
     # TODO: Future: generalize this iteration navigation system for other classifiers.
