@@ -938,6 +938,8 @@ train_classification_model <- function(classification_data, algorithm_name, para
     algorithm_training_results <- logistic_training_results
   } else if (algorithm_name == "knn") {
     requested_k <- parameter_values$knn_k
+    distance_metric <- normalize_knn_distance_metric(parameter_values$knn_distance_metric)
+    voting_method <- normalize_knn_voting_method(parameter_values$knn_voting_method)
 
     if (is.null(requested_k)) {
       requested_k <- 5
@@ -955,6 +957,8 @@ train_classification_model <- function(classification_data, algorithm_name, para
       classification_data = train_classification_data,
       prediction_grid = prediction_grid,
       k = requested_k,
+      distance_metric = distance_metric,
+      voting_method = voting_method,
       evaluation_data = split_classification_data
     )
 

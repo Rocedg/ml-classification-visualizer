@@ -370,6 +370,24 @@ mod_visualizer_plot_panel_server <- function(id,
       if (isTRUE(fit_intercept)) "ON" else "OFF"
     }
 
+    format_knn_distance_label <- function(distance_metric) {
+      switch(
+        normalize_knn_distance_metric(distance_metric),
+        euclidean = "Euclidean",
+        manhattan = "Manhattan",
+        "Euclidean"
+      )
+    }
+
+    format_knn_voting_label <- function(voting_method) {
+      switch(
+        normalize_knn_voting_method(voting_method),
+        uniform = "Uniform",
+        distance_weighted = "Distance-weighted",
+        "Uniform"
+      )
+    }
+
     format_current_run_integer <- function(value) {
       if (is.null(value) || length(value) != 1 || is.na(value)) {
         return("â€”")
@@ -483,6 +501,8 @@ mod_visualizer_plot_panel_server <- function(id,
 
       parameter_values <- algorithm_parameters()
       requested_k <- parameter_values$knn_k
+      distance_metric <- parameter_values$knn_distance_metric
+      voting_method <- parameter_values$knn_voting_method
 
       if (is.null(requested_k)) {
         requested_k <- model_results$model_object$effective_k
@@ -490,11 +510,19 @@ mod_visualizer_plot_panel_server <- function(id,
       if (is.null(requested_k)) {
         requested_k <- 5
       }
+      if (is.null(distance_metric)) {
+        distance_metric <- model_results$model_object$distance_metric
+      }
+      if (is.null(voting_method)) {
+        voting_method <- model_results$model_object$voting_method
+      }
 
       inspect_knn_point(
         training_data = model_results$train_data,
         query_point = query_point,
-        k = requested_k
+        k = requested_k,
+        distance_metric = distance_metric,
+        voting_method = voting_method
       )
     })
 
@@ -806,17 +834,49 @@ mod_visualizer_plot_panel_server <- function(id,
       class_a_votes <- as.integer(vote_counts[["Class A"]])
       class_b_votes <- as.integer(vote_counts[["Class B"]])
       predicted_class <- if (is.na(inspection$predicted_class)) "-" else inspection$predicted_class
+      voting_method <- normalize_knn_voting_method(inspection$voting_method)
+      show_weight_column <- identical(voting_method, "distance_weighted") && "weight" %in% names(neighbors)
+
+      if (show_weight_column) {
+        weighted_votes <- inspection$weighted_votes
+        class_a_weighted_vote <- if (is.null(weighted_votes[["Class A"]])) 0 else weighted_votes[["Class A"]]
+        class_b_weighted_vote <- if (is.null(weighted_votes[["Class B"]])) 0 else weighted_votes[["Class B"]]
+        vote_label <- "Weighted vote"
+        vote_value <- paste0(
+          "Class A = ", format_inspection_number(class_a_weighted_vote),
+          ", Class B = ", format_inspection_number(class_b_weighted_vote)
+        )
+      } else {
+        vote_label <- "Vote"
+        vote_value <- paste0("Class A = ", class_a_votes, ", Class B = ", class_b_votes)
+      }
 
       neighbor_rows <- lapply(seq_len(nrow(neighbors)), function(row_index) {
         neighbor <- neighbors[row_index, , drop = FALSE]
         badge_class <- if (as.character(neighbor$class) == "Class A") "class-badge class-a-badge" else "class-badge class-b-badge"
 
-        tags$tr(
+        row_cells <- list(
           tags$td(neighbor$rank),
           tags$td(tags$span(class = badge_class, as.character(neighbor$class))),
           tags$td(format_inspection_number(neighbor$distance))
         )
+
+        if (show_weight_column) {
+          row_cells <- c(row_cells, list(tags$td(format_inspection_number(neighbor$weight))))
+        }
+
+        do.call(tags$tr, row_cells)
       })
+
+      table_header_cells <- list(
+        tags$th("Rank"),
+        tags$th("Class"),
+        tags$th("Distance")
+      )
+
+      if (show_weight_column) {
+        table_header_cells <- c(table_header_cells, list(tags$th("Weight")))
+      }
 
       div(
         class = "knn-inspection-panel",
@@ -830,17 +890,13 @@ mod_visualizer_plot_panel_server <- function(id,
           ),
           tags$span(class = "knn-inspection-label", "Prediction"),
           tags$span(class = "knn-inspection-value", predicted_class),
-          tags$span(class = "knn-inspection-label", "Vote"),
-          tags$span(class = "knn-inspection-value", paste0("Class A = ", class_a_votes, ", Class B = ", class_b_votes))
+          tags$span(class = "knn-inspection-label", vote_label),
+          tags$span(class = "knn-inspection-value", vote_value)
         ),
         tags$table(
           class = "knn-neighbor-table",
           tags$thead(
-            tags$tr(
-              tags$th("Rank"),
-              tags$th("Class"),
-              tags$th("Distance")
-            )
+            do.call(tags$tr, table_header_cells)
           ),
           tags$tbody(neighbor_rows)
         )
@@ -872,11 +928,23 @@ mod_visualizer_plot_panel_server <- function(id,
       algorithm_key <- selected_algorithm_key()
 
       if (identical(algorithm_key, "knn")) {
+        knn_distance_metric <- parameter_values$knn_distance_metric
+        knn_voting_method <- parameter_values$knn_voting_method
+
+        if (is.null(knn_distance_metric) && !is.null(model_results$model_object$distance_metric)) {
+          knn_distance_metric <- model_results$model_object$distance_metric
+        }
+        if (is.null(knn_voting_method) && !is.null(model_results$model_object$voting_method)) {
+          knn_voting_method <- model_results$model_object$voting_method
+        }
+
         return(tagList(
           summary_row("Dataset", format_current_run_text(selected_dataset_label())),
           summary_row("Model", format_algorithm_label(algorithm_key)),
           summary_row("Split 70/30", format_split_summary(model_results)),
-          summary_row("k neighbors", format_current_run_integer(parameter_values$knn_k))
+          summary_row("K neighbors", format_current_run_integer(parameter_values$knn_k)),
+          summary_row("Distance", format_knn_distance_label(knn_distance_metric)),
+          summary_row("Voting", format_knn_voting_label(knn_voting_method))
         ))
       }
 
