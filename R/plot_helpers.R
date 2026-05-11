@@ -32,9 +32,10 @@ build_square_plot_limits <- function(x_values, y_values, padding_fraction = 0.18
 # Inputs:
 #   - classification_data: current points from preset/upload/drawing workflows
 #   - active_model_view: NULL before training, or one saved model iteration
+#   - knn_inspection: optional selected query point and nearest neighbors
 # Output:
 #   A ggplot object rendered by the plot panel module.
-build_classification_plot <- function(classification_data, active_model_view) {
+build_classification_plot <- function(classification_data, active_model_view, knn_inspection = NULL) {
   plot_object <- ggplot()
   point_data <- classification_data
 
@@ -138,10 +139,52 @@ build_classification_plot <- function(classification_data, active_model_view) {
     )
   }
 
+  inspection_layers <- list()
+  if (!is.null(knn_inspection) && !is.null(knn_inspection$query_point)) {
+    query_point <- knn_inspection$query_point
+    nearest_neighbors <- knn_inspection$neighbors
+
+    if (!is.null(nearest_neighbors) && nrow(nearest_neighbors) > 0) {
+      inspection_layers <- c(
+        inspection_layers,
+        list(
+          geom_point(
+            data = nearest_neighbors,
+            aes(x = x, y = y),
+            color = "#111827",
+            fill = NA,
+            size = 4.6,
+            alpha = 0.98,
+            shape = 21,
+            stroke = 1.35,
+            inherit.aes = FALSE
+          )
+        )
+      )
+    }
+
+    inspection_layers <- c(
+      inspection_layers,
+      list(
+        geom_point(
+          data = query_point,
+          aes(x = x, y = y),
+          color = "#111827",
+          size = 5,
+          alpha = 0.98,
+          shape = 4,
+          stroke = 1.4,
+          inherit.aes = FALSE
+        )
+      )
+    )
+  }
+
   plot_object +
     geom_hline(yintercept = 0, color = "#d6dfe8", linewidth = 0.6) +
     geom_vline(xintercept = 0, color = "#d6dfe8", linewidth = 0.6) +
     point_layers +
+    inspection_layers +
     coord_equal(xlim = plot_x_limits, ylim = plot_y_limits, expand = FALSE) +
     labs(
       x = "X",

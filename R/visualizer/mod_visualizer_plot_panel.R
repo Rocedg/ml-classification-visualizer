@@ -154,10 +154,7 @@ mod_visualizer_plot_panel_ui <- function(id) {
         ),
         conditionalPanel(
           condition = paste0("output['", ns("show_knn_iteration_note"), "'] == 'true'"),
-          tags$p(
-            class = "metrics-comparison-note",
-            "k-NN has no training iterations. Predictions update when k changes."
-          )
+          uiOutput(ns("knn_inspection_ui"))
         )
       )
     ),
@@ -274,6 +271,7 @@ mod_visualizer_plot_panel_server <- function(id,
     # The parent module supplies the trained model through this setter after
     # the child module is created.
     internal_model_reactive <- reactiveVal(NULL)
+    knn_selected_query_point <- reactiveVal(NULL)
 
     # current_iteration is local display state using 0-based indexing (0 to max_iterations).
     # It controls which saved logistic training step is rendered without retraining the model.
@@ -386,6 +384,14 @@ mod_visualizer_plot_panel_server <- function(id,
       as.character(as.integer(round(numeric_value)))
     }
 
+    format_inspection_number <- function(value, digits = 2) {
+      if (is.null(value) || length(value) != 1 || is.na(value) || !is.finite(value)) {
+        return("-")
+      }
+
+      formatC(as.numeric(value), format = "f", digits = digits)
+    }
+
     format_split_summary <- function(model_results) {
       if (is.null(model_results) || is.null(model_results$split_counts)) {
         return("70 / 30")
@@ -463,6 +469,35 @@ mod_visualizer_plot_panel_server <- function(id,
       get_active_iteration_results(model_results, iteration_history, current_iteration())
     })
 
+    active_knn_inspection <- reactive({
+      if (!identical(selected_algorithm_text(), "knn")) {
+        return(NULL)
+      }
+
+      model_results <- safe_model_results()
+      query_point <- knn_selected_query_point()
+
+      if (is.null(model_results) || !identical(model_results$algorithm_key, "knn") || is.null(query_point)) {
+        return(NULL)
+      }
+
+      parameter_values <- algorithm_parameters()
+      requested_k <- parameter_values$knn_k
+
+      if (is.null(requested_k)) {
+        requested_k <- model_results$model_object$effective_k
+      }
+      if (is.null(requested_k)) {
+        requested_k <- 5
+      }
+
+      inspect_knn_point(
+        training_data = model_results$train_data,
+        query_point = query_point,
+        k = requested_k
+      )
+    })
+
     training_data_for_diagnostics <- reactive({
       model_results <- safe_model_results()
 
@@ -510,6 +545,56 @@ mod_visualizer_plot_panel_server <- function(id,
         advance_playback_generation()
         is_playing(FALSE)
       }
+
+      if (!identical(selected_algorithm_text(), "knn")) {
+        knn_selected_query_point(NULL)
+      }
+    }, ignoreInit = TRUE)
+
+    observeEvent(classification_data(), {
+      knn_selected_query_point(NULL)
+    }, ignoreInit = TRUE)
+
+    observeEvent(run_model_clicked(), {
+      knn_selected_query_point(NULL)
+    }, ignoreInit = TRUE)
+
+    observeEvent(input$plot_click, {
+      if (!identical(selected_algorithm_text(), "knn") || drawing_mode_active()) {
+        return(NULL)
+      }
+
+      model_results <- safe_model_results()
+      if (is.null(model_results) || !identical(model_results$algorithm_key, "knn")) {
+        return(NULL)
+      }
+
+      clicked_point <- input$plot_click
+      if (is.null(clicked_point$x) || is.null(clicked_point$y)) {
+        return(NULL)
+      }
+
+      clicked_x <- suppressWarnings(as.numeric(clicked_point$x))
+      clicked_y <- suppressWarnings(as.numeric(clicked_point$y))
+      if (is.na(clicked_x) || is.na(clicked_y)) {
+        return(NULL)
+      }
+
+      active_model_view <- active_iteration_results()
+      prediction_grid <- active_model_view$prediction_grid
+
+      if (!is.null(prediction_grid) && all(c("x", "y") %in% names(prediction_grid))) {
+        x_range <- range(prediction_grid$x, finite = TRUE)
+        y_range <- range(prediction_grid$y, finite = TRUE)
+
+        if (length(x_range) == 2 && length(y_range) == 2 &&
+            (clicked_x < x_range[1] || clicked_x > x_range[2] ||
+             clicked_y < y_range[1] || clicked_y > y_range[2])) {
+          return(NULL)
+        }
+      }
+
+      knn_selected_query_point(data.frame(x = clicked_x, y = clicked_y))
     }, ignoreInit = TRUE)
 
     # Moving the slider selects a saved iteration using 0-based indexing.
@@ -682,6 +767,86 @@ mod_visualizer_plot_panel_server <- function(id,
       }
     })
 
+    output$knn_inspection_ui <- renderUI({
+      model_results <- safe_model_results()
+
+      if (!identical(selected_algorithm_text(), "knn")) {
+        return(NULL)
+      }
+
+      if (is.null(model_results) || !identical(model_results$algorithm_key, "knn")) {
+        return(div(
+          class = "knn-inspection-panel",
+          tags$h4("k-NN inspection"),
+          tags$p("Run k-NN, then click the plot to inspect the k nearest training points.")
+        ))
+      }
+
+      inspection <- active_knn_inspection()
+
+      if (is.null(inspection)) {
+        return(div(
+          class = "knn-inspection-panel",
+          tags$h4("k-NN inspection"),
+          tags$p("Click the plot to inspect the k nearest training points.")
+        ))
+      }
+
+      neighbors <- inspection$neighbors
+
+      if (is.null(neighbors) || nrow(neighbors) == 0) {
+        return(div(
+          class = "knn-inspection-panel",
+          tags$h4("k-NN inspection"),
+          tags$p("No valid training points are available for this inspection.")
+        ))
+      }
+
+      vote_counts <- inspection$vote_counts
+      class_a_votes <- as.integer(vote_counts[["Class A"]])
+      class_b_votes <- as.integer(vote_counts[["Class B"]])
+      predicted_class <- if (is.na(inspection$predicted_class)) "-" else inspection$predicted_class
+
+      neighbor_rows <- lapply(seq_len(nrow(neighbors)), function(row_index) {
+        neighbor <- neighbors[row_index, , drop = FALSE]
+        badge_class <- if (as.character(neighbor$class) == "Class A") "class-badge class-a-badge" else "class-badge class-b-badge"
+
+        tags$tr(
+          tags$td(neighbor$rank),
+          tags$td(tags$span(class = badge_class, as.character(neighbor$class))),
+          tags$td(format_inspection_number(neighbor$distance))
+        )
+      })
+
+      div(
+        class = "knn-inspection-panel",
+        tags$h4("k-NN inspection"),
+        div(
+          class = "knn-inspection-grid",
+          tags$span(class = "knn-inspection-label", "Selected point"),
+          tags$span(
+            class = "knn-inspection-value",
+            paste0("x = ", format_inspection_number(inspection$query_point$x), ", y = ", format_inspection_number(inspection$query_point$y))
+          ),
+          tags$span(class = "knn-inspection-label", "Prediction"),
+          tags$span(class = "knn-inspection-value", predicted_class),
+          tags$span(class = "knn-inspection-label", "Vote"),
+          tags$span(class = "knn-inspection-value", paste0("Class A = ", class_a_votes, ", Class B = ", class_b_votes))
+        ),
+        tags$table(
+          class = "knn-neighbor-table",
+          tags$thead(
+            tags$tr(
+              tags$th("Rank"),
+              tags$th("Class"),
+              tags$th("Distance")
+            )
+          ),
+          tags$tbody(neighbor_rows)
+        )
+      )
+    })
+
     output$current_run_summary <- renderUI({
       parameter_values <- algorithm_parameters()
       model_results <- safe_model_results()
@@ -774,10 +939,11 @@ mod_visualizer_plot_panel_server <- function(id,
     output$classification_plot <- renderPlot({
       current_classification_data <- classification_data()
       active_model_view <- active_iteration_results()
+      knn_inspection <- active_knn_inspection()
 
       # active_model_view is either NULL or one saved training iteration. The
       # plot helper uses it to decide whether to draw the probability heatmap.
-      build_classification_plot(current_classification_data, active_model_view)
+      build_classification_plot(current_classification_data, active_model_view, knn_inspection)
     }, res = 110)
 
     output$iteration_metric_plot <- renderPlot({

@@ -460,6 +460,117 @@ predict_knn_points <- function(training_data, prediction_points, k = 5) {
 }
 
 
+# find_knn_neighbors()
+# Purpose:
+#   Return the nearest training rows for one query point, including rank and
+#   distance values used by the inspection panel.
+find_knn_neighbors <- function(training_data, query_point, k = 5) {
+  class_levels <- c("Class A", "Class B")
+  empty_neighbors <- data.frame(
+    rank = integer(0),
+    x = numeric(0),
+    y = numeric(0),
+    class = factor(character(0), levels = class_levels),
+    distance = numeric(0)
+  )
+
+  if (is.null(query_point) || !all(c("x", "y") %in% names(query_point))) {
+    return(empty_neighbors)
+  }
+
+  query_x <- suppressWarnings(as.numeric(query_point$x[1]))
+  query_y <- suppressWarnings(as.numeric(query_point$y[1]))
+
+  if (is.na(query_x) || is.na(query_y)) {
+    return(empty_neighbors)
+  }
+
+  required_training_columns <- c("x", "y", "class")
+
+  if (is.null(training_data) || !all(required_training_columns %in% names(training_data))) {
+    return(empty_neighbors)
+  }
+
+  valid_training_rows <- stats::complete.cases(training_data[, required_training_columns, drop = FALSE])
+  neighbor_data <- training_data[valid_training_rows, required_training_columns, drop = FALSE]
+  neighbor_data$class <- factor(as.character(neighbor_data$class), levels = class_levels)
+  neighbor_data <- neighbor_data[!is.na(neighbor_data$class), , drop = FALSE]
+
+  effective_k <- cap_knn_k(k, nrow(neighbor_data))
+
+  if (effective_k == 0) {
+    return(empty_neighbors)
+  }
+
+  distances <- sqrt((neighbor_data$x - query_x)^2 + (neighbor_data$y - query_y)^2)
+  ordered_neighbor_indices <- order(distances, seq_along(distances), na.last = NA)
+
+  if (length(ordered_neighbor_indices) == 0) {
+    return(empty_neighbors)
+  }
+
+  nearest_indices <- head(ordered_neighbor_indices, effective_k)
+  nearest_neighbors <- neighbor_data[nearest_indices, , drop = FALSE]
+
+  data.frame(
+    rank = seq_along(nearest_indices),
+    x = nearest_neighbors$x,
+    y = nearest_neighbors$y,
+    class = factor(as.character(nearest_neighbors$class), levels = class_levels),
+    distance = distances[nearest_indices],
+    stringsAsFactors = FALSE
+  )
+}
+
+
+# inspect_knn_point()
+# Purpose:
+#   Build the compact details needed to explain a k-NN prediction at one
+#   selected plot location.
+inspect_knn_point <- function(training_data, query_point, k = 5) {
+  class_levels <- c("Class A", "Class B")
+
+  if (is.null(query_point) || !all(c("x", "y") %in% names(query_point))) {
+    return(NULL)
+  }
+
+  query_data <- data.frame(
+    x = suppressWarnings(as.numeric(query_point$x[1])),
+    y = suppressWarnings(as.numeric(query_point$y[1]))
+  )
+
+  if (is.na(query_data$x) || is.na(query_data$y)) {
+    return(NULL)
+  }
+
+  nearest_neighbors <- find_knn_neighbors(
+    training_data = training_data,
+    query_point = query_data,
+    k = k
+  )
+  prediction_result <- predict_knn_points(
+    training_data = training_data,
+    prediction_points = query_data,
+    k = k
+  )
+
+  vote_counts <- table(factor(as.character(nearest_neighbors$class), levels = class_levels))
+  predicted_class <- as.character(prediction_result$predicted_class[1])
+
+  if (is.na(predicted_class)) {
+    predicted_class <- NA_character_
+  }
+
+  list(
+    query_point = query_data,
+    predicted_class = predicted_class,
+    vote_counts = vote_counts,
+    neighbors = nearest_neighbors,
+    effective_k = prediction_result$effective_k
+  )
+}
+
+
 # train_knn_classifier()
 # Purpose:
 #   Store the training points and evaluate k-NN predictions for train/test rows
