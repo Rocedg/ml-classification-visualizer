@@ -340,6 +340,19 @@ a { text-decoration: none; }
 .algorithm-selection-card.is-active,
 .algorithm-selection-card:hover { background: #effaf7; border-color: var(--mint); }
 
+.algorithm-selection-card,
+.algorithm-selection-card:hover,
+.algorithm-selection-card:focus,
+.algorithm-selection-card:active,
+.algorithm-selection-card .help-tooltip {
+  text-decoration: none;
+}
+
+.algorithm-selection-card:focus-visible {
+  outline: 2px solid rgba(93, 181, 162, 0.45);
+  outline-offset: 2px;
+}
+
 .problem-type-card.is-disabled { opacity: 0.55; background: #fafbfd; }
 .problem-type-title-row, .algorithm-card-title-row { margin-bottom: 6px; font-size: 14px; }
 
@@ -516,6 +529,19 @@ a { text-decoration: none; }
 }
 
 .raw-data-tab-layout, .theory-panel-layout { display: flex; flex-direction: column; gap: 10px; }
+.main-plot-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.main-plot-title {
+  margin: 0;
+  color: var(--navy);
+  font-size: 18px;
+  font-weight: 800;
+}
+
 .plot-top-status-row { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .status-chip {
@@ -533,7 +559,7 @@ a { text-decoration: none; }
 
 .status-chip-primary { background: var(--mint-soft); color: var(--mint-dark); }
 .plot-canvas-shell { padding: 8px; }
-.plot-tab-layout > .plot-top-status-row { grid-area: status; }
+.plot-tab-layout > .main-plot-header { grid-area: status; }
 .main-feature-plot-card {
   grid-area: plot;
   display: grid;

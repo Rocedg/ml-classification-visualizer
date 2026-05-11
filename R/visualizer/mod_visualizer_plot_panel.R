@@ -38,14 +38,19 @@ mod_visualizer_plot_panel_ui <- function(id) {
   div(
     class = "plot-tab-layout",
     div(
-      class = "plot-top-status-row",
+      class = "main-plot-header",
       div(
-        class = "status-chip status-chip-primary",
-        title = "Background color shows predicted class probability across the feature space.",
-        textOutput(ns("plot_status_text"), inline = TRUE),
-        help_icon("Background color shows predicted class probability across the feature space.")
+        class = "main-plot-title-row",
+        tags$h3(class = "main-plot-title", "Main visualization")
       ),
-      div(class = "status-chip", textOutput(ns("drawing_status_text"), inline = TRUE))
+      div(
+        class = "plot-top-status-row",
+        div(
+          class = "status-chip status-chip-primary",
+          textOutput(ns("plot_status_text"), inline = TRUE)
+        ),
+        div(class = "status-chip", textOutput(ns("drawing_status_text"), inline = TRUE))
+      )
     ),
     div(
       class = "plot-canvas-shell main-feature-plot-card",

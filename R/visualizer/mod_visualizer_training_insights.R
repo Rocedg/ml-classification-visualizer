@@ -16,7 +16,6 @@ mod_visualizer_training_insights_ui <- function(id) {
     class = "training-insights-tab-layout",
     div(
       class = "training-insights-header",
-      title = "Shows model-specific training details.",
       tags$h3(tags$span("Training insights"), help_icon("Shows model-specific training details.")),
       tags$p(textOutput(ns("training_insights_subtitle"), inline = TRUE))
     ),
@@ -26,7 +25,6 @@ mod_visualizer_training_insights_ui <- function(id) {
         class = "training-insights-grid",
         div(
           class = "plot-canvas-shell diagnostic-plot-shell",
-          title = "Shows how prediction error changes over training iterations.",
           div(
             class = "diagnostic-section-header",
             tags$span("Loss curve"),
@@ -43,7 +41,6 @@ mod_visualizer_training_insights_ui <- function(id) {
             class = "plot-top-status-row",
             div(
               class = "status-chip status-chip-primary",
-              title = "Shows how the learned model parameters move during optimization.",
               textOutput(ns("parameter_diagnostic_title"), inline = TRUE),
               help_icon("Shows how the learned model parameters move during optimization.")
             )

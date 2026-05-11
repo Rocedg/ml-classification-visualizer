@@ -116,13 +116,11 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           actionLink(
             inputId = session$ns(button_id),
             label = card_contents,
-            class = active_class,
-            title = tooltip_text
+            class = active_class
           )
         } else {
           div(
             class = paste(active_class, "is-coming-soon"),
-            title = tooltip_text,
             card_contents
           )
         }
