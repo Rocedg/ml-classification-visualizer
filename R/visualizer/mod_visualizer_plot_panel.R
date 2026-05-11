@@ -54,7 +54,7 @@ mod_visualizer_plot_panel_ui <- function(id) {
     ),
     div(
       class = "plot-canvas-shell main-feature-plot-card",
-      title = "Background color shows predicted class probability across the feature space.",
+      title = "Background color shows how the selected classifier divides the feature space.",
       div(
         class = "main-feature-plot-shell",
         plotOutput(
@@ -69,20 +69,19 @@ mod_visualizer_plot_panel_ui <- function(id) {
           class = "plot-guide-stack",
           div(
             class = "probability-guide-panel",
-            title = "Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.",
+            title = "Background colors explain the selected model output across the feature space.",
             tags$div(
               class = "probability-guide-title",
-              tags$span("Probability"),
-              help_icon("Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.")
+              uiOutput(ns("region_guide_title_ui"), inline = TRUE)
             ),
             tags$div(
               class = "probability-guide-body",
-              tags$div(class = "probability-guide-gradient"),
+              uiOutput(ns("region_guide_gradient_ui")),
               tags$div(
                 class = "probability-guide-labels",
-                tags$span("Class A likely"),
-                tags$span("Uncertain"),
-                tags$span("Class B likely")
+                tags$span(textOutput(ns("region_guide_top_label"), inline = TRUE)),
+                tags$span(textOutput(ns("region_guide_middle_label"), inline = TRUE)),
+                tags$span(textOutput(ns("region_guide_bottom_label"), inline = TRUE))
               )
             )
           ),
@@ -98,7 +97,11 @@ mod_visualizer_plot_panel_ui <- function(id) {
               div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-class-a"), tags$span("Class A")),
               div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-class-b"), tags$span("Class B")),
               div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-train"), tags$span("Train")),
-              div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-test"), tags$span("Test"))
+              div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-test"), tags$span("Test")),
+              conditionalPanel(
+                condition = paste0("output['", ns("svm_guide_visible"), "'] == 'true'"),
+                div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-support-vector"), tags$span("Support vector"))
+              )
             )
           )
         )
@@ -579,6 +582,60 @@ mod_visualizer_plot_panel_server <- function(id,
       if (is.null(active_iteration_results())) "false" else "true"
     })
     outputOptions(output, "probability_guide_visible", suspendWhenHidden = FALSE)
+
+    active_plot_uses_svm <- reactive({
+      active_model_view <- active_iteration_results()
+      !is.null(active_model_view) && identical(active_model_view$algorithm_key, "svm")
+    })
+
+    guide_help_icon <- function(help_text) {
+      tags$span(
+        class = "help-tooltip",
+        `aria-label` = help_text,
+        "?"
+      )
+    }
+
+    output$svm_guide_visible <- renderText({
+      if (active_plot_uses_svm()) "true" else "false"
+    })
+    outputOptions(output, "svm_guide_visible", suspendWhenHidden = FALSE)
+
+    output$region_guide_title_ui <- renderUI({
+      if (active_plot_uses_svm()) {
+        return(tagList(
+          tags$span("Decision regions"),
+          guide_help_icon("Blue and orange show the SVM predicted class regions. The solid contour is the decision boundary, and dashed contours show the margins when available.")
+        ))
+      }
+
+      tagList(
+        tags$span("Probability"),
+        guide_help_icon("Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.")
+      )
+    })
+
+    output$region_guide_gradient_ui <- renderUI({
+      guide_class <- if (active_plot_uses_svm()) {
+        "probability-guide-gradient decision-region-guide-gradient"
+      } else {
+        "probability-guide-gradient"
+      }
+
+      tags$div(class = guide_class)
+    })
+
+    output$region_guide_top_label <- renderText({
+      if (active_plot_uses_svm()) "Class A region" else "Class A likely"
+    })
+
+    output$region_guide_middle_label <- renderText({
+      if (active_plot_uses_svm()) "Boundary / margins" else "Uncertain"
+    })
+
+    output$region_guide_bottom_label <- renderText({
+      if (active_plot_uses_svm()) "Class B region" else "Class B likely"
+    })
 
     output$classification_plot <- renderPlot({
       current_classification_data <- classification_data()

@@ -631,6 +631,22 @@ a { text-decoration: none; }
   );
 }
 
+.decision-region-guide-gradient {
+  background: linear-gradient(
+    to bottom,
+    #d8e8ff 0%,
+    #d8e8ff 45%,
+    #111827 45%,
+    #111827 47%,
+    #e2e8f0 47%,
+    #e2e8f0 53%,
+    #111827 53%,
+    #111827 55%,
+    #ffe4d3 55%,
+    #ffe4d3 100%
+  );
+}
+
 .probability-guide-labels {
   display: flex;
   flex-direction: column;
@@ -684,6 +700,10 @@ a { text-decoration: none; }
 .point-guide-dot-test {
   background: #ffffff;
   border: 2px solid #243b57;
+}
+.point-guide-dot-support-vector {
+  background: #ffffff;
+  border: 2px solid #111827;
 }
 
 .iteration-control-card { grid-area: controls; padding: 10px 12px; }

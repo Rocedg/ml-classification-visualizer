@@ -40,6 +40,8 @@ build_square_plot_limits <- function(x_values, y_values, padding_fraction = 0.18
 build_classification_plot <- function(classification_data, active_model_view, knn_inspection = NULL) {
   plot_object <- ggplot()
   point_data <- classification_data
+  model_algorithm_key <- if (!is.null(active_model_view$algorithm_key)) active_model_view$algorithm_key else NA_character_
+  uses_svm_plot <- identical(model_algorithm_key, "svm")
 
   if (!is.null(active_model_view) && !is.null(active_model_view$classification_data)) {
     point_data <- active_model_view$classification_data
@@ -51,44 +53,104 @@ build_classification_plot <- function(classification_data, active_model_view, kn
 
   if (!is.null(active_model_view)) {
     prediction_grid <- active_model_view$prediction_grid
-    # Training stores Class B probabilities. The background scale is expressed
-    # as Class A probability so blue means more likely Class A and orange means
-    # more likely Class B.
-    prediction_grid$class_a_probability <- 1 - prediction_grid$class_b_probability
     plot_x_limits <- range(prediction_grid$x)
     plot_y_limits <- range(prediction_grid$y)
 
-    plot_object <- plot_object +
-      # Each grid cell becomes one heatmap tile. Rounding to 0.05 steps keeps
-      # the probability field visually readable while still showing transitions.
-      geom_raster(
-        data = prediction_grid,
-        aes(x = x, y = y, fill = round(class_a_probability / 0.05) * 0.05),
-        alpha = 0.94,
-        interpolate = FALSE
-      ) +
-      scale_fill_gradientn(
-        colours = c("#ff9b6b", "#ffe4d3", "#fff7ed", "#d8e8ff", "#74a9ff"),
-        values = c(0, 0.25, 0.5, 0.75, 1),
-        limits = c(0, 1),
-        breaks = c(1, 0.75, 0.5, 0.25, 0),
-        labels = c(
-          "Class A probability = 1.0\n(100%)",
-          "More likely Class A",
-          "0.5 = uncertain\nDecision threshold",
-          "More likely Class B",
-          "Class B probability = 1.0\n(100%)"
-        ),
-        name = "Probability guide\nHigh = Class A\nLow = Class B",
-        guide = guide_colorbar(
-          title.position = "top",
-          barheight = grid::unit(96, "pt"),
-          barwidth = grid::unit(12, "pt"),
-          ticks = TRUE,
-          ticks.colour = "#475569",
-          frame.colour = "#cbd5e1"
+    if (uses_svm_plot) {
+      region_grid <- prediction_grid[!is.na(prediction_grid$predicted_class), , drop = FALSE]
+
+      if (nrow(region_grid) > 0) {
+        plot_object <- plot_object +
+          geom_raster(
+            data = region_grid,
+            aes(x = x, y = y, fill = predicted_class),
+            alpha = 0.42,
+            interpolate = FALSE
+          ) +
+          scale_fill_manual(
+            values = c("Class A" = "#d8e8ff", "Class B" = "#ffe4d3"),
+            guide = "none"
+          )
+      }
+
+      if ("decision_value" %in% names(prediction_grid)) {
+        finite_decision_values <- prediction_grid$decision_value[
+          !is.na(prediction_grid$decision_value) & is.finite(prediction_grid$decision_value)
+        ]
+
+        if (length(finite_decision_values) > 0) {
+          decision_value_range <- range(finite_decision_values)
+          break_is_visible <- function(contour_break) {
+            decision_value_range[1] <= contour_break && decision_value_range[2] >= contour_break
+          }
+
+          if (break_is_visible(0)) {
+            plot_object <- plot_object +
+              geom_contour(
+                data = prediction_grid,
+                aes(x = x, y = y, z = decision_value),
+                breaks = 0,
+                color = "#111827",
+                linewidth = 0.65,
+                inherit.aes = FALSE
+              )
+          }
+
+          margin_breaks <- c(-1, 1)[vapply(c(-1, 1), break_is_visible, logical(1))]
+
+          if (length(margin_breaks) > 0) {
+            plot_object <- plot_object +
+              geom_contour(
+                data = prediction_grid,
+                aes(x = x, y = y, z = decision_value),
+                breaks = margin_breaks,
+                color = "#475569",
+                linewidth = 0.5,
+                linetype = "dashed",
+                alpha = 0.9,
+                inherit.aes = FALSE
+              )
+          }
+        }
+      }
+    } else {
+      # Training stores Class B probabilities. The background scale is expressed
+      # as Class A probability so blue means more likely Class A and orange means
+      # more likely Class B.
+      prediction_grid$class_a_probability <- 1 - prediction_grid$class_b_probability
+
+      plot_object <- plot_object +
+        # Each grid cell becomes one heatmap tile. Rounding to 0.05 steps keeps
+        # the probability field visually readable while still showing transitions.
+        geom_raster(
+          data = prediction_grid,
+          aes(x = x, y = y, fill = round(class_a_probability / 0.05) * 0.05),
+          alpha = 0.94,
+          interpolate = FALSE
+        ) +
+        scale_fill_gradientn(
+          colours = c("#ff9b6b", "#ffe4d3", "#fff7ed", "#d8e8ff", "#74a9ff"),
+          values = c(0, 0.25, 0.5, 0.75, 1),
+          limits = c(0, 1),
+          breaks = c(1, 0.75, 0.5, 0.25, 0),
+          labels = c(
+            "Class A probability = 1.0\n(100%)",
+            "More likely Class A",
+            "0.5 = uncertain\nDecision threshold",
+            "More likely Class B",
+            "Class B probability = 1.0\n(100%)"
+          ),
+          name = "Probability guide\nHigh = Class A\nLow = Class B",
+          guide = guide_colorbar(
+            title.position = "top",
+            barheight = grid::unit(96, "pt"),
+            barwidth = grid::unit(12, "pt"),
+            ticks = TRUE,
+            ticks.colour = "#475569",
+            frame.colour = "#cbd5e1"
+          )
         )
-      )
+    }
   }
 
   if ("split" %in% names(point_data)) {
@@ -138,6 +200,22 @@ build_classification_plot <- function(classification_data, active_model_view, kn
         alpha = 0.98
       ),
       scale_color_manual(values = c("Class A" = "#5a95ff", "Class B" = "#ff8b3d"), guide = "none")
+    )
+  }
+
+  support_vector_layers <- list()
+  if (uses_svm_plot && !is.null(active_model_view$support_vectors) && nrow(active_model_view$support_vectors) > 0) {
+    support_vector_layers <- list(
+      geom_point(
+        data = active_model_view$support_vectors,
+        aes(x = x, y = y, color = class),
+        fill = NA,
+        size = 5.2,
+        alpha = 0.98,
+        shape = 21,
+        stroke = 1.35,
+        inherit.aes = FALSE
+      )
     )
   }
 
@@ -202,6 +280,7 @@ build_classification_plot <- function(classification_data, active_model_view, kn
     geom_hline(yintercept = 0, color = "#d6dfe8", linewidth = 0.6) +
     geom_vline(xintercept = 0, color = "#d6dfe8", linewidth = 0.6) +
     point_layers +
+    support_vector_layers +
     inspection_layers +
     coord_equal(xlim = plot_x_limits, ylim = plot_y_limits, expand = FALSE) +
     labs(
