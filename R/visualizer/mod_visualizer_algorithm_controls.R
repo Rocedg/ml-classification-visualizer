@@ -87,6 +87,8 @@ mod_visualizer_algorithm_controls_server <- function(id) {
     default_decision_threshold <- 0.50
     default_logistic_fit_intercept <- TRUE
     default_knn_k <- 5
+    default_knn_distance_metric <- "euclidean"
+    default_knn_voting_method <- "uniform"
 
     observeEvent(input$choose_logistic_regression, {
       selected_algorithm_key("logistic_regression")
@@ -209,6 +211,30 @@ mod_visualizer_algorithm_controls_server <- function(id) {
             max = 25,
             value = 5,
             step = 1
+          ),
+          selectInput(
+            inputId = session$ns("knn_distance_metric"),
+            label = help_label(
+              "Distance metric",
+              "Euclidean is straight-line distance. Manhattan adds horizontal and vertical distance."
+            ),
+            choices = c(
+              "Euclidean" = "euclidean",
+              "Manhattan" = "manhattan"
+            ),
+            selected = default_knn_distance_metric
+          ),
+          selectInput(
+            inputId = session$ns("knn_voting_method"),
+            label = help_label(
+              "Voting method",
+              "Uniform gives each neighbor one vote. Distance-weighted gives closer neighbors more influence."
+            ),
+            choices = c(
+              "Uniform" = "uniform",
+              "Distance-weighted" = "distance_weighted"
+            ),
+            selected = default_knn_voting_method
           )
         )
       } else {
@@ -263,13 +289,23 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           )
         } else if (selected_algorithm_key() == "knn") {
           knn_k <- input$knn_k
+          knn_distance_metric <- input$knn_distance_metric
+          knn_voting_method <- input$knn_voting_method
 
           if (is.null(knn_k)) {
             knn_k <- default_knn_k
           }
+          if (is.null(knn_distance_metric)) {
+            knn_distance_metric <- default_knn_distance_metric
+          }
+          if (is.null(knn_voting_method)) {
+            knn_voting_method <- default_knn_voting_method
+          }
 
           list(
-            knn_k = knn_k
+            knn_k = knn_k,
+            knn_distance_metric = knn_distance_metric,
+            knn_voting_method = knn_voting_method
           )
         } else {
           list()
