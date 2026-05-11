@@ -31,7 +31,8 @@ helper_files <- c(
   "R/models/knn.R",
   "R/model_dispatch_helpers.R",
   "R/playback_helpers.R",
-  "R/plot_helpers.R"
+  "R/plots/main_probability_plot.R",
+  "R/plots/logistic_diagnostics.R"
 )
 
 for (helper_file in helper_files) {
