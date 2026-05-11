@@ -114,6 +114,8 @@ mod_visualizer_plot_panel_ui <- function(id) {
         class = "iteration-control-body",
         conditionalPanel(
           condition = paste0("output['", ns("show_logistic_playback_controls"), "'] == 'true'"),
+          div(
+            class = "iteration-control-row",
         div(
           class = "button-row iteration-button-row",
           actionButton(
@@ -136,6 +138,8 @@ mod_visualizer_plot_panel_ui <- function(id) {
             class = "ml-button ml-button-secondary iteration-icon-button"
           )
         ),
+        div(
+          class = "iteration-slider-group",
         sliderInput(
           inputId = ns("iteration_slider"),
           label = NULL,
@@ -144,6 +148,8 @@ mod_visualizer_plot_panel_ui <- function(id) {
           value = 0,
           step = 1,
           width = "100%"
+        )
+        )
         )
         ),
         conditionalPanel(

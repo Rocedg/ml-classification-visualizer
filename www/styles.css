@@ -663,13 +663,23 @@ a { text-decoration: none; }
 .iteration-control-card { grid-area: controls; padding: 10px 12px; }
 .iteration-control-header { display: flex; align-items: center; margin-bottom: 8px; }
 .iteration-control-body {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
+  display: block;
+}
+
+.iteration-control-row {
+  display: flex;
   align-items: center;
   gap: 12px;
+  width: 100%;
+}
+
+.iteration-slider-group {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .iteration-button-row {
+  flex: 0 0 auto;
   align-items: center;
   gap: 8px;
   position: relative;
@@ -698,6 +708,7 @@ a { text-decoration: none; }
 }
 
 .iteration-control-card .form-group { margin-bottom: 0; }
+.iteration-slider-group .form-group { width: 100% !important; }
 .iteration-control-card .irs { margin-top: -6px; margin-bottom: -6px; }
 .iteration-control-card .irs-single,
 .iteration-control-card .irs-from,
