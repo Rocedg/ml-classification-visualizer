@@ -440,7 +440,8 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) 
           tags$p(
             "If a neighbour is at distance 0 (exact match), it is assigned infinite weight",
             " and its class is returned directly."
-          ),
+          )
+        ),
           
         
         strengths = tagList(
