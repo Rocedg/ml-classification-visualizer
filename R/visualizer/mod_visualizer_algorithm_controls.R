@@ -156,95 +156,16 @@ mod_visualizer_algorithm_controls_server <- function(id) {
       # Parameter controls are algorithm-specific. The returned values are read
       # by mod_visualizer_server() only when Run Classifier is clicked.
       if (selected_algorithm_key() == "logistic_regression") {
-        tagList(
-          sliderInput(
-            inputId = session$ns("logistic_learning_rate"),
-            label = help_label(
-              "Learning rate",
-              "Controls how large each training update is. Higher values learn faster but may become unstable."
-            ),
-            min = 0.01,
-            max = 1,
-            value = 0.12,
-            step = 0.01
-          ),
-          sliderInput(
-            inputId = session$ns("logistic_max_iter"),
-            label = help_label(
-              "Iterations",
-              "Maximum number of training steps shown in the visualization."
-            ),
-            min = 10,
-            max = 100,
-            value = 60,
-            step = 10
-          ),
-          sliderInput(
-            inputId = session$ns("decision_threshold"),
-            label = help_label(
-              "Threshold",
-              "Probability cutoff used to assign a predicted class."
-            ),
-            min = 0.30,
-            max = 0.70,
-            value = 0.50,
-            step = 0.01
-          ),
-          checkboxInput(
-            inputId = session$ns("logistic_fit_intercept"),
-            label = help_label(
-              "Fit intercept",
-              "Allows the decision boundary to shift by learning a bias term."
-            ),
-            value = TRUE
-          )
-        )
+        visualizer_logistic_parameter_controls_ui(session$ns, help_label)
       } else if (selected_algorithm_key() == "knn") {
-        tagList(
-          sliderInput(
-            inputId = session$ns("knn_k"),
-            label = help_label(
-              "k neighbors",
-              "Number of nearest training points used to vote for the predicted class."
-            ),
-            min = 1,
-            max = 25,
-            value = 5,
-            step = 1
-          ),
-          selectInput(
-            inputId = session$ns("knn_distance_metric"),
-            label = help_label(
-              "Distance metric",
-              "Euclidean is straight-line distance. Manhattan adds horizontal and vertical distance."
-            ),
-            choices = c(
-              "Euclidean" = "euclidean",
-              "Manhattan" = "manhattan"
-            ),
-            selected = default_knn_distance_metric
-          ),
-          selectInput(
-            inputId = session$ns("knn_voting_method"),
-            label = help_label(
-              "Voting method",
-              "Uniform gives each neighbor one vote. Distance-weighted gives closer neighbors more influence."
-            ),
-            choices = c(
-              "Uniform" = "uniform",
-              "Distance-weighted" = "distance_weighted"
-            ),
-            selected = default_knn_voting_method
-          )
+        visualizer_knn_parameter_controls_ui(
+          ns = session$ns,
+          help_label = help_label,
+          default_knn_distance_metric = default_knn_distance_metric,
+          default_knn_voting_method = default_knn_voting_method
         )
       } else {
-        tagList(
-          div(
-            class = "algorithm-placeholder-card",
-            tags$span("Coming soon"),
-            tags$p("Parameters for this algorithm will appear here when it is enabled.")
-          )
-        )
+        visualizer_parameter_placeholder_ui()
       }
     })
 

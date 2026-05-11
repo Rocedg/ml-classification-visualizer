@@ -11,7 +11,6 @@
 #
 # Functions:
 #   - mod_visualizer_plot_panel_ui(): Build the plot tab layout.
-#   - mod_visualizer_training_insights_ui(): Build the training diagnostics tab.
 #   - mod_visualizer_plot_panel_server(): Render the plot, metric cards,
 #     and expose click coordinates.
 #
@@ -100,161 +99,8 @@ mod_visualizer_plot_panel_ui <- function(id) {
         )
       )
     ),
-    div(
-      class = "iteration-control-card",
-      div(
-        class = "iteration-control-header",
-        div(
-          class = "status-chip status-chip-primary",
-          title = "Use the playback controls or slider to inspect saved training iterations.",
-          textOutput(ns("iteration_status_text"), inline = TRUE)
-        )
-      ),
-      div(
-        class = "iteration-control-body",
-        conditionalPanel(
-          condition = paste0("output['", ns("show_logistic_playback_controls"), "'] == 'true'"),
-          div(
-            class = "iteration-control-row",
-        div(
-          class = "button-row iteration-button-row",
-          actionButton(
-            inputId = ns("step_backward_button"),
-            label = "←",
-            class = "ml-button ml-button-secondary iteration-icon-button"
-          ),
-          actionButton(
-            inputId = ns("play_pause_button"),
-            label = "▶",
-            class = "ml-button ml-button-secondary iteration-icon-button",
-            onclick = sprintf(
-              "Shiny.setInputValue('%s', Date.now() + Math.random(), {priority: 'event'});",
-              ns("play_pause_command")
-            )
-          ),
-          actionButton(
-            inputId = ns("step_forward_button"),
-            label = "→",
-            class = "ml-button ml-button-secondary iteration-icon-button"
-          )
-        ),
-        div(
-          class = "iteration-slider-group",
-        sliderInput(
-          inputId = ns("iteration_slider"),
-          label = NULL,
-          min = 0,
-          max = 0,
-          value = 0,
-          step = 1,
-          width = "100%"
-        )
-        )
-        )
-        ),
-        conditionalPanel(
-          condition = paste0("output['", ns("show_knn_iteration_note"), "'] == 'true'"),
-          uiOutput(ns("knn_inspection_ui"))
-        )
-      )
-    ),
-    div(
-      class = "plot-side-panel",
-      div(
-        class = "app-card current-run-card",
-        div(
-          class = "current-run-header",
-          tags$span("Current run"),
-          help_icon("Summary of the dataset, model, and parameters used in the current visualization.")
-        ),
-        uiOutput(ns("current_run_summary"))
-      ),
-      div(
-        class = "app-card metrics-comparison-card",
-        div(
-          class = "metrics-comparison-header",
-          tags$span("Model performance"),
-          help_icon("Training points fit the model. Test points are held out and used only to evaluate it.")
-        ),
-        uiOutput(ns("metrics_summary_ui"))
-      )
-    )
-  )
-}
-
-
-mod_visualizer_training_insights_ui <- function(id) {
-  ns <- NS(id)
-  help_icon <- function(help_text) {
-    tags$span(
-      class = "help-tooltip",
-      `aria-label` = help_text,
-      "?"
-    )
-  }
-
-  div(
-    class = "training-insights-tab-layout",
-    div(
-      class = "training-insights-header",
-      title = "Shows model-specific training details.",
-      tags$h3(tags$span("Training insights"), help_icon("Shows model-specific training details.")),
-      tags$p(textOutput(ns("training_insights_subtitle"), inline = TRUE))
-    ),
-    conditionalPanel(
-      condition = paste0("output['", ns("training_insights_algorithm"), "'] == 'logistic_regression'"),
-    div(
-      class = "training-insights-grid",
-      div(
-        class = "plot-canvas-shell diagnostic-plot-shell",
-        title = "Shows how prediction error changes over training iterations.",
-        div(
-          class = "diagnostic-section-header",
-          tags$span("Loss curve"),
-          help_icon("Shows how prediction error changes over training iterations.")
-        ),
-        plotOutput(
-          outputId = ns("iteration_metric_plot"),
-          height = "300px"
-        )
-      ),
-      div(
-        class = "app-card theory-summary-card diagnostic-plot-shell parameter-diagnostic-card",
-        div(
-          class = "plot-top-status-row",
-          div(
-            class = "status-chip status-chip-primary",
-            title = "Shows how the learned model parameters move during optimization.",
-            textOutput(ns("parameter_diagnostic_title"), inline = TRUE),
-            help_icon("Shows how the learned model parameters move during optimization.")
-          )
-        ),
-        conditionalPanel(
-          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'true'"),
-          plotly::plotlyOutput(
-            outputId = ns("parameter_trajectory_3d_plot"),
-            height = "320px"
-          )
-        ),
-        conditionalPanel(
-          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'false'"),
-          plotOutput(
-            outputId = ns("bias_fixed_loss_landscape_plot"),
-            height = "320px"
-          )
-        )
-      )
-    )
-    ),
-    conditionalPanel(
-      condition = paste0("output['", ns("training_insights_algorithm"), "'] == 'knn'"),
-      div(
-        class = "app-card theory-summary-card",
-        tags$h3("How k-NN predicts"),
-        tags$p("k-NN does not learn parameters through iterations. It classifies each point by looking at the k nearest training points and using majority vote."),
-        tags$p("Smaller k can create more flexible boundaries; larger k usually creates smoother boundaries.")
-      )
-    )
+    visualizer_interaction_panel_ui(ns),
+    visualizer_summary_cards_ui(ns, help_icon)
   )
 }
 
@@ -310,119 +156,6 @@ mod_visualizer_plot_panel_server <- function(id,
 
     set_model_reactive <- function(model_reactive_expression) {
       internal_model_reactive(model_reactive_expression)
-    }
-
-    format_current_run_number <- function(value, digits = 2) {
-      if (is.null(value) || length(value) != 1 || is.na(value)) {
-        return("—")
-      }
-
-      numeric_value <- suppressWarnings(as.numeric(value))
-
-      if (is.na(numeric_value)) {
-        return("—")
-      }
-
-      formatC(numeric_value, format = "f", digits = digits)
-    }
-
-    format_metric_value <- function(metrics, metric_name) {
-      if (is.null(metrics) || is.null(metrics[[metric_name]])) {
-        return("—")
-      }
-
-      metric_value <- suppressWarnings(as.numeric(metrics[[metric_name]]))
-
-      if (length(metric_value) != 1 || is.na(metric_value) || !is.finite(metric_value)) {
-        return("—")
-      }
-
-      formatC(metric_value, format = "f", digits = 3)
-    }
-
-    format_current_run_text <- function(value) {
-      if (is.null(value) || length(value) != 1 || is.na(value) || !nzchar(as.character(value))) {
-        return("—")
-      }
-
-      as.character(value)
-    }
-
-    format_algorithm_label <- function(algorithm_key) {
-      if (is.null(algorithm_key) || length(algorithm_key) != 1 || is.na(algorithm_key)) {
-        return("—")
-      }
-
-      switch(
-        as.character(algorithm_key),
-        logistic_regression = "Logistic Regression",
-        svm = "SVM",
-        knn = "k-NN",
-        as.character(algorithm_key)
-      )
-    }
-
-    format_intercept_label <- function(fit_intercept) {
-      if (is.null(fit_intercept) || length(fit_intercept) != 1 || is.na(fit_intercept)) {
-        return("—")
-      }
-
-      if (isTRUE(fit_intercept)) "ON" else "OFF"
-    }
-
-    format_knn_distance_label <- function(distance_metric) {
-      switch(
-        normalize_knn_distance_metric(distance_metric),
-        euclidean = "Euclidean",
-        manhattan = "Manhattan",
-        "Euclidean"
-      )
-    }
-
-    format_knn_voting_label <- function(voting_method) {
-      switch(
-        normalize_knn_voting_method(voting_method),
-        uniform = "Uniform",
-        distance_weighted = "Distance-weighted",
-        "Uniform"
-      )
-    }
-
-    format_current_run_integer <- function(value) {
-      if (is.null(value) || length(value) != 1 || is.na(value)) {
-        return("â€”")
-      }
-
-      numeric_value <- suppressWarnings(as.numeric(value))
-
-      if (is.na(numeric_value) || !is.finite(numeric_value)) {
-        return("â€”")
-      }
-
-      as.character(as.integer(round(numeric_value)))
-    }
-
-    format_inspection_number <- function(value, digits = 2) {
-      if (is.null(value) || length(value) != 1 || is.na(value) || !is.finite(value)) {
-        return("-")
-      }
-
-      formatC(as.numeric(value), format = "f", digits = digits)
-    }
-
-    format_split_summary <- function(model_results) {
-      if (is.null(model_results) || is.null(model_results$split_counts)) {
-        return("70 / 30")
-      }
-
-      train_count <- model_results$split_counts$train
-      test_count <- model_results$split_counts$test
-
-      if (is.null(train_count) || is.null(test_count)) {
-        return("70 / 30")
-      }
-
-      paste0(train_count, " / ", test_count)
     }
 
     selected_algorithm_text <- reactive({
@@ -796,113 +529,12 @@ mod_visualizer_plot_panel_server <- function(id,
     })
 
     output$knn_inspection_ui <- renderUI({
-      model_results <- safe_model_results()
-
-      if (!identical(selected_algorithm_text(), "knn")) {
-        return(NULL)
-      }
-
-      if (is.null(model_results) || !identical(model_results$algorithm_key, "knn")) {
-        return(div(
-          class = "knn-inspection-panel",
-          tags$h4("k-NN inspection"),
-          tags$p("Run k-NN, then click the plot to inspect the k nearest training points.")
-        ))
-      }
-
-      inspection <- active_knn_inspection()
-
-      if (is.null(inspection)) {
-        return(div(
-          class = "knn-inspection-panel",
-          tags$h4("k-NN inspection"),
-          tags$p("Click the plot to inspect the k nearest training points.")
-        ))
-      }
-
-      neighbors <- inspection$neighbors
-
-      if (is.null(neighbors) || nrow(neighbors) == 0) {
-        return(div(
-          class = "knn-inspection-panel",
-          tags$h4("k-NN inspection"),
-          tags$p("No valid training points are available for this inspection.")
-        ))
-      }
-
-      vote_counts <- inspection$vote_counts
-      class_a_votes <- as.integer(vote_counts[["Class A"]])
-      class_b_votes <- as.integer(vote_counts[["Class B"]])
-      predicted_class <- if (is.na(inspection$predicted_class)) "-" else inspection$predicted_class
-      voting_method <- normalize_knn_voting_method(inspection$voting_method)
-      show_weight_column <- identical(voting_method, "distance_weighted") && "weight" %in% names(neighbors)
-
-      if (show_weight_column) {
-        weighted_votes <- inspection$weighted_votes
-        class_a_weighted_vote <- if (is.null(weighted_votes[["Class A"]])) 0 else weighted_votes[["Class A"]]
-        class_b_weighted_vote <- if (is.null(weighted_votes[["Class B"]])) 0 else weighted_votes[["Class B"]]
-        vote_label <- "Weighted vote"
-        vote_value <- paste0(
-          "Class A = ", format_inspection_number(class_a_weighted_vote),
-          ", Class B = ", format_inspection_number(class_b_weighted_vote)
-        )
-      } else {
-        vote_label <- "Vote"
-        vote_value <- paste0("Class A = ", class_a_votes, ", Class B = ", class_b_votes)
-      }
-
-      neighbor_rows <- lapply(seq_len(nrow(neighbors)), function(row_index) {
-        neighbor <- neighbors[row_index, , drop = FALSE]
-        badge_class <- if (as.character(neighbor$class) == "Class A") "class-badge class-a-badge" else "class-badge class-b-badge"
-
-        row_cells <- list(
-          tags$td(neighbor$rank),
-          tags$td(tags$span(class = badge_class, as.character(neighbor$class))),
-          tags$td(format_inspection_number(neighbor$distance))
-        )
-
-        if (show_weight_column) {
-          row_cells <- c(row_cells, list(tags$td(format_inspection_number(neighbor$weight))))
-        }
-
-        do.call(tags$tr, row_cells)
-      })
-
-      table_header_cells <- list(
-        tags$th("Rank"),
-        tags$th("Class"),
-        tags$th("Distance")
-      )
-
-      if (show_weight_column) {
-        table_header_cells <- c(table_header_cells, list(tags$th("Weight")))
-      }
-
-      div(
-        class = "knn-inspection-panel",
-        tags$h4("k-NN inspection"),
-        div(
-          class = "knn-inspection-grid",
-          tags$span(class = "knn-inspection-label", "Selected point"),
-          tags$span(
-            class = "knn-inspection-value",
-            paste0("x = ", format_inspection_number(inspection$query_point$x), ", y = ", format_inspection_number(inspection$query_point$y))
-          ),
-          tags$span(class = "knn-inspection-label", "Prediction"),
-          tags$span(class = "knn-inspection-value", predicted_class),
-          tags$span(class = "knn-inspection-label", vote_label),
-          tags$span(class = "knn-inspection-value", vote_value)
-        ),
-        tags$table(
-          class = "knn-neighbor-table",
-          tags$thead(
-            do.call(tags$tr, table_header_cells)
-          ),
-          tags$tbody(neighbor_rows)
-        )
+      visualizer_knn_inspection_panel_ui(
+        selected_algorithm = selected_algorithm_text(),
+        model_results = safe_model_results(),
+        inspection = active_knn_inspection()
       )
     })
-
     output$current_run_summary <- renderUI({
       parameter_values <- algorithm_parameters()
       model_results <- safe_model_results()
@@ -917,88 +549,21 @@ mod_visualizer_plot_panel_server <- function(id,
         "Not started"
       }
 
-      summary_row <- function(label_text, value_text) {
-        div(
-          class = "current-run-row",
-          tags$span(class = "current-run-label", label_text),
-          tags$span(class = "current-run-value", value_text)
-        )
-      }
-
-      algorithm_key <- selected_algorithm_key()
-
-      if (identical(algorithm_key, "knn")) {
-        knn_distance_metric <- parameter_values$knn_distance_metric
-        knn_voting_method <- parameter_values$knn_voting_method
-
-        if (is.null(knn_distance_metric) && !is.null(model_results$model_object$distance_metric)) {
-          knn_distance_metric <- model_results$model_object$distance_metric
-        }
-        if (is.null(knn_voting_method) && !is.null(model_results$model_object$voting_method)) {
-          knn_voting_method <- model_results$model_object$voting_method
-        }
-
-        return(tagList(
-          summary_row("Dataset", format_current_run_text(selected_dataset_label())),
-          summary_row("Model", format_algorithm_label(algorithm_key)),
-          summary_row("Split 70/30", format_split_summary(model_results)),
-          summary_row("K neighbors", format_current_run_integer(parameter_values$knn_k)),
-          summary_row("Distance", format_knn_distance_label(knn_distance_metric)),
-          summary_row("Voting", format_knn_voting_label(knn_voting_method))
-        ))
-      }
-
-      if (identical(algorithm_key, "logistic_regression")) {
-        return(tagList(
-          summary_row("Dataset", format_current_run_text(selected_dataset_label())),
-          summary_row("Model", format_algorithm_label(algorithm_key)),
-          summary_row("Iteration", iteration_text),
-          summary_row("Split 70/30", format_split_summary(model_results)),
-          summary_row("Learning rate", format_current_run_number(parameter_values$logistic_learning_rate)),
-          summary_row("Threshold", format_current_run_number(parameter_values$decision_threshold)),
-          summary_row("Intercept", format_intercept_label(parameter_values$logistic_fit_intercept))
-        ))
-      }
-
-      tagList(
-        summary_row("Dataset", format_current_run_text(selected_dataset_label())),
-        summary_row("Model", format_algorithm_label(algorithm_key)),
-        summary_row("Split 70/30", format_split_summary(model_results))
+      visualizer_current_run_summary_ui(
+        parameter_values = parameter_values,
+        model_results = model_results,
+        selected_dataset_label = selected_dataset_label(),
+        algorithm_key = selected_algorithm_key(),
+        iteration_text = iteration_text
       )
     })
-
     output$metrics_summary_ui <- renderUI({
       active_model_view <- active_iteration_results()
       train_metrics <- if (is.null(active_model_view)) NULL else active_model_view$train_metrics
       test_metrics <- if (is.null(active_model_view)) NULL else active_model_view$test_metrics
 
-      metric_row <- function(label_text, metric_name) {
-        div(
-          class = "metrics-comparison-row",
-          tags$span(class = "metrics-comparison-label", label_text),
-          tags$span(class = "metrics-comparison-value", format_metric_value(train_metrics, metric_name)),
-          tags$span(class = "metrics-comparison-value metrics-comparison-test-value", format_metric_value(test_metrics, metric_name))
-        )
-      }
-
-      tagList(
-        div(
-          class = "metrics-comparison-row metrics-comparison-row-heading",
-          tags$span("Metric"),
-          tags$span("Train"),
-          tags$span(class = "metrics-comparison-test-heading", "Test")
-        ),
-        metric_row("Accuracy", "accuracy"),
-        metric_row("Precision", "precision"),
-        metric_row("Recall", "recall"),
-        metric_row("F1", "f1_score"),
-        tags$p(
-          class = "metrics-comparison-note",
-          "A large train-test gap can indicate overfitting."
-        )
-      )
+      visualizer_metrics_summary_ui(train_metrics, test_metrics)
     })
-
     output$probability_guide_visible <- renderText({
       if (is.null(active_iteration_results())) "false" else "true"
     })
