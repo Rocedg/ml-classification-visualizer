@@ -23,7 +23,7 @@ visualizer_interaction_panel_ui <- function(ns) {
             class = "button-row iteration-button-row",
             actionButton(
               inputId = ns("step_backward_button"),
-              label = "â†",
+              label = HTML("&larr;"),
               class = "ml-button ml-button-secondary iteration-icon-button"
             ),
             actionButton(
@@ -37,7 +37,7 @@ visualizer_interaction_panel_ui <- function(ns) {
             ),
             actionButton(
               inputId = ns("step_forward_button"),
-              label = "â†’",
+              label = HTML("&rarr;"),
               class = "ml-button ml-button-secondary iteration-icon-button"
             )
           ),

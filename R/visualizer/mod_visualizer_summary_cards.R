@@ -44,13 +44,13 @@ format_current_run_number <- function(value, digits = 2) {
 
 format_metric_value <- function(metrics, metric_name) {
   if (is.null(metrics) || is.null(metrics[[metric_name]])) {
-    return("â€”")
+    return("-")
   }
 
   metric_value <- suppressWarnings(as.numeric(metrics[[metric_name]]))
 
   if (length(metric_value) != 1 || is.na(metric_value) || !is.finite(metric_value)) {
-    return("â€”")
+    return("-")
   }
 
   formatC(metric_value, format = "f", digits = 3)
