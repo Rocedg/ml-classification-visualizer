@@ -502,7 +502,7 @@ mod_visualizer_plot_panel_server <- function(id,
 
     output$iteration_status_text <- renderText({
       if (identical(selected_algorithm_text(), "knn")) {
-        return("No training iterations")
+        return("k-NN inspection")
       }
 
       model_results <- safe_model_results()

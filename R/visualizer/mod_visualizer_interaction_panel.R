@@ -73,6 +73,49 @@ format_inspection_number <- function(value, digits = 2) {
 }
 
 
+calculate_knn_inspection_confidence <- function(inspection, voting_method) {
+  predicted_class <- inspection$predicted_class
+
+  if (is.null(predicted_class) || length(predicted_class) != 1 || is.na(predicted_class)) {
+    return(NA_real_)
+  }
+
+  if (identical(voting_method, "distance_weighted")) {
+    weighted_votes <- inspection$weighted_votes
+
+    if (is.null(weighted_votes) || is.null(weighted_votes[[predicted_class]])) {
+      return(NA_real_)
+    }
+
+    total_weight <- sum(weighted_votes, na.rm = TRUE)
+
+    if (!is.finite(total_weight) || total_weight <= 0) {
+      return(NA_real_)
+    }
+
+    return(as.numeric(weighted_votes[[predicted_class]]) / total_weight)
+  }
+
+  vote_counts <- inspection$vote_counts
+
+  if (is.null(vote_counts) || is.null(vote_counts[[predicted_class]])) {
+    return(NA_real_)
+  }
+
+  total_votes <- inspection$effective_k
+
+  if (is.null(total_votes) || length(total_votes) != 1 || is.na(total_votes) || total_votes <= 0) {
+    total_votes <- sum(vote_counts, na.rm = TRUE)
+  }
+
+  if (!is.finite(total_votes) || total_votes <= 0) {
+    return(NA_real_)
+  }
+
+  as.numeric(vote_counts[[predicted_class]]) / total_votes
+}
+
+
 visualizer_knn_inspection_panel_ui <- function(selected_algorithm, model_results, inspection) {
   if (!identical(selected_algorithm, "knn")) {
     return(NULL)
@@ -109,12 +152,14 @@ visualizer_knn_inspection_panel_ui <- function(selected_algorithm, model_results
   class_b_votes <- as.integer(vote_counts[["Class B"]])
   predicted_class <- if (is.na(inspection$predicted_class)) "-" else inspection$predicted_class
   voting_method <- normalize_knn_voting_method(inspection$voting_method)
-  show_weight_column <- identical(voting_method, "distance_weighted") && "weight" %in% names(neighbors)
+  is_weighted_voting <- identical(voting_method, "distance_weighted")
+  show_weight_column <- is_weighted_voting && "weight" %in% names(neighbors)
+  confidence_value <- calculate_knn_inspection_confidence(inspection, voting_method)
 
-  if (show_weight_column) {
+  if (is_weighted_voting) {
     weighted_votes <- inspection$weighted_votes
-    class_a_weighted_vote <- if (is.null(weighted_votes[["Class A"]])) 0 else weighted_votes[["Class A"]]
-    class_b_weighted_vote <- if (is.null(weighted_votes[["Class B"]])) 0 else weighted_votes[["Class B"]]
+    class_a_weighted_vote <- if (is.null(weighted_votes[["Class A"]])) NA_real_ else weighted_votes[["Class A"]]
+    class_b_weighted_vote <- if (is.null(weighted_votes[["Class B"]])) NA_real_ else weighted_votes[["Class B"]]
     vote_label <- "Weighted vote"
     vote_value <- paste0(
       "Class A = ", format_inspection_number(class_a_weighted_vote),
@@ -164,9 +209,12 @@ visualizer_knn_inspection_panel_ui <- function(selected_algorithm, model_results
       ),
       tags$span(class = "knn-inspection-label", "Prediction"),
       tags$span(class = "knn-inspection-value", predicted_class),
+      tags$span(class = "knn-inspection-label", "Confidence"),
+      tags$span(class = "knn-inspection-value", format_inspection_number(confidence_value)),
       tags$span(class = "knn-inspection-label", vote_label),
       tags$span(class = "knn-inspection-value", vote_value)
     ),
+    tags$div(class = "knn-neighbor-table-title", "Nearest neighbors"),
     tags$table(
       class = "knn-neighbor-table",
       tags$thead(

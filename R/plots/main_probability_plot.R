@@ -147,9 +147,25 @@ build_classification_plot <- function(classification_data, active_model_view, kn
     nearest_neighbors <- knn_inspection$neighbors
 
     if (!is.null(nearest_neighbors) && nrow(nearest_neighbors) > 0) {
+      segment_data <- data.frame(
+        x = rep(query_point$x[1], nrow(nearest_neighbors)),
+        y = rep(query_point$y[1], nrow(nearest_neighbors)),
+        xend = nearest_neighbors$x,
+        yend = nearest_neighbors$y
+      )
+
       inspection_layers <- c(
         inspection_layers,
         list(
+          geom_segment(
+            data = segment_data,
+            aes(x = x, y = y, xend = xend, yend = yend),
+            color = "#111827",
+            linewidth = 0.35,
+            linetype = "dashed",
+            alpha = 0.32,
+            inherit.aes = FALSE
+          ),
           geom_point(
             data = nearest_neighbors,
             aes(x = x, y = y),
