@@ -16,6 +16,10 @@ library(shiny)
 library(ggplot2)
 library(plotly)
 
+if (!requireNamespace("e1071", quietly = TRUE)) {
+  message("Optional dependency missing: install.packages('e1071') to enable Linear SVM.")
+}
+
 # ---------------------------- Helper Source Files -----------------------------
 
 # Source helper files before modules so their functions are available everywhere.
@@ -29,6 +33,7 @@ helper_files <- c(
   "R/metrics_helpers.R",
   "R/models/logistic_regression.R",
   "R/models/knn.R",
+  "R/models/svm.R",
   "R/model_dispatch_helpers.R",
   "R/playback_helpers.R",
   "R/plots/main_probability_plot.R",

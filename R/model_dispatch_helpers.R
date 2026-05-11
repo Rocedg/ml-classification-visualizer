@@ -122,8 +122,32 @@ train_classification_model <- function(classification_data, algorithm_name, para
 
     algorithm_label <- "k-NN"
     algorithm_training_results <- knn_training_results
+  } else if (algorithm_name == "svm") {
+    svm_cost <- parameter_values$svm_cost
+
+    if (is.null(svm_cost)) {
+      svm_cost <- 1
+    }
+
+    if (!is.numeric(svm_cost) || length(svm_cost) != 1 || is.na(svm_cost)) {
+      stop("C / Cost must be a single numeric value.")
+    }
+
+    if (svm_cost <= 0) {
+      stop("C / Cost must be greater than 0.")
+    }
+
+    svm_training_results <- train_svm_classifier(
+      classification_data = train_classification_data,
+      prediction_grid = prediction_grid,
+      cost = svm_cost,
+      evaluation_data = split_classification_data
+    )
+
+    algorithm_label <- "SVM"
+    algorithm_training_results <- svm_training_results
   } else {
-    stop("Only Logistic Regression and k-NN are currently available for training.")
+    stop("Only Logistic Regression, k-NN, and SVM are currently available for training.")
   }
 
   trained_model <- algorithm_training_results$model_object
@@ -146,6 +170,8 @@ train_classification_model <- function(classification_data, algorithm_name, para
     split_counts = split_counts,
     prediction_grid = prediction_grid,
     training_predictions = training_predictions,
+    support_vectors = algorithm_training_results$support_vectors,
+    margin_summary = algorithm_training_results$margin_summary,
     metrics = metrics,
     train_metrics = train_metrics,
     test_metrics = test_metrics,
