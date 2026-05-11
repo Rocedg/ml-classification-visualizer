@@ -15,7 +15,7 @@
 #     - Styled explanatory content for the selected model
 
 
-model_theory_panel_module_ui <- function(id) {
+mod_visualizer_model_explanation_ui <- function(id) {
   ns <- NS(id)
 
   div(
@@ -25,7 +25,7 @@ model_theory_panel_module_ui <- function(id) {
 }
 
 
-model_theory_panel_module_server <- function(id, selected_algorithm_key, trained_model_bundle) {
+mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, trained_model_bundle) {
   moduleServer(id, function(input, output, session) {
 
     # Centralised per-model configuration
