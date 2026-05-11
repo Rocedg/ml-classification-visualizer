@@ -58,6 +58,10 @@ visualizer_interaction_panel_ui <- function(ns) {
       conditionalPanel(
         condition = paste0("output['", ns("show_knn_iteration_note"), "'] == 'true'"),
         uiOutput(ns("knn_inspection_ui"))
+      ),
+      conditionalPanel(
+        condition = paste0("output['", ns("show_svm_summary_panel"), "'] == 'true'"),
+        uiOutput(ns("svm_summary_ui"))
       )
     )
   )
@@ -222,5 +226,76 @@ visualizer_knn_inspection_panel_ui <- function(selected_algorithm, model_results
       ),
       tags$tbody(neighbor_rows)
     )
+  )
+}
+
+
+visualizer_svm_margin_panel_ui <- function(selected_algorithm, model_results) {
+  if (!identical(selected_algorithm, "svm")) {
+    return(NULL)
+  }
+
+  if (is.null(model_results) || !identical(model_results$algorithm_key, "svm")) {
+    return(div(
+      class = "knn-inspection-panel svm-summary-panel",
+      tags$h4("SVM margin summary"),
+      tags$p("Run SVM to inspect the margin, decision boundary, and support vectors.")
+    ))
+  }
+
+  margin_summary <- model_results$margin_summary
+
+  if (is.null(margin_summary)) {
+    margin_summary <- model_results$model_object$margin_summary
+  }
+
+  if (is.null(margin_summary)) {
+    margin_summary <- list()
+  }
+
+  summary_row <- function(label_text, value_text) {
+    tagList(
+      tags$span(class = "knn-inspection-label", label_text),
+      tags$span(class = "knn-inspection-value", value_text)
+    )
+  }
+
+  support_vector_count <- margin_summary$support_vector_count
+
+  if (is.null(support_vector_count) && !is.null(model_results$support_vectors)) {
+    support_vector_count <- nrow(model_results$support_vectors)
+  }
+
+  optional_rows <- list()
+
+  if (!is.null(margin_summary$margin_violation_count) &&
+      length(margin_summary$margin_violation_count) == 1 &&
+      !is.na(margin_summary$margin_violation_count)) {
+    optional_rows <- c(optional_rows, list(
+      summary_row("Inside margin", format_current_run_integer(margin_summary$margin_violation_count))
+    ))
+  }
+
+  if (!is.null(margin_summary$misclassified_train_points) &&
+      length(margin_summary$misclassified_train_points) == 1 &&
+      !is.na(margin_summary$misclassified_train_points)) {
+    optional_rows <- c(optional_rows, list(
+      summary_row("Train mistakes", format_current_run_integer(margin_summary$misclassified_train_points))
+    ))
+  }
+
+  div(
+    class = "knn-inspection-panel svm-summary-panel",
+    tags$h4("SVM margin summary"),
+    div(
+      class = "knn-inspection-grid",
+      summary_row("Kernel", "Linear"),
+      summary_row("C", format_current_run_number(margin_summary$cost)),
+      summary_row("Support vectors", format_current_run_integer(support_vector_count)),
+      summary_row("Boundary", "score = 0"),
+      summary_row("Margins", "score = -1 and +1"),
+      optional_rows
+    ),
+    tags$p("Support vectors are the training points closest to the decision boundary. They define the margin.")
   )
 }

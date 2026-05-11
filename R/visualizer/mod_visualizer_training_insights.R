@@ -70,6 +70,16 @@ mod_visualizer_training_insights_ui <- function(id) {
         tags$p("k-NN does not learn parameters through iterations. It classifies each point by looking at the k nearest training points and using majority vote."),
         tags$p("Smaller k can create more flexible boundaries; larger k usually creates smoother boundaries.")
       )
+    ),
+    conditionalPanel(
+      condition = paste0("output['", ns("training_insights_algorithm"), "'] == 'svm'"),
+      div(
+        class = "app-card theory-summary-card",
+        tags$h3("How SVM decides"),
+        tags$p("SVM chooses a decision boundary that tries to maximize the margin between classes. The support vectors are the training points closest to the boundary and have the strongest influence on where it is placed."),
+        tags$p("Lower C allows a wider margin and tolerates more mistakes. Higher C penalizes mistakes more strongly and can fit the training data more tightly."),
+        uiOutput(ns("svm_training_summary_ui"))
+      )
     )
   )
 }

@@ -186,6 +186,11 @@ mod_visualizer_plot_panel_server <- function(id,
     })
     outputOptions(output, "show_knn_iteration_note", suspendWhenHidden = FALSE)
 
+    output$show_svm_summary_panel <- renderText({
+      if (identical(selected_algorithm_text(), "svm")) "true" else "false"
+    })
+    outputOptions(output, "show_svm_summary_panel", suspendWhenHidden = FALSE)
+
     output$training_insights_algorithm <- renderText({
       selected_algorithm_text()
     })
@@ -194,6 +199,8 @@ mod_visualizer_plot_panel_server <- function(id,
     output$training_insights_subtitle <- renderText({
       if (identical(selected_algorithm_text(), "knn")) {
         "Review how nearest-neighbor voting makes predictions."
+      } else if (identical(selected_algorithm_text(), "svm")) {
+        "Review the margin, support vectors, and C."
       } else {
         "Track loss and parameter movement."
       }
@@ -519,6 +526,10 @@ mod_visualizer_plot_panel_server <- function(id,
         return("k-NN inspection")
       }
 
+      if (identical(selected_algorithm_text(), "svm")) {
+        return("SVM margin summary")
+      }
+
       model_results <- safe_model_results()
       format_iteration_status_text(model_results, current_iteration(), total_iteration_count())
     })
@@ -549,6 +560,12 @@ mod_visualizer_plot_panel_server <- function(id,
         inspection = active_knn_inspection()
       )
     })
+    output$svm_summary_ui <- renderUI({
+      visualizer_svm_margin_panel_ui(
+        selected_algorithm = selected_algorithm_text(),
+        model_results = safe_model_results()
+      )
+    })
     output$current_run_summary <- renderUI({
       parameter_values <- algorithm_parameters()
       model_results <- safe_model_results()
@@ -577,6 +594,27 @@ mod_visualizer_plot_panel_server <- function(id,
       test_metrics <- if (is.null(active_model_view)) NULL else active_model_view$test_metrics
 
       visualizer_metrics_summary_ui(train_metrics, test_metrics)
+    })
+    output$svm_training_summary_ui <- renderUI({
+      model_results <- safe_model_results()
+
+      if (is.null(model_results) || !identical(model_results$algorithm_key, "svm")) {
+        return(tags$p("Run SVM to see support vector counts for the current split."))
+      }
+
+      margin_summary <- model_results$margin_summary
+
+      if (is.null(margin_summary)) {
+        margin_summary <- list()
+      }
+
+      tags$ul(
+        tags$li(paste("Kernel: Linear")),
+        tags$li(paste("C:", format_current_run_number(margin_summary$cost))),
+        tags$li(paste("Support vectors:", format_current_run_integer(margin_summary$support_vector_count))),
+        tags$li("Decision boundary: score = 0"),
+        tags$li("Margin contours: score = -1 and +1 when available")
+      )
     })
     output$probability_guide_visible <- renderText({
       if (is.null(active_iteration_results())) "false" else "true"

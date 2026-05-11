@@ -228,13 +228,38 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) 
       # ── SVM ───────────────────────────────────────────────────────────────
       svm = list(
         title = "Support Vector Machine",
-        explanation = "SVM searches for a separating boundary that maximises the margin between classes. With a radial kernel, the boundary can bend around more complex shapes.",
-        strengths = c(
-          "Can learn nonlinear boundaries",
-          "Often performs well on complex shapes",
-          "Margin-based decision rule"
+        explanation = tagList(
+          tags$h4("What does it do?"),
+          tags$p(
+            "In this app, SVM uses a ", tags$b("linear kernel"), ". It draws a straight decision boundary",
+            " between Class A and Class B while trying to keep that boundary as far as possible from the closest training points."
+          ),
+          tags$h4("Margin and support vectors"),
+          tags$p(
+            "The margin is the space around the decision boundary. The training points closest to that space are",
+            " called ", tags$b("support vectors"), " because they have the strongest influence on where the boundary sits."
+          ),
+          tags$div(
+            class = "math-box",
+            withMathJax("$$\\text{decision boundary: score} = 0 \\qquad \\text{margins: score} = -1 \\text{ and } +1$$")
+          ),
+          tags$p(
+            "The plot highlights support vectors with rings. Solid contour lines show the boundary, and dashed contours show margin lines when the decision scores make them available."
+          )
         ),
-        parameter_note = "Main parameters in this app: kernel, cost, and gamma."
+        strengths = tagList(
+          tags$li("Shows a clear margin-based decision rule."),
+          tags$li("Highlights the specific training points that define the boundary."),
+          tags$li("Works well as an interpretable linear classifier for two-dimensional examples.")
+        ),
+        parameter_note = tagList(
+          tags$p(tags$b("Kernel:"), " Linear only in this version."),
+          tags$p(tags$b("C / Cost:"), " controls how strongly margin violations are penalized."),
+          tags$ul(
+            tags$li("Lower C allows a wider margin and tolerates more mistakes."),
+            tags$li("Higher C fits the training data more tightly and penalizes mistakes more strongly.")
+          )
+        )
       ),
       
       # ── KNN ───────────────────────────────────────────────────────────────
