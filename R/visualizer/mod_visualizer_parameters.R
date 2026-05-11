@@ -93,6 +93,42 @@ visualizer_knn_parameter_controls_ui <- function(ns,
 }
 
 
+visualizer_svm_parameter_controls_ui <- function(ns,
+                                                 help_label,
+                                                 default_svm_cost = 1) {
+  tagList(
+    selectInput(
+      inputId = ns("svm_kernel"),
+      label = help_label(
+        "Kernel",
+        "SVM v1 uses a straight-line decision boundary."
+      ),
+      choices = c("Linear" = "linear"),
+      selected = "linear"
+    ),
+    selectInput(
+      inputId = ns("svm_cost"),
+      label = help_label(
+        "C / Cost",
+        "Controls how strongly margin violations are penalized. Lower C allows a wider margin with more mistakes; higher C fits the training data more tightly."
+      ),
+      choices = c(
+        "0.01" = "0.01",
+        "0.03" = "0.03",
+        "0.1" = "0.1",
+        "0.3" = "0.3",
+        "1" = "1",
+        "3" = "3",
+        "10" = "10",
+        "30" = "30",
+        "100" = "100"
+      ),
+      selected = as.character(default_svm_cost)
+    )
+  )
+}
+
+
 visualizer_parameter_placeholder_ui <- function() {
   tagList(
     div(

@@ -89,6 +89,7 @@ mod_visualizer_algorithm_controls_server <- function(id) {
     default_knn_k <- 5
     default_knn_distance_metric <- "euclidean"
     default_knn_voting_method <- "uniform"
+    default_svm_cost <- 1
 
     observeEvent(input$choose_logistic_regression, {
       selected_algorithm_key("logistic_regression")
@@ -96,6 +97,10 @@ mod_visualizer_algorithm_controls_server <- function(id) {
 
     observeEvent(input$choose_knn, {
       selected_algorithm_key("knn")
+    })
+
+    observeEvent(input$choose_svm, {
+      selected_algorithm_key("svm")
     })
 
     output$algorithm_cards_ui <- renderUI({
@@ -138,8 +143,7 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           button_id = "choose_svm",
           title_text = "SVM",
           algorithm_key = "svm",
-          tooltip_text = "Finds a separating boundary with the widest possible margin between classes.",
-          is_available = FALSE
+          tooltip_text = "Finds a decision boundary that maximizes the margin between classes. The closest training points are called support vectors."
         ),
         create_algorithm_card(
           button_id = "choose_knn",
@@ -162,6 +166,12 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           default_knn_distance_metric = default_knn_distance_metric,
           default_knn_voting_method = default_knn_voting_method
         )
+      } else if (selected_algorithm_key() == "svm") {
+        visualizer_svm_parameter_controls_ui(
+          ns = session$ns,
+          help_label = help_label,
+          default_svm_cost = default_svm_cost
+        )
       } else {
         visualizer_parameter_placeholder_ui()
       }
@@ -172,6 +182,8 @@ mod_visualizer_algorithm_controls_server <- function(id) {
         "Run to update the boundary, metrics, and training views."
       } else if (selected_algorithm_key() == "knn") {
         "Run to update k-NN decision regions and metrics."
+      } else if (selected_algorithm_key() == "svm") {
+        "Run to update SVM decision regions, margins, support vectors, and metrics."
       } else {
         "This algorithm is coming soon. Choose Logistic Regression to run the classifier."
       }
@@ -225,6 +237,21 @@ mod_visualizer_algorithm_controls_server <- function(id) {
             knn_k = knn_k,
             knn_distance_metric = knn_distance_metric,
             knn_voting_method = knn_voting_method
+          )
+        } else if (selected_algorithm_key() == "svm") {
+          svm_kernel <- input$svm_kernel
+          svm_cost <- input$svm_cost
+
+          if (is.null(svm_kernel)) {
+            svm_kernel <- "linear"
+          }
+          if (is.null(svm_cost)) {
+            svm_cost <- default_svm_cost
+          }
+
+          list(
+            svm_kernel = "linear",
+            svm_cost = svm_cost
           )
         } else {
           list()

@@ -110,6 +110,19 @@ format_knn_voting_label <- function(voting_method) {
 }
 
 
+format_svm_kernel_label <- function(kernel_value) {
+  if (is.null(kernel_value) || length(kernel_value) != 1 || is.na(kernel_value)) {
+    return("Linear")
+  }
+
+  switch(
+    tolower(as.character(kernel_value)),
+    linear = "Linear",
+    "Linear"
+  )
+}
+
+
 format_current_run_integer <- function(value) {
   if (is.null(value) || length(value) != 1 || is.na(value)) {
     return("â€”")
@@ -172,6 +185,33 @@ visualizer_current_run_summary_ui <- function(parameter_values,
       summary_row("K neighbors", format_current_run_integer(parameter_values$knn_k)),
       summary_row("Distance", format_knn_distance_label(knn_distance_metric)),
       summary_row("Voting", format_knn_voting_label(knn_voting_method))
+    ))
+  }
+
+  if (identical(algorithm_key, "svm")) {
+    svm_cost <- parameter_values$svm_cost
+    svm_kernel <- parameter_values$svm_kernel
+    support_vector_count <- NULL
+
+    if (is.null(svm_cost) && !is.null(model_results$model_object$cost)) {
+      svm_cost <- model_results$model_object$cost
+    }
+    if (is.null(svm_kernel) && !is.null(model_results$model_object$kernel)) {
+      svm_kernel <- model_results$model_object$kernel
+    }
+    if (!is.null(model_results$margin_summary$support_vector_count)) {
+      support_vector_count <- model_results$margin_summary$support_vector_count
+    } else if (!is.null(model_results$support_vectors)) {
+      support_vector_count <- nrow(model_results$support_vectors)
+    }
+
+    return(tagList(
+      summary_row("Dataset", format_current_run_text(selected_dataset_label)),
+      summary_row("Model", format_algorithm_label(algorithm_key)),
+      summary_row("Split 70/30", format_split_summary(model_results)),
+      summary_row("Kernel", format_svm_kernel_label(svm_kernel)),
+      summary_row("C / Cost", format_current_run_number(svm_cost)),
+      summary_row("Support vectors", format_current_run_integer(support_vector_count))
     ))
   }
 

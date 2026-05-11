@@ -129,7 +129,9 @@ train_classification_model <- function(classification_data, algorithm_name, para
       svm_cost <- 1
     }
 
-    if (!is.numeric(svm_cost) || length(svm_cost) != 1 || is.na(svm_cost)) {
+    svm_cost <- suppressWarnings(as.numeric(svm_cost))
+
+    if (length(svm_cost) != 1 || is.na(svm_cost)) {
       stop("C / Cost must be a single numeric value.")
     }
 
