@@ -171,6 +171,10 @@ mod_visualizer_server <- function(id) {
       }
     }, ignoreNULL = TRUE)
 
+    observeEvent(dataset_controls$continue_to_model(), {
+      wizard_state("model")
+    }, ignoreInit = TRUE)
+
     observeEvent(algorithm_controls$selected_algorithm_key(), {
       current_state <- isolate(wizard_state())
 

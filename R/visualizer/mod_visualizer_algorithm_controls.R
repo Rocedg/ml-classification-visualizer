@@ -28,9 +28,19 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
       div(
         class = "sidebar-section-header",
         div(class = "sidebar-step-pill", "2"),
-        tags$span("Select Algorithm")
+        tags$span("Model")
       ),
-      uiOutput(ns("algorithm_cards_ui"))
+      uiOutput(ns("algorithm_cards_ui")),
+      div(
+        class = "run-defaults-card",
+        tags$p("Use the recommended starting parameters for this model."),
+        actionButton(
+          inputId = ns("run_defaults_button"),
+          label = "Run with defaults",
+          class = "ml-button ml-button-secondary ml-button-full",
+          title = "Train the selected model using recommended starting parameters."
+        )
+      )
     ),
 
     div(
@@ -42,6 +52,7 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
       ),
       div(
         class = "parameter-panel",
+        tags$p(class = "sidebar-helper-text", "Tune the selected model, or keep the defaults for a quick first run."),
         uiOutput(ns("parameter_controls_ui"))
       )
     ),
@@ -53,6 +64,7 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
         div(class = "sidebar-step-pill", "4"),
         tags$span("Run")
       ),
+      tags$p(class = "run-helper-text", textOutput(ns("run_helper_text"), inline = TRUE)),
       actionButton(
         inputId = ns("run_classifier_button"),
         label = "Run Classifier",
@@ -271,7 +283,8 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           list()
         }
       }),
-      run_model_clicks = reactive(input$run_classifier_button)
+      run_model_clicks = reactive(input$run_classifier_button),
+      run_defaults_clicks = reactive(input$run_defaults_button)
     )
   })
 }

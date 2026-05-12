@@ -142,6 +142,17 @@ mod_visualizer_dataset_controls_ui <- function(id) {
             class = "ml-button ml-button-link"
           )
         )
+      ),
+
+      div(
+        class = "wizard-step-action-card",
+        tags$p("Use this dataset, upload a CSV, or add drawn points before choosing a model."),
+        actionButton(
+          inputId = ns("continue_to_model_button"),
+          label = "Continue to model",
+          class = "ml-button ml-button-secondary ml-button-full",
+          title = "Move to model selection."
+        )
       )
     )
   )
@@ -230,7 +241,8 @@ mod_visualizer_dataset_controls_server <- function(id) {
       drawing_mode_active = reactive(drawing_mode_active()),
       selected_drawing_class = reactive(input$drawing_class),
       undo_last_point = reactive(input$undo_last_point_button),
-      clear_drawn_points = reactive(input$clear_points_button)
+      clear_drawn_points = reactive(input$clear_points_button),
+      continue_to_model = reactive(input$continue_to_model_button)
     )
   })
 }

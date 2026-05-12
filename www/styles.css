@@ -593,6 +593,23 @@ a { text-decoration: none; }
   gap: 6px;
 }
 
+.wizard-step-action-card,
+.run-defaults-card {
+  margin-top: 10px;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px dashed #d9e3ec;
+  border-radius: 8px;
+}
+
+.wizard-step-action-card p,
+.run-defaults-card p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .main-plot-title {
   margin: 0;
   color: var(--navy);
