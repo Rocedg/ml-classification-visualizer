@@ -20,60 +20,6 @@
 #     - Raw data table
 #     - Model explanation content
 
-visualizer_wizard_steps <- function() {
-  data.frame(
-    key = c("data", "model", "parameters", "run", "results"),
-    label = c("Data", "Model", "Parameters", "Run", "Results"),
-    stringsAsFactors = FALSE
-  )
-}
-
-
-visualizer_wizard_step_index <- function(step_key) {
-  wizard_steps <- visualizer_wizard_steps()
-  matched_index <- match(step_key, wizard_steps$key)
-
-  if (is.na(matched_index)) {
-    return(1)
-  }
-
-  matched_index
-}
-
-
-visualizer_wizard_progress_ui <- function(current_step) {
-  wizard_steps <- visualizer_wizard_steps()
-  current_index <- visualizer_wizard_step_index(current_step)
-
-  div(
-    class = "wizard-progress",
-    lapply(seq_len(nrow(wizard_steps)), function(step_index) {
-      step_state <- if (step_index < current_index) {
-        "complete"
-      } else if (step_index == current_index) {
-        "current"
-      } else {
-        "future"
-      }
-
-      div(
-        class = paste("wizard-progress-step", paste0("is-", step_state)),
-        tags$span(class = "wizard-progress-number", step_index),
-        tags$span(class = "wizard-progress-label", wizard_steps$label[step_index]),
-        tags$span(
-          class = "wizard-progress-state",
-          switch(
-            step_state,
-            complete = "Done",
-            current = "Now",
-            future = "Next"
-          )
-        )
-      )
-    })
-  )
-}
-
 
 visualizer_sidebar_results_ui <- function(ns) {
   div(
@@ -112,18 +58,6 @@ mod_visualizer_ui <- function(id) {
       class = "visualizer-layout",
       div(
         class = "visualizer-sidebar",
-        div(
-          class = "wizard-progress-toggle",
-          checkboxInput(
-            inputId = ns("show_wizard_steps"),
-            label = "Show workflow steps",
-            value = TRUE
-          )
-        ),
-        conditionalPanel(
-          condition = paste0("input['", ns("show_wizard_steps"), "'] === true"),
-          uiOutput(ns("wizard_progress_ui"))
-        ),
         conditionalPanel(
           condition = paste0("output['", ns("wizard_state"), "'] != 'results'"),
           div(
@@ -177,10 +111,6 @@ mod_visualizer_server <- function(id) {
     wizard_state <- reactiveVal("data")
     dataset_controls <- mod_visualizer_dataset_controls_server("dataset_controls")
     algorithm_controls <- mod_visualizer_algorithm_controls_server("algorithm_controls")
-
-    output$wizard_progress_ui <- renderUI({
-      visualizer_wizard_progress_ui(wizard_state())
-    })
 
     output$wizard_state <- renderText({
       wizard_state()
