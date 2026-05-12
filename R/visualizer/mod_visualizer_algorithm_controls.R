@@ -90,6 +90,8 @@ mod_visualizer_algorithm_controls_server <- function(id) {
     default_knn_distance_metric <- "euclidean"
     default_knn_voting_method <- "uniform"
     default_svm_cost <- 1
+    default_svm_gamma <- 0.5
+    default_svm_degree <- 3
 
     observeEvent(input$choose_logistic_regression, {
       selected_algorithm_key("logistic_regression")
@@ -170,7 +172,9 @@ mod_visualizer_algorithm_controls_server <- function(id) {
         visualizer_svm_parameter_controls_ui(
           ns = session$ns,
           help_label = help_label,
-          default_svm_cost = default_svm_cost
+          default_svm_cost = default_svm_cost,
+          default_svm_gamma = default_svm_gamma,
+          default_svm_degree = default_svm_degree
         )
       } else {
         visualizer_parameter_placeholder_ui()
@@ -241,6 +245,8 @@ mod_visualizer_algorithm_controls_server <- function(id) {
         } else if (selected_algorithm_key() == "svm") {
           svm_kernel <- input$svm_kernel
           svm_cost <- input$svm_cost
+          svm_gamma <- input$svm_gamma
+          svm_degree <- input$svm_degree
 
           if (is.null(svm_kernel)) {
             svm_kernel <- "linear"
@@ -248,10 +254,18 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           if (is.null(svm_cost)) {
             svm_cost <- default_svm_cost
           }
+          if (is.null(svm_gamma)) {
+            svm_gamma <- default_svm_gamma
+          }
+          if (is.null(svm_degree)) {
+            svm_degree <- default_svm_degree
+          }
 
           list(
-            svm_kernel = "linear",
-            svm_cost = svm_cost
+            svm_kernel = svm_kernel,
+            svm_cost = svm_cost,
+            svm_gamma = svm_gamma,
+            svm_degree = svm_degree
           )
         } else {
           list()

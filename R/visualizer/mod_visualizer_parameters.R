@@ -95,15 +95,21 @@ visualizer_knn_parameter_controls_ui <- function(ns,
 
 visualizer_svm_parameter_controls_ui <- function(ns,
                                                  help_label,
-                                                 default_svm_cost = 1) {
+                                                 default_svm_cost = 1,
+                                                 default_svm_gamma = 0.5,
+                                                 default_svm_degree = 3) {
   tagList(
     selectInput(
       inputId = ns("svm_kernel"),
       label = help_label(
         "Kernel",
-        "SVM v1 uses a straight-line decision boundary."
+        "Controls how the SVM transforms the feature space before finding a separating boundary."
       ),
-      choices = c("Linear" = "linear"),
+      choices = c(
+        "Linear" = "linear",
+        "RBF" = "radial",
+        "Polynomial" = "polynomial"
+      ),
       selected = "linear"
     ),
     selectInput(
@@ -124,6 +130,44 @@ visualizer_svm_parameter_controls_ui <- function(ns,
         "100" = "100"
       ),
       selected = as.character(default_svm_cost)
+    ),
+    conditionalPanel(
+      condition = paste0(
+        "input['", ns("svm_kernel"), "'] == 'radial' || ",
+        "input['", ns("svm_kernel"), "'] == 'polynomial'"
+      ),
+      selectInput(
+        inputId = ns("svm_gamma"),
+        label = help_label(
+          "Gamma",
+          "Controls how much influence each training point has. Higher gamma creates more local, flexible boundaries."
+        ),
+        choices = c(
+          "0.01" = "0.01",
+          "0.03" = "0.03",
+          "0.1" = "0.1",
+          "0.3" = "0.3",
+          "0.5" = "0.5",
+          "1" = "1",
+          "3" = "3",
+          "10" = "10"
+        ),
+        selected = as.character(default_svm_gamma)
+      )
+    ),
+    conditionalPanel(
+      condition = paste0("input['", ns("svm_kernel"), "'] == 'polynomial'"),
+      sliderInput(
+        inputId = ns("svm_degree"),
+        label = help_label(
+          "Degree",
+          "Controls the complexity of the polynomial boundary. Higher degree can create more curved boundaries."
+        ),
+        min = 2,
+        max = 5,
+        value = default_svm_degree,
+        step = 1
+      )
     )
   )
 }

@@ -118,8 +118,24 @@ format_svm_kernel_label <- function(kernel_value) {
   switch(
     tolower(as.character(kernel_value)),
     linear = "Linear",
+    radial = "RBF",
+    rbf = "RBF",
+    polynomial = "Polynomial",
+    poly = "Polynomial",
     "Linear"
   )
+}
+
+
+svm_kernel_uses_gamma <- function(kernel_value) {
+  normalized_kernel <- tolower(as.character(kernel_value))
+  any(normalized_kernel %in% c("radial", "rbf", "polynomial", "poly"))
+}
+
+
+svm_kernel_uses_degree <- function(kernel_value) {
+  normalized_kernel <- tolower(as.character(kernel_value))
+  any(normalized_kernel %in% c("polynomial", "poly"))
 }
 
 
@@ -191,6 +207,8 @@ visualizer_current_run_summary_ui <- function(parameter_values,
   if (identical(algorithm_key, "svm")) {
     svm_cost <- parameter_values$svm_cost
     svm_kernel <- parameter_values$svm_kernel
+    svm_gamma <- parameter_values$svm_gamma
+    svm_degree <- parameter_values$svm_degree
     support_vector_count <- NULL
 
     if (is.null(svm_cost) && !is.null(model_results$model_object$cost)) {
@@ -199,20 +217,43 @@ visualizer_current_run_summary_ui <- function(parameter_values,
     if (is.null(svm_kernel) && !is.null(model_results$model_object$kernel)) {
       svm_kernel <- model_results$model_object$kernel
     }
+    if (is.null(svm_gamma) && !is.null(model_results$model_object$gamma)) {
+      svm_gamma <- model_results$model_object$gamma
+    }
+    if (is.null(svm_degree) && !is.null(model_results$model_object$degree)) {
+      svm_degree <- model_results$model_object$degree
+    }
     if (!is.null(model_results$margin_summary$support_vector_count)) {
       support_vector_count <- model_results$margin_summary$support_vector_count
     } else if (!is.null(model_results$support_vectors)) {
       support_vector_count <- nrow(model_results$support_vectors)
     }
 
-    return(tagList(
+    summary_rows <- list(
       summary_row("Dataset", format_current_run_text(selected_dataset_label)),
       summary_row("Model", format_algorithm_label(algorithm_key)),
       summary_row("Split 70/30", format_split_summary(model_results)),
       summary_row("Kernel", format_svm_kernel_label(svm_kernel)),
-      summary_row("C / Cost", format_current_run_number(svm_cost)),
+      summary_row("C / Cost", format_current_run_number(svm_cost))
+    )
+
+    if (svm_kernel_uses_gamma(svm_kernel)) {
+      summary_rows <- c(summary_rows, list(
+        summary_row("Gamma", format_current_run_number(svm_gamma))
+      ))
+    }
+
+    if (svm_kernel_uses_degree(svm_kernel)) {
+      summary_rows <- c(summary_rows, list(
+        summary_row("Degree", format_current_run_integer(svm_degree))
+      ))
+    }
+
+    summary_rows <- c(summary_rows, list(
       summary_row("Support vectors", format_current_run_integer(support_vector_count))
     ))
+
+    return(do.call(tagList, summary_rows))
   }
 
   if (identical(algorithm_key, "logistic_regression")) {
