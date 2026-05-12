@@ -68,7 +68,7 @@ mod_visualizer_training_insights_ui <- function(id) {
         class = "app-card theory-summary-card",
         tags$h3("How k-NN predicts"),
         tags$p("k-NN does not learn parameters through iterations. It classifies each point by looking at the k nearest training points and using majority vote."),
-        tags$p("Smaller k can create more flexible boundaries; larger k usually creates smoother boundaries.")
+        tags$p("No more training insights here. Try interacting with the main plot using the k-NN inspection feature.")
       )
     ),
     conditionalPanel(
