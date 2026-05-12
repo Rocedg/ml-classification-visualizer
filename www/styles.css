@@ -296,6 +296,26 @@ a { text-decoration: none; }
   border-radius: 10px;
 }
 
+.wizard-progress-toggle {
+  margin-bottom: 8px;
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wizard-progress-toggle .checkbox {
+  margin: 0;
+}
+
+.wizard-progress-toggle label {
+  min-height: 0;
+  margin: 0;
+  color: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .wizard-progress-step {
   display: grid;
   grid-template-columns: 24px 1fr auto;
@@ -381,32 +401,6 @@ a { text-decoration: none; }
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
-}
-
-.wizard-results-summary {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.wizard-results-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  color: var(--navy);
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.wizard-results-label {
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.wizard-results-value {
-  text-align: right;
 }
 
 .wizard-results-actions {

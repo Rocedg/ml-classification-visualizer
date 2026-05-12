@@ -75,70 +75,15 @@ visualizer_wizard_progress_ui <- function(current_step) {
 }
 
 
-visualizer_sidebar_results_ui <- function(ns,
-                                          model_results,
-                                          selected_dataset_label,
-                                          algorithm_key,
-                                          parameter_values) {
-  result_row <- function(label_text, value_text) {
-    div(
-      class = "wizard-results-row",
-      tags$span(class = "wizard-results-label", label_text),
-      tags$span(class = "wizard-results-value", value_text)
-    )
-  }
-
-  if (is.null(parameter_values)) {
-    parameter_values <- list()
-  }
-
-  summary_rows <- list(
-    result_row("Dataset", format_current_run_text(selected_dataset_label)),
-    result_row("Model", format_algorithm_label(algorithm_key)),
-    result_row("Split", format_split_summary(model_results))
-  )
-
-  if (identical(algorithm_key, "svm")) {
-    svm_kernel <- if (!is.null(model_results$model_object$kernel)) {
-      model_results$model_object$kernel
-    } else {
-      parameter_values$svm_kernel
-    }
-
-    summary_rows <- c(summary_rows, list(
-      result_row("Kernel", format_svm_kernel_label(svm_kernel))
-    ))
-  } else if (identical(algorithm_key, "knn")) {
-    knn_k <- if (!is.null(model_results$model_object$effective_k)) {
-      model_results$model_object$effective_k
-    } else {
-      parameter_values$knn_k
-    }
-
-    summary_rows <- c(summary_rows, list(
-      result_row("k", format_current_run_integer(knn_k))
-    ))
-  } else if (identical(algorithm_key, "logistic_regression")) {
-    iteration_count <- if (!is.null(model_results$iterations)) {
-      max(length(model_results$iterations) - 1, 0)
-    } else {
-      parameter_values$logistic_max_iter
-    }
-
-    summary_rows <- c(summary_rows, list(
-      result_row("Iterations", format_current_run_integer(iteration_count))
-    ))
-  }
-
+visualizer_sidebar_results_ui <- function(ns) {
   div(
     class = "wizard-results-card",
     tags$div(class = "wizard-results-kicker", "Results ready"),
     tags$h3("Model ready"),
     tags$p(
       class = "wizard-results-note",
-      "Inspect the visualization, metrics, and tabs, or edit the setup to run again."
+      "Inspect the visualization or edit the setup to run again."
     ),
-    div(class = "wizard-results-summary", do.call(tagList, summary_rows)),
     div(
       class = "wizard-results-actions",
       actionButton(
@@ -167,7 +112,18 @@ mod_visualizer_ui <- function(id) {
       class = "visualizer-layout",
       div(
         class = "visualizer-sidebar",
-        uiOutput(ns("wizard_progress_ui")),
+        div(
+          class = "wizard-progress-toggle",
+          checkboxInput(
+            inputId = ns("show_wizard_steps"),
+            label = "Show workflow steps",
+            value = TRUE
+          )
+        ),
+        conditionalPanel(
+          condition = paste0("input['", ns("show_wizard_steps"), "'] === true"),
+          uiOutput(ns("wizard_progress_ui"))
+        ),
         conditionalPanel(
           condition = paste0("output['", ns("wizard_state"), "'] != 'results'"),
           div(
@@ -404,13 +360,7 @@ mod_visualizer_server <- function(id) {
     trained_model_bundle <- reactiveVal(NULL)
 
     output$wizard_results_ui <- renderUI({
-      visualizer_sidebar_results_ui(
-        ns = session$ns,
-        model_results = trained_model_bundle(),
-        selected_dataset_label = current_dataset_summary_label(),
-        algorithm_key = algorithm_controls$selected_algorithm_key(),
-        parameter_values = algorithm_controls$algorithm_parameters()
-      )
+      visualizer_sidebar_results_ui(ns = session$ns)
     })
 
     # The Run Classifier button is the training trigger. Parameter changes do
@@ -431,6 +381,7 @@ mod_visualizer_server <- function(id) {
       trained_model_bundle(NULL)
       model_run_count(0)
       drawn_classification_data(create_empty_classification_data())
+      plot_panel$reset_display_state()
       wizard_state("data")
     }, ignoreInit = TRUE)
 

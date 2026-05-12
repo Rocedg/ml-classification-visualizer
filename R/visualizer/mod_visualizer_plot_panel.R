@@ -166,6 +166,23 @@ mod_visualizer_plot_panel_server <- function(id,
       internal_model_reactive(model_reactive_expression)
     }
 
+    reset_display_state <- function() {
+      knn_selected_query_point(NULL)
+      current_iteration(0)
+      advance_playback_generation()
+      is_playing(FALSE)
+      pending_programmatic_slider_values(integer(0))
+
+      mark_programmatic_slider_update(0)
+      updateSliderInput(
+        session = session,
+        inputId = "iteration_slider",
+        min = 0,
+        max = 0,
+        value = 0
+      )
+    }
+
     selected_algorithm_text <- reactive({
       algorithm_key <- selected_algorithm_key()
 
@@ -777,7 +794,8 @@ mod_visualizer_plot_panel_server <- function(id,
 
     list(
       plot_click_coordinates = reactive(input$plot_click),
-      set_model_reactive = set_model_reactive
+      set_model_reactive = set_model_reactive,
+      reset_display_state = reset_display_state
     )
   })
 }
