@@ -24,6 +24,9 @@ generate_preset_dataset <- function(dataset_name, points_per_class = 40) {
     "Overlapping classes" = 303,
     "Moons" = 404,
     "Circles" = 505,
+    "XOR pattern" = 506,
+    "Polynomial curve" = 507,
+    "Noisy nonlinear blobs" = 508,
     "Titanic passengers" = 606,
     "Diabetes health data" = 707
   )

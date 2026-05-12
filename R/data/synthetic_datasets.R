@@ -6,7 +6,10 @@ synthetic_preset_dataset_names <- function() {
     "Linearly separable",
     "Overlapping classes",
     "Moons",
-    "Circles"
+    "Circles",
+    "XOR pattern",
+    "Polynomial curve",
+    "Noisy nonlinear blobs"
   )
 }
 
@@ -74,6 +77,81 @@ generate_synthetic_preset_dataset <- function(dataset_name, points_per_class = 4
 
     class_b_x <- 1.9 * cos(inner_angle) + rnorm(points_per_class, sd = 0.18)
     class_b_y <- 1.9 * sin(inner_angle) + rnorm(points_per_class, sd = 0.18)
+
+    x_values <- c(class_a_x, class_b_x)
+    y_values <- c(class_a_y, class_b_y)
+    class_labels <- c(rep("Class A", points_per_class), rep("Class B", points_per_class))
+
+  } else if (dataset_name == "XOR pattern") {
+    class_a_split <- c(floor(points_per_class / 2), ceiling(points_per_class / 2))
+    class_b_split <- c(floor(points_per_class / 2), ceiling(points_per_class / 2))
+
+    class_a_x <- c(
+      rnorm(class_a_split[1], mean = -2.2, sd = 0.45),
+      rnorm(class_a_split[2], mean = 2.2, sd = 0.45)
+    )
+    class_a_y <- c(
+      rnorm(class_a_split[1], mean = -2.2, sd = 0.45),
+      rnorm(class_a_split[2], mean = 2.2, sd = 0.45)
+    )
+    class_b_x <- c(
+      rnorm(class_b_split[1], mean = -2.2, sd = 0.45),
+      rnorm(class_b_split[2], mean = 2.2, sd = 0.45)
+    )
+    class_b_y <- c(
+      rnorm(class_b_split[1], mean = 2.2, sd = 0.45),
+      rnorm(class_b_split[2], mean = -2.2, sd = 0.45)
+    )
+
+    x_values <- c(class_a_x, class_b_x)
+    y_values <- c(class_a_y, class_b_y)
+    class_labels <- c(rep("Class A", points_per_class), rep("Class B", points_per_class))
+
+  } else if (dataset_name == "Polynomial curve") {
+    class_a_x <- runif(points_per_class, min = -3.2, max = 3.2)
+    class_b_x <- runif(points_per_class, min = -3.2, max = 3.2)
+
+    class_a_curve <- 0.42 * class_a_x^2 - 1.05
+    class_b_curve <- 0.42 * class_b_x^2 - 1.05
+    class_a_y <- class_a_curve + 1.0 + rnorm(points_per_class, sd = 0.42)
+    class_b_y <- class_b_curve - 1.0 + rnorm(points_per_class, sd = 0.42)
+
+    x_values <- c(class_a_x, class_b_x)
+    y_values <- c(class_a_y, class_b_y)
+    class_labels <- c(rep("Class A", points_per_class), rep("Class B", points_per_class))
+
+  } else if (dataset_name == "Noisy nonlinear blobs") {
+    class_a_split <- c(
+      floor(points_per_class / 3),
+      floor(points_per_class / 3),
+      points_per_class - 2 * floor(points_per_class / 3)
+    )
+    class_b_split <- c(
+      floor(points_per_class / 3),
+      floor(points_per_class / 3),
+      points_per_class - 2 * floor(points_per_class / 3)
+    )
+
+    class_a_x <- c(
+      rnorm(class_a_split[1], mean = -2.6, sd = 0.55),
+      rnorm(class_a_split[2], mean = 0.3, sd = 0.65),
+      rnorm(class_a_split[3], mean = 2.5, sd = 0.55)
+    )
+    class_a_y <- c(
+      rnorm(class_a_split[1], mean = -1.3, sd = 0.55),
+      rnorm(class_a_split[2], mean = 1.6, sd = 0.65),
+      rnorm(class_a_split[3], mean = -1.1, sd = 0.55)
+    )
+    class_b_x <- c(
+      rnorm(class_b_split[1], mean = -2.2, sd = 0.65),
+      rnorm(class_b_split[2], mean = 0.2, sd = 0.55),
+      rnorm(class_b_split[3], mean = 2.5, sd = 0.65)
+    )
+    class_b_y <- c(
+      rnorm(class_b_split[1], mean = 1.4, sd = 0.65),
+      rnorm(class_b_split[2], mean = -1.7, sd = 0.55),
+      rnorm(class_b_split[3], mean = 1.5, sd = 0.65)
+    )
 
     x_values <- c(class_a_x, class_b_x)
     y_values <- c(class_a_y, class_b_y)

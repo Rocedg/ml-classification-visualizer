@@ -64,15 +64,7 @@ mod_visualizer_dataset_controls_ui <- function(id) {
         selectInput(
           inputId = ns("preset_dataset"),
           label = NULL,
-          choices = c(
-            "Gaussian clusters",
-            "Linearly separable",
-            "Overlapping classes",
-            "Moons",
-            "Circles",
-            "Titanic passengers",
-            "Diabetes health data"
-          ),
+          choices = available_preset_dataset_names(),
           selected = "Gaussian clusters",
           width = "100%"
         )
