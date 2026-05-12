@@ -115,16 +115,19 @@ svm_fit_model <- function(training_data,
   svm_training_data <- svm_training_data[!is.na(svm_training_data$class), , drop = FALSE]
 
   if (nrow(svm_training_data) < 2) {
-    stop("Linear SVM needs at least 2 complete training points.")
+    stop("SVM needs at least 2 complete training points.")
   }
 
   if (length(unique(svm_training_data$class)) < 2) {
     stop("The training split must contain both Class A and Class B before fitting SVM.")
   }
 
+  train_x <- svm_training_data[, c("x", "y"), drop = FALSE]
+  train_y <- svm_training_data$class
+
   svm_args <- list(
-    x = class ~ x + y,
-    data = svm_training_data,
+    x = train_x,
+    y = train_y,
     type = "C-classification",
     kernel = kernel,
     cost = cost,
