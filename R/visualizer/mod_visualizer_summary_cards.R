@@ -29,13 +29,13 @@ visualizer_summary_cards_ui <- function(ns, help_icon) {
 
 format_current_run_number <- function(value, digits = 2) {
   if (is.null(value) || length(value) != 1 || is.na(value)) {
-    return("â€”")
+    return("-")
   }
 
   numeric_value <- suppressWarnings(as.numeric(value))
 
   if (is.na(numeric_value)) {
-    return("â€”")
+    return("-")
   }
 
   formatC(numeric_value, format = "f", digits = digits)
@@ -59,7 +59,7 @@ format_metric_value <- function(metrics, metric_name) {
 
 format_current_run_text <- function(value) {
   if (is.null(value) || length(value) != 1 || is.na(value) || !nzchar(as.character(value))) {
-    return("â€”")
+    return("-")
   }
 
   as.character(value)
@@ -68,7 +68,7 @@ format_current_run_text <- function(value) {
 
 format_algorithm_label <- function(algorithm_key) {
   if (is.null(algorithm_key) || length(algorithm_key) != 1 || is.na(algorithm_key)) {
-    return("â€”")
+    return("-")
   }
 
   switch(
@@ -83,7 +83,7 @@ format_algorithm_label <- function(algorithm_key) {
 
 format_intercept_label <- function(fit_intercept) {
   if (is.null(fit_intercept) || length(fit_intercept) != 1 || is.na(fit_intercept)) {
-    return("â€”")
+    return("-")
   }
 
   if (isTRUE(fit_intercept)) "ON" else "OFF"
@@ -141,13 +141,13 @@ svm_kernel_uses_degree <- function(kernel_value) {
 
 format_current_run_integer <- function(value) {
   if (is.null(value) || length(value) != 1 || is.na(value)) {
-    return("â€”")
+    return("-")
   }
 
   numeric_value <- suppressWarnings(as.numeric(value))
 
   if (is.na(numeric_value) || !is.finite(numeric_value)) {
-    return("â€”")
+    return("-")
   }
 
   as.character(as.integer(round(numeric_value)))
