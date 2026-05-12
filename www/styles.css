@@ -343,6 +343,15 @@ a { text-decoration: none; }
   color: var(--mint-dark);
 }
 
+.wizard-progress-step.is-future {
+  opacity: 0.72;
+}
+
+.wizard-progress-step.is-future .wizard-progress-number {
+  border: 1px dashed #cbd5e1;
+  background: #f8fafc;
+}
+
 .wizard-results-card {
   padding: 14px;
   background: #ffffff;
@@ -365,6 +374,13 @@ a { text-decoration: none; }
   color: var(--navy);
   font-size: 18px;
   font-weight: 800;
+}
+
+.wizard-results-note {
+  margin: -4px 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .wizard-results-summary {

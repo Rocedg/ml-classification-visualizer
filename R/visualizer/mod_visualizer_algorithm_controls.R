@@ -38,7 +38,7 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
           inputId = ns("run_defaults_button"),
           label = "Run with defaults",
           class = "ml-button ml-button-secondary ml-button-full",
-          title = "Train the selected model using recommended starting parameters."
+          title = "Run the selected model using recommended starting parameters."
         )
       )
     ),
@@ -67,7 +67,7 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
       tags$p(class = "run-helper-text", textOutput(ns("run_helper_text"), inline = TRUE)),
       actionButton(
         inputId = ns("run_classifier_button"),
-        label = "Run Classifier",
+        label = "Run model",
         class = "ml-button ml-button-primary ml-button-full",
         title = "Train the selected classifier and update the plot, metrics, and training views."
       )

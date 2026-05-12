@@ -134,6 +134,10 @@ visualizer_sidebar_results_ui <- function(ns,
     class = "wizard-results-card",
     tags$div(class = "wizard-results-kicker", "Results ready"),
     tags$h3("Model ready"),
+    tags$p(
+      class = "wizard-results-note",
+      "Inspect the visualization, metrics, and tabs, or edit the setup to run again."
+    ),
     div(class = "wizard-results-summary", do.call(tagList, summary_rows)),
     div(
       class = "wizard-results-actions",
