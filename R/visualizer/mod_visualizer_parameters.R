@@ -112,47 +112,32 @@ visualizer_svm_parameter_controls_ui <- function(ns,
       ),
       selected = "linear"
     ),
-    selectInput(
+    sliderInput(
       inputId = ns("svm_cost"),
       label = help_label(
         "C / Cost",
         "Controls how strongly margin violations are penalized. Lower C allows a wider margin with more mistakes; higher C fits the training data more tightly."
       ),
-      choices = c(
-        "0.01" = "0.01",
-        "0.03" = "0.03",
-        "0.1" = "0.1",
-        "0.3" = "0.3",
-        "1" = "1",
-        "3" = "3",
-        "10" = "10",
-        "30" = "30",
-        "100" = "100"
-      ),
-      selected = as.character(default_svm_cost)
+      min = 0.01,
+      max = 100,
+      value = default_svm_cost,
+      step = 0.01
     ),
     conditionalPanel(
       condition = paste0(
         "input['", ns("svm_kernel"), "'] == 'radial' || ",
         "input['", ns("svm_kernel"), "'] == 'polynomial'"
       ),
-      selectInput(
+      sliderInput(
         inputId = ns("svm_gamma"),
         label = help_label(
           "Gamma",
           "Controls how much influence each training point has. Higher gamma creates more local, flexible boundaries."
         ),
-        choices = c(
-          "0.01" = "0.01",
-          "0.03" = "0.03",
-          "0.1" = "0.1",
-          "0.3" = "0.3",
-          "0.5" = "0.5",
-          "1" = "1",
-          "3" = "3",
-          "10" = "10"
-        ),
-        selected = as.character(default_svm_gamma)
+        min = 0.01,
+        max = 10,
+        value = default_svm_gamma,
+        step = 0.01
       )
     ),
     conditionalPanel(
