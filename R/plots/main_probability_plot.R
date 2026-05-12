@@ -304,3 +304,157 @@ build_classification_plot <- function(classification_data, active_model_view, kn
 }
 
 
+# build_empty_svm_decision_surface_plot()
+# Purpose:
+#   Provide a safe Plotly placeholder when SVM decision scores are unavailable.
+build_empty_svm_decision_surface_plot <- function(message = "Decision surface unavailable for this model run.") {
+  empty_surface_data <- data.frame(
+    x = numeric(0),
+    y = numeric(0),
+    decision_score = numeric(0)
+  )
+
+  empty_plot <- plotly::plot_ly(
+    data = empty_surface_data,
+    x = ~x,
+    y = ~y,
+    z = ~decision_score,
+    type = "scatter3d",
+    mode = "markers",
+    hoverinfo = "none",
+    showlegend = FALSE
+  )
+
+  plotly::layout(
+    empty_plot,
+    title = list(text = "SVM decision function surface"),
+    annotations = list(
+      list(
+        text = message,
+        x = 0.5,
+        y = 0.5,
+        xref = "paper",
+        yref = "paper",
+        showarrow = FALSE,
+        font = list(color = "#6d8196", size = 14)
+      )
+    ),
+    xaxis = list(visible = FALSE),
+    yaxis = list(visible = FALSE),
+    margin = list(l = 0, r = 0, b = 0, t = 50),
+    paper_bgcolor = "#ffffff",
+    plot_bgcolor = "#ffffff"
+  )
+}
+
+
+# build_svm_decision_surface_plot()
+# Purpose:
+#   Draw z = SVM decision score over the original x/y feature space.
+build_svm_decision_surface_plot <- function(model_results, max_axis_points = 80) {
+  if (is.null(model_results) || !identical(model_results$algorithm_key, "svm")) {
+    return(build_empty_svm_decision_surface_plot("Run SVM to see the decision function surface."))
+  }
+
+  prediction_grid <- model_results$prediction_grid
+  required_columns <- c("x", "y", "decision_value")
+
+  if (is.null(prediction_grid) || !all(required_columns %in% names(prediction_grid))) {
+    return(build_empty_svm_decision_surface_plot())
+  }
+
+  valid_rows <- stats::complete.cases(prediction_grid[, required_columns, drop = FALSE]) &
+    is.finite(prediction_grid$decision_value)
+  surface_grid <- prediction_grid[valid_rows, required_columns, drop = FALSE]
+
+  if (nrow(surface_grid) == 0) {
+    return(build_empty_svm_decision_surface_plot())
+  }
+
+  x_values <- sort(unique(surface_grid$x))
+  y_values <- sort(unique(surface_grid$y))
+
+  if (length(x_values) < 2 || length(y_values) < 2 ||
+      nrow(surface_grid) != length(x_values) * length(y_values)) {
+    return(build_empty_svm_decision_surface_plot())
+  }
+
+  ordered_grid <- surface_grid[order(surface_grid$y, surface_grid$x), , drop = FALSE]
+  z_matrix <- matrix(
+    ordered_grid$decision_value,
+    nrow = length(y_values),
+    ncol = length(x_values),
+    byrow = TRUE
+  )
+
+  x_step <- max(1, ceiling(length(x_values) / max_axis_points))
+  y_step <- max(1, ceiling(length(y_values) / max_axis_points))
+  x_indexes <- seq(1, length(x_values), by = x_step)
+  y_indexes <- seq(1, length(y_values), by = y_step)
+  x_values <- x_values[x_indexes]
+  y_values <- y_values[y_indexes]
+  z_matrix <- z_matrix[y_indexes, x_indexes, drop = FALSE]
+  zero_matrix <- matrix(0, nrow = nrow(z_matrix), ncol = ncol(z_matrix))
+
+  kernel_label <- if (!is.null(model_results$margin_summary$kernel_label)) {
+    model_results$margin_summary$kernel_label
+  } else {
+    "SVM"
+  }
+
+  surface_plot <- plotly::plot_ly(
+    x = x_values,
+    y = y_values,
+    z = z_matrix,
+    type = "surface",
+    name = "Decision score",
+    colorscale = list(
+      list(0, "#ff9b6b"),
+      list(0.5, "#fff7ed"),
+      list(1, "#74a9ff")
+    ),
+    colorbar = list(title = "Score"),
+    hovertemplate = paste(
+      "x: %{x:.2f}<br>",
+      "y: %{y:.2f}<br>",
+      "score: %{z:.3f}",
+      "<extra></extra>"
+    )
+  )
+
+  surface_plot <- plotly::add_surface(
+    surface_plot,
+    x = x_values,
+    y = y_values,
+    z = zero_matrix,
+    opacity = 0.18,
+    showscale = FALSE,
+    hoverinfo = "skip",
+    name = "score = 0",
+    colorscale = list(
+      list(0, "#111827"),
+      list(1, "#111827")
+    )
+  )
+
+  plotly::layout(
+    surface_plot,
+    title = list(
+      text = paste0(
+        "SVM decision function surface",
+        "<br><sup>Kernel: ", kernel_label, " | z = decision score</sup>"
+      )
+    ),
+    scene = list(
+      xaxis = list(title = "X", backgroundcolor = "#f8fafc", gridcolor = "#e2e8f0", zerolinecolor = "#94a3b8"),
+      yaxis = list(title = "Y", backgroundcolor = "#f8fafc", gridcolor = "#e2e8f0", zerolinecolor = "#94a3b8"),
+      zaxis = list(title = "Decision score", backgroundcolor = "#f8fafc", gridcolor = "#e2e8f0", zerolinecolor = "#94a3b8"),
+      camera = list(eye = list(x = 1.35, y = 1.35, z = 0.95))
+    ),
+    legend = list(orientation = "h", x = 0, y = -0.08),
+    margin = list(l = 0, r = 0, b = 0, t = 60),
+    paper_bgcolor = "#ffffff",
+    plot_bgcolor = "#ffffff"
+  )
+}
+

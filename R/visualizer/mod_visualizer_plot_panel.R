@@ -616,6 +616,9 @@ mod_visualizer_plot_panel_server <- function(id,
         tags$li("Dashed score contours: score = -1 and +1 when available")
       )
     })
+    output$svm_decision_surface_plot <- plotly::renderPlotly({
+      build_svm_decision_surface_plot(safe_model_results())
+    })
     output$probability_guide_visible <- renderText({
       if (is.null(active_iteration_results())) "false" else "true"
     })
