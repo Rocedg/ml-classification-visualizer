@@ -1,4 +1,36 @@
-# Linear SVM backend helpers for the ML Visualizer app.
+# SVM backend helpers for the ML Visualizer app.
+
+# normalize_svm_kernel()
+# Purpose:
+#   Map UI labels to the e1071 kernel names supported in this app.
+normalize_svm_kernel <- function(kernel_value) {
+  if (is.null(kernel_value) || length(kernel_value) != 1 || is.na(kernel_value)) {
+    return("linear")
+  }
+
+  normalized_kernel <- tolower(gsub("[ _-]+", "_", as.character(kernel_value)))
+
+  switch(
+    normalized_kernel,
+    linear = "linear",
+    radial = "radial",
+    rbf = "radial",
+    polynomial = "polynomial",
+    poly = "polynomial",
+    "linear"
+  )
+}
+
+
+svm_kernel_display_label <- function(kernel_value) {
+  switch(
+    normalize_svm_kernel(kernel_value),
+    linear = "Linear",
+    radial = "RBF",
+    polynomial = "Polynomial",
+    "Linear"
+  )
+}
 
 # normalize_svm_cost()
 # Purpose:
@@ -18,15 +50,58 @@ normalize_svm_cost <- function(cost_value) {
 }
 
 
-# svm_fit_linear()
+# normalize_svm_gamma()
 # Purpose:
-#   Fit an e1071 linear SVM on the training split only.
-svm_fit_linear <- function(training_data, cost = 1) {
+#   Validate gamma for kernels that use local similarity or polynomial terms.
+normalize_svm_gamma <- function(gamma_value) {
+  if (is.null(gamma_value) || length(gamma_value) != 1 || is.na(gamma_value)) {
+    return(0.5)
+  }
+
+  numeric_gamma <- suppressWarnings(as.numeric(gamma_value))
+
+  if (is.na(numeric_gamma) || !is.finite(numeric_gamma) || numeric_gamma <= 0) {
+    stop("Gamma must be a positive numeric value.")
+  }
+
+  numeric_gamma
+}
+
+
+# normalize_svm_degree()
+# Purpose:
+#   Keep polynomial degree as a small positive integer for beginner-friendly UI.
+normalize_svm_degree <- function(degree_value) {
+  if (is.null(degree_value) || length(degree_value) != 1 || is.na(degree_value)) {
+    return(3)
+  }
+
+  numeric_degree <- suppressWarnings(as.numeric(degree_value))
+
+  if (is.na(numeric_degree) || !is.finite(numeric_degree) || numeric_degree < 1) {
+    stop("Degree must be a positive integer.")
+  }
+
+  as.integer(round(numeric_degree))
+}
+
+
+# svm_fit_model()
+# Purpose:
+#   Fit an e1071 SVM on the training split only.
+svm_fit_model <- function(training_data,
+                          cost = 1,
+                          kernel = "linear",
+                          gamma = 0.5,
+                          degree = 3) {
   if (!requireNamespace("e1071", quietly = TRUE)) {
-    stop("Linear SVM requires the e1071 package. Install it with install.packages('e1071').")
+    stop("SVM requires the e1071 package. Install it with install.packages('e1071').")
   }
 
   cost <- normalize_svm_cost(cost)
+  kernel <- normalize_svm_kernel(kernel)
+  gamma <- if (kernel %in% c("radial", "polynomial")) normalize_svm_gamma(gamma) else 0.5
+  degree <- if (identical(kernel, "polynomial")) normalize_svm_degree(degree) else 3
   class_levels <- c("Class A", "Class B")
   required_columns <- c("x", "y", "class")
 
@@ -47,17 +122,27 @@ svm_fit_linear <- function(training_data, cost = 1) {
     stop("The training split must contain both Class A and Class B before fitting SVM.")
   }
 
+  svm_args <- list(
+    x = class ~ x + y,
+    data = svm_training_data,
+    type = "C-classification",
+    kernel = kernel,
+    cost = cost,
+    scale = FALSE
+  )
+
+  if (kernel %in% c("radial", "polynomial")) {
+    svm_args$gamma <- gamma
+  }
+
+  if (identical(kernel, "polynomial")) {
+    svm_args$degree <- degree
+  }
+
   fitted_svm <- tryCatch(
-    e1071::svm(
-      class ~ x + y,
-      data = svm_training_data,
-      type = "C-classification",
-      kernel = "linear",
-      cost = cost,
-      scale = FALSE
-    ),
+    do.call(e1071::svm, svm_args),
     error = function(error_object) {
-      stop(paste("Linear SVM could not be fitted:", error_object$message), call. = FALSE)
+      stop(paste(svm_kernel_display_label(kernel), "SVM could not be fitted:", error_object$message), call. = FALSE)
     }
   )
 
@@ -68,11 +153,25 @@ svm_fit_linear <- function(training_data, cost = 1) {
 
   list(
     fit = fitted_svm,
-    kernel = "linear",
+    kernel = kernel,
     cost = cost,
+    gamma = if (kernel %in% c("radial", "polynomial")) gamma else NULL,
+    degree = if (identical(kernel, "polynomial")) degree else NULL,
     class_levels = class_levels,
     training_data = svm_training_data,
     support_vectors = support_vectors
+  )
+}
+
+
+# svm_fit_linear()
+# Purpose:
+#   Compatibility wrapper for the first SVM version's linear fit helper.
+svm_fit_linear <- function(training_data, cost = 1) {
+  svm_fit_model(
+    training_data = training_data,
+    cost = cost,
+    kernel = "linear"
   )
 }
 
@@ -147,7 +246,7 @@ svm_predict <- function(model_object, prediction_points) {
   predictions <- tryCatch(
     stats::predict(model_object$fit, prediction_data, decision.values = TRUE),
     error = function(error_object) {
-      stop(paste("Linear SVM prediction failed:", error_object$message), call. = FALSE)
+      stop(paste(svm_kernel_display_label(model_object$kernel), "SVM prediction failed:", error_object$message), call. = FALSE)
     }
   )
 
@@ -253,8 +352,11 @@ svm_margin_summary <- function(model_object, training_results = NULL) {
   }
 
   list(
-    kernel = "Linear",
+    kernel = model_object$kernel,
+    kernel_label = svm_kernel_display_label(model_object$kernel),
     cost = model_object$cost,
+    gamma = model_object$gamma,
+    degree = model_object$degree,
     support_vector_count = support_vector_count,
     decision_boundary = "score = 0",
     margins = "score = -1 and +1",
@@ -266,10 +368,13 @@ svm_margin_summary <- function(model_object, training_results = NULL) {
 
 # train_svm_classifier()
 # Purpose:
-#   Fit a linear SVM and evaluate it for train/test rows and the plot grid.
+#   Fit an SVM and evaluate it for train/test rows and the plot grid.
 train_svm_classifier <- function(classification_data,
                                  prediction_grid,
                                  cost = 1,
+                                 kernel = "linear",
+                                 gamma = 0.5,
+                                 degree = 3,
                                  evaluation_data = classification_data) {
   if (!"split" %in% names(evaluation_data)) {
     evaluation_data$split <- factor(rep("train", nrow(evaluation_data)), levels = c("train", "test"))
@@ -277,9 +382,12 @@ train_svm_classifier <- function(classification_data,
     evaluation_data$split <- factor(as.character(evaluation_data$split), levels = c("train", "test"))
   }
 
-  model_object <- svm_fit_linear(
+  model_object <- svm_fit_model(
     training_data = classification_data,
-    cost = cost
+    cost = cost,
+    kernel = kernel,
+    gamma = gamma,
+    degree = degree
   )
 
   grid_results <- svm_predict_grid(

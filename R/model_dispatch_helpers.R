@@ -123,7 +123,10 @@ train_classification_model <- function(classification_data, algorithm_name, para
     algorithm_label <- "k-NN"
     algorithm_training_results <- knn_training_results
   } else if (algorithm_name == "svm") {
+    svm_kernel <- normalize_svm_kernel(parameter_values$svm_kernel)
     svm_cost <- parameter_values$svm_cost
+    svm_gamma <- parameter_values$svm_gamma
+    svm_degree <- parameter_values$svm_degree
 
     if (is.null(svm_cost)) {
       svm_cost <- 1
@@ -139,10 +142,25 @@ train_classification_model <- function(classification_data, algorithm_name, para
       stop("C / Cost must be greater than 0.")
     }
 
+    if (svm_kernel %in% c("radial", "polynomial")) {
+      svm_gamma <- normalize_svm_gamma(svm_gamma)
+    } else {
+      svm_gamma <- 0.5
+    }
+
+    if (identical(svm_kernel, "polynomial")) {
+      svm_degree <- normalize_svm_degree(svm_degree)
+    } else {
+      svm_degree <- 3
+    }
+
     svm_training_results <- train_svm_classifier(
       classification_data = train_classification_data,
       prediction_grid = prediction_grid,
       cost = svm_cost,
+      kernel = svm_kernel,
+      gamma = svm_gamma,
+      degree = svm_degree,
       evaluation_data = split_classification_data
     )
 
