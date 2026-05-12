@@ -20,6 +20,61 @@
 #     - Raw data table
 #     - Model explanation content
 
+visualizer_wizard_steps <- function() {
+  data.frame(
+    key = c("data", "model", "parameters", "run", "results"),
+    label = c("Data", "Model", "Parameters", "Run", "Results"),
+    stringsAsFactors = FALSE
+  )
+}
+
+
+visualizer_wizard_step_index <- function(step_key) {
+  wizard_steps <- visualizer_wizard_steps()
+  matched_index <- match(step_key, wizard_steps$key)
+
+  if (is.na(matched_index)) {
+    return(1)
+  }
+
+  matched_index
+}
+
+
+visualizer_wizard_progress_ui <- function(current_step) {
+  wizard_steps <- visualizer_wizard_steps()
+  current_index <- visualizer_wizard_step_index(current_step)
+
+  div(
+    class = "wizard-progress",
+    lapply(seq_len(nrow(wizard_steps)), function(step_index) {
+      step_state <- if (step_index < current_index) {
+        "complete"
+      } else if (step_index == current_index) {
+        "current"
+      } else {
+        "future"
+      }
+
+      div(
+        class = paste("wizard-progress-step", paste0("is-", step_state)),
+        tags$span(class = "wizard-progress-number", step_index),
+        tags$span(class = "wizard-progress-label", wizard_steps$label[step_index]),
+        tags$span(
+          class = "wizard-progress-state",
+          switch(
+            step_state,
+            complete = "Done",
+            current = "Now",
+            future = "Next"
+          )
+        )
+      )
+    })
+  )
+}
+
+
 mod_visualizer_ui <- function(id) {
   ns <- NS(id)
 
@@ -29,6 +84,7 @@ mod_visualizer_ui <- function(id) {
       class = "visualizer-layout",
       div(
         class = "visualizer-sidebar",
+        uiOutput(ns("wizard_progress_ui")),
         mod_visualizer_dataset_controls_ui(ns("dataset_controls")),
         mod_visualizer_algorithm_controls_ui(ns("algorithm_controls"))
       ),
@@ -69,8 +125,18 @@ mod_visualizer_ui <- function(id) {
 
 mod_visualizer_server <- function(id) {
   moduleServer(id, function(input, output, session) {
+    wizard_state <- reactiveVal("data")
     dataset_controls <- mod_visualizer_dataset_controls_server("dataset_controls")
     algorithm_controls <- mod_visualizer_algorithm_controls_server("algorithm_controls")
+
+    output$wizard_progress_ui <- renderUI({
+      visualizer_wizard_progress_ui(wizard_state())
+    })
+
+    output$wizard_state <- renderText({
+      wizard_state()
+    })
+    outputOptions(output, "wizard_state", suspendWhenHidden = FALSE)
 
     # The visualizer keeps preset/uploaded data separate from user-drawn
     # points so drawing can be cleared without losing the selected base dataset.
@@ -84,7 +150,11 @@ mod_visualizer_server <- function(id) {
       base_classification_data(new_preset_data)
       drawn_classification_data(create_empty_classification_data())
       current_base_dataset_label(dataset_controls$selected_dataset_name())
-    }, ignoreInit = FALSE)
+
+      if (identical(isolate(wizard_state()), "data")) {
+        wizard_state("model")
+      }
+    }, ignoreInit = TRUE)
 
     # Uploads are already validated by mod_visualizer_dataset_controls_server().
     observeEvent(dataset_controls$uploaded_dataset(), {
@@ -94,8 +164,20 @@ mod_visualizer_server <- function(id) {
         base_classification_data(uploaded_classification_data)
         drawn_classification_data(create_empty_classification_data())
         current_base_dataset_label("Uploaded CSV")
+
+        if (identical(isolate(wizard_state()), "data")) {
+          wizard_state("model")
+        }
       }
     }, ignoreNULL = TRUE)
+
+    observeEvent(algorithm_controls$selected_algorithm_key(), {
+      current_state <- isolate(wizard_state())
+
+      if (visualizer_wizard_step_index(current_state) <= visualizer_wizard_step_index("model")) {
+        wizard_state("parameters")
+      }
+    }, ignoreInit = TRUE)
 
     observeEvent(dataset_controls$clear_drawn_points(), {
       drawn_classification_data(create_empty_classification_data())
@@ -202,6 +284,8 @@ mod_visualizer_server <- function(id) {
     # The Run Classifier button is the training trigger. Parameter changes do
     # not retrain automatically; they are read only when this event fires.
     observeEvent(algorithm_controls$run_model_clicks(), {
+      wizard_state("run")
+
       trained_model_results <- tryCatch(
         train_classification_model(
           classification_data = current_classification_data(),
@@ -215,6 +299,10 @@ mod_visualizer_server <- function(id) {
       )
 
       trained_model_bundle(trained_model_results)
+
+      if (!is.null(trained_model_results)) {
+        wizard_state("results")
+      }
     }, ignoreInit = TRUE)
 
     plot_panel$set_model_reactive(trained_model_bundle)

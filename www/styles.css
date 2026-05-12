@@ -285,6 +285,64 @@ a { text-decoration: none; }
 .sidebar-header-block { margin-bottom: 12px; }
 .sidebar-header-block h2 { margin: 0 0 6px; font-size: 26px; font-weight: 800; }
 
+.wizard-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 10px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.wizard-progress-step {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  color: #7a8da1;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.wizard-progress-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #eef4f7;
+  color: #6d8196;
+}
+
+.wizard-progress-state {
+  color: #97a6b5;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wizard-progress-step.is-current {
+  color: var(--navy);
+}
+
+.wizard-progress-step.is-current .wizard-progress-number {
+  background: var(--mint);
+  color: var(--white);
+}
+
+.wizard-progress-step.is-current .wizard-progress-state {
+  color: var(--mint-dark);
+}
+
+.wizard-progress-step.is-complete .wizard-progress-number {
+  background: var(--mint-soft);
+  color: var(--mint-dark);
+}
+
 .sidebar-header-block p, .sidebar-helper-text, .parameter-note,
 .run-helper-text, .draw-mode-status, .sidebar-run-note {
   margin: 0;
