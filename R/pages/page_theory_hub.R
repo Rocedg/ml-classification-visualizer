@@ -40,11 +40,11 @@ page_theory_hub_ui <- function(id) {
         div(
           class = "app-card theory-card",
           tags$h3("Support Vector Machine"),
-          tags$p("SVM tries to place a straight boundary that separates the classes while keeping the widest possible margin from the closest training points."),
+          tags$p("SVM searches for a boundary with a wide margin. Support vectors are the training points that shape that boundary most strongly."),
           tags$ul(
-            tags$li("Focus: margin and support vectors"),
-            tags$li("Kernel in this app: Linear"),
-            tags$li("Important parameter: C / Cost")
+            tags$li("Focus: margin, support vectors, and decision score"),
+            tags$li("C controls tolerance for margin violations"),
+            tags$li("Kernels allow straight or curved boundaries")
           )
         ),
         div(

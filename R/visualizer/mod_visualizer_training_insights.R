@@ -76,8 +76,9 @@ mod_visualizer_training_insights_ui <- function(id) {
       div(
         class = "app-card theory-summary-card",
         tags$h3("How SVM decides"),
-        tags$p("SVM chooses a decision boundary that tries to maximize the margin between classes. The support vectors are the training points closest to the boundary and have the strongest influence on where it is placed."),
-        tags$p("Lower C allows a wider margin and tolerates more mistakes. Higher C penalizes mistakes more strongly and can fit the training data more tightly."),
+        tags$p("SVM chooses a decision boundary by maximizing the margin between classes. Support vectors are the influential training points that define that margin."),
+        tags$p("This visualizer does not animate SVM optimizer steps. Classical SVM training is a constrained optimization problem, so this tab focuses on the final boundary, support vectors, and parameter effects."),
+        tags$p("C controls the penalty for margin violations. Kernels control the boundary shape: Linear is straight, RBF creates flexible local regions, and Polynomial creates curved boundaries controlled by degree."),
         uiOutput(ns("svm_training_summary_ui"))
       )
     )

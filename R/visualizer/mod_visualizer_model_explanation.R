@@ -229,35 +229,55 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) 
       svm = list(
         title = "Support Vector Machine",
         explanation = tagList(
-          tags$h4("What does it do?"),
+          tags$h4("What SVM tries to do"),
           tags$p(
-            "In this app, SVM uses a ", tags$b("linear kernel"), ". It draws a straight decision boundary",
-            " between Class A and Class B while trying to keep that boundary as far as possible from the closest training points."
+            "SVM searches for a decision boundary that separates the classes while maximizing the margin between them.",
+            " Instead of estimating class probabilities, it focuses on a decision score and the boundary where that score crosses 0."
           ),
           tags$h4("Margin and support vectors"),
           tags$p(
-            "The margin is the space around the decision boundary. The training points closest to that space are",
-            " called ", tags$b("support vectors"), " because they have the strongest influence on where the boundary sits."
+            "The margin is the distance between the decision boundary and the closest influential training points.",
+            " Those points are called ", tags$b("support vectors"), ". They define the margin and have the strongest influence on the final boundary."
           ),
-          tags$div(
-            class = "math-box",
-            withMathJax("$$\\text{decision boundary: score} = 0 \\qquad \\text{margins: score} = -1 \\text{ and } +1$$")
-          ),
+          tags$h4("Soft margin and C"),
           tags$p(
-            "The plot highlights support vectors with rings. Solid contour lines show the boundary, and dashed contours show margin lines when the decision scores make them available."
+            "Real datasets are often not perfectly separable, so SVM allows some points to fall inside the margin or even on the wrong side.",
+            " The ", tags$b("C / Cost"), " parameter controls how strongly those violations are penalized."
+          ),
+          tags$ul(
+            tags$li(tags$b("Lower C:"), " wider margin, more tolerance for mistakes, often smoother."),
+            tags$li(tags$b("Higher C:"), " stronger penalty for violations, tighter fit to training data, possible overfitting.")
+          ),
+          tags$h4("Kernels"),
+          tags$p(
+            "Kernels let SVM create nonlinear decision boundaries by comparing points in a transformed feature space without explicitly computing that transformation."
+          ),
+          tags$ul(
+            tags$li(tags$b("Linear:"), " best when the classes are roughly separable by a straight line."),
+            tags$li(tags$b("RBF:"), " useful for curved regions; gamma controls how local each training point's influence is."),
+            tags$li(tags$b("Polynomial:"), " useful for polynomial-like curves; degree controls the curve complexity.")
+          ),
+          tags$h4("Why no SVM iteration animation?"),
+          tags$p(
+            "Unlike Logistic Regression in this visualizer, SVM is not shown as a step-by-step gradient descent animation.",
+            " Classical SVM training is usually formulated as a constrained optimization problem, often solved through dual optimization methods.",
+            " Showing that optimizer accurately is outside this project's scope, so the app focuses on the final boundary, margin, support vectors, and parameter effects."
           )
         ),
         strengths = tagList(
-          tags$li("Shows a clear margin-based decision rule."),
-          tags$li("Highlights the specific training points that define the boundary."),
-          tags$li("Works well as an interpretable linear classifier for two-dimensional examples.")
+          tags$li("Useful when classes can be separated with a clear margin."),
+          tags$li("Kernels can handle nonlinear patterns when a straight line is not enough."),
+          tags$li("Works well on small to medium datasets, but parameter choice matters: too much flexibility can overfit, while too little can underfit.")
         ),
         parameter_note = tagList(
-          tags$p(tags$b("Kernel:"), " Linear only in this version."),
-          tags$p(tags$b("C / Cost:"), " controls how strongly margin violations are penalized."),
+          tags$p(tags$b("Kernel:"), " controls the type of boundary the model can learn."),
+          tags$p(tags$b("C / Cost:"), " controls the penalty for margin violations."),
+          tags$p(tags$b("Gamma:"), " for RBF and Polynomial kernels, higher values make the boundary more local and flexible; lower values create smoother, broader regions."),
+          tags$p(tags$b("Degree:"), " for Polynomial kernels, higher values allow more complex curves but can overfit."),
           tags$ul(
-            tags$li("Lower C allows a wider margin and tolerates more mistakes."),
-            tags$li("Higher C fits the training data more tightly and penalizes mistakes more strongly.")
+            tags$li("Linear is best for data that is roughly separable by a straight line."),
+            tags$li("RBF is useful for nonlinear datasets with curved regions."),
+            tags$li("Polynomial can help when the boundary follows polynomial-like curves.")
           )
         )
       ),
