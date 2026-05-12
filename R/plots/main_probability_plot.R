@@ -437,6 +437,116 @@ build_svm_decision_surface_plot <- function(model_results, max_axis_points = 80)
     )
   )
 
+  point_surface_data <- NULL
+  point_required_columns <- c("x", "y", "class", "decision_value")
+
+  if (!is.null(model_results$classification_data) &&
+      all(point_required_columns %in% names(model_results$classification_data))) {
+    valid_point_rows <- stats::complete.cases(
+      model_results$classification_data[, point_required_columns, drop = FALSE]
+    ) &
+      is.finite(model_results$classification_data$decision_value)
+
+    point_surface_data <- model_results$classification_data[valid_point_rows, , drop = FALSE]
+
+    if (nrow(point_surface_data) > 0) {
+      if (!"split" %in% names(point_surface_data)) {
+        point_surface_data$split <- "train"
+      }
+
+      point_surface_data$class <- factor(as.character(point_surface_data$class), levels = c("Class A", "Class B"))
+      point_surface_data$split <- factor(as.character(point_surface_data$split), levels = c("train", "test"))
+
+      if (!is.null(model_results$support_vectors) && nrow(model_results$support_vectors) > 0) {
+        point_keys <- paste(
+          round(point_surface_data$x, 3),
+          round(point_surface_data$y, 3),
+          as.character(point_surface_data$class),
+          sep = "|"
+        )
+        support_vector_keys <- paste(
+          round(model_results$support_vectors$x, 3),
+          round(model_results$support_vectors$y, 3),
+          as.character(model_results$support_vectors$class),
+          sep = "|"
+        )
+        point_surface_data$is_support_vector <- point_keys %in% support_vector_keys
+      } else {
+        point_surface_data$is_support_vector <- FALSE
+      }
+    }
+  }
+
+  if (!is.null(point_surface_data) && nrow(point_surface_data) > 0) {
+    point_trace_specs <- list(
+      list(class_label = "Class A", split_label = "train", color = "#5a95ff", marker_size = 4.2, marker_line = "#ffffff", trace_name = "Train Class A"),
+      list(class_label = "Class B", split_label = "train", color = "#ff8b3d", marker_size = 4.2, marker_line = "#ffffff", trace_name = "Train Class B"),
+      list(class_label = "Class A", split_label = "test", color = "#5a95ff", marker_size = 4.9, marker_line = "#111827", trace_name = "Test Class A"),
+      list(class_label = "Class B", split_label = "test", color = "#ff8b3d", marker_size = 4.9, marker_line = "#111827", trace_name = "Test Class B")
+    )
+
+    for (point_trace in point_trace_specs) {
+      trace_points <- point_surface_data[
+        point_surface_data$class == point_trace$class_label &
+          point_surface_data$split == point_trace$split_label,
+        ,
+        drop = FALSE
+      ]
+
+      if (nrow(trace_points) == 0) {
+        next
+      }
+
+      surface_plot <- plotly::add_markers(
+        surface_plot,
+        data = trace_points,
+        x = ~x,
+        y = ~y,
+        z = ~decision_value,
+        name = point_trace$trace_name,
+        marker = list(
+          color = point_trace$color,
+          size = point_trace$marker_size,
+          opacity = 0.9,
+          line = list(color = point_trace$marker_line, width = 1)
+        ),
+        hovertemplate = paste(
+          "x: %{x:.2f}<br>",
+          "y: %{y:.2f}<br>",
+          "score: %{z:.3f}<br>",
+          point_trace$trace_name,
+          "<extra></extra>"
+        )
+      )
+    }
+
+    support_point_data <- point_surface_data[point_surface_data$is_support_vector, , drop = FALSE]
+
+    if (nrow(support_point_data) > 0) {
+      surface_plot <- plotly::add_markers(
+        surface_plot,
+        data = support_point_data,
+        x = ~x,
+        y = ~y,
+        z = ~decision_value,
+        name = "Support vectors",
+        marker = list(
+          color = "rgba(255, 255, 255, 0.02)",
+          size = 7.2,
+          opacity = 0.95,
+          line = list(color = "#111827", width = 2.2)
+        ),
+        hovertemplate = paste(
+          "Support vector<br>",
+          "x: %{x:.2f}<br>",
+          "y: %{y:.2f}<br>",
+          "score: %{z:.3f}",
+          "<extra></extra>"
+        )
+      )
+    }
+  }
+
   plotly::layout(
     surface_plot,
     title = list(
@@ -457,4 +567,3 @@ build_svm_decision_surface_plot <- function(model_results, max_axis_points = 80)
     plot_bgcolor = "#ffffff"
   )
 }
-
