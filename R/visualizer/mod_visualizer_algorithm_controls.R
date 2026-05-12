@@ -32,12 +32,21 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
       ),
       uiOutput(ns("algorithm_cards_ui")),
       div(
-        class = "run-defaults-card",
-        tags$p("Use the recommended starting parameters for this model."),
+        class = "algorithm-card-stack",
         actionButton(
           inputId = ns("run_defaults_button"),
-          label = "Run with defaults",
-          class = "ml-button ml-button-secondary ml-button-full",
+          label = tagList(
+            div(
+              class = "algorithm-card-title-row",
+              tags$span("Run with defaults"),
+              tags$span(
+                class = "help-tooltip",
+                `aria-label` = "Run the current model using recommended default parameter settings.",
+                "?"
+              )
+            )
+          ),
+          class = "algorithm-selection-card run-defaults-button",
           title = "Run the selected model using recommended starting parameters."
         )
       )
@@ -132,10 +141,11 @@ mod_visualizer_algorithm_controls_server <- function(id) {
         )
 
         if (is_available) {
-          actionLink(
+          actionButton(
             inputId = session$ns(button_id),
             label = card_contents,
-            class = active_class
+            class = active_class,
+            title = tooltip_text
           )
         } else {
           div(

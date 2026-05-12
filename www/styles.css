@@ -55,6 +55,16 @@ a { text-decoration: none; }
 .ml-button-primary { padding: 14px 24px; background: var(--mint); color: var(--white); }
 .ml-button-primary:hover, .ml-button-primary:focus { background: var(--mint-dark); color: var(--white); }
 
+.run-defaults-button {
+  background: #f4f8ff;
+  color: var(--navy);
+  border-color: #cdd9eb;
+}
+.run-defaults-button:hover, .run-defaults-button:focus {
+  background: #e8efff;
+  color: var(--navy);
+}
+
 .ml-button-secondary, .upload-button-shell .btn {
   padding: 12px 16px;
   background: var(--white);
