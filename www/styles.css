@@ -343,6 +343,66 @@ a { text-decoration: none; }
   color: var(--mint-dark);
 }
 
+.wizard-results-card {
+  padding: 14px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--mint);
+  border-radius: 10px;
+}
+
+.wizard-results-kicker {
+  margin-bottom: 4px;
+  color: var(--mint-dark);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wizard-results-card h3 {
+  margin: 0 0 12px;
+  color: var(--navy);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.wizard-results-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.wizard-results-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.wizard-results-label {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.wizard-results-value {
+  text-align: right;
+}
+
+.wizard-results-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wizard-start-over-button {
+  text-align: center;
+}
+
 .sidebar-header-block p, .sidebar-helper-text, .parameter-note,
 .run-helper-text, .draw-mode-status, .sidebar-run-note {
   margin: 0;
