@@ -82,6 +82,7 @@ mod_visualizer_training_insights_ui <- function(id) {
         uiOutput(ns("svm_training_summary_ui")),
         tags$h4("SVM decision function"),
         tags$p("The surface shows the SVM decision score across the feature space. The decision boundary is where the score crosses 0."),
+        tags$p(withMathJax("It plots \\(f(x)\\) over the original x/y space, not the full kernel-transformed feature space.")),
         plotly::plotlyOutput(
           outputId = ns("svm_decision_surface_plot"),
           height = "320px"

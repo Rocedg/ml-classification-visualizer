@@ -234,15 +234,31 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) 
             "SVM searches for a decision boundary that separates the classes while maximizing the margin between them.",
             " Instead of estimating class probabilities, it focuses on a decision score and the boundary where that score crosses 0."
           ),
+          tags$h4("Decision function"),
+          tags$p(withMathJax("For a linear SVM, the score is \\(f(x) = w \\cdot x + b\\).")),
+          tags$ul(
+            tags$li(withMathJax("\\(f(x) > 0\\): one class.")),
+            tags$li(withMathJax("\\(f(x) < 0\\): the other class.")),
+            tags$li(withMathJax("\\(f(x) = 0\\): the decision boundary."))
+          ),
           tags$h4("Margin and support vectors"),
           tags$p(
             "The margin is the distance between the decision boundary and the closest influential training points.",
             " Those points are called ", tags$b("support vectors"), ". They define the margin and have the strongest influence on the final boundary."
           ),
+          tags$p(withMathJax(
+            "For labels \\(y_i \\in \\{-1, +1\\}\\), points safely outside the margin satisfy \\(y_i f(x_i) \\ge 1\\). Points near or inside that band influence the boundary most."
+          )),
           tags$h4("Soft margin and C"),
           tags$p(
             "Real datasets are often not perfectly separable, so SVM allows some points to fall inside the margin or even on the wrong side.",
             " The ", tags$b("C / Cost"), " parameter controls how strongly those violations are penalized."
+          ),
+          tags$p(withMathJax(
+            "A soft-margin SVM balances a wide margin and violations with \\(\\min \\; \\frac{1}{2}\\lVert w \\rVert^2 + C \\sum_i \\xi_i\\)."
+          )),
+          tags$p(
+            "The first term prefers a wider margin. The second term penalizes violations, and C controls how strongly that penalty matters."
           ),
           tags$ul(
             tags$li(tags$b("Lower C:"), " wider margin, more tolerance for mistakes, often smoother."),
@@ -252,6 +268,9 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) 
           tags$p(
             "Kernels let SVM create nonlinear decision boundaries by comparing points in a transformed feature space without explicitly computing that transformation."
           ),
+          tags$p(withMathJax(
+            "With kernels, the decision score can be written as \\(f(x) = \\sum_i \\alpha_i y_i K(x_i, x) + b\\). Only support vectors have meaningful nonzero \\(\\alpha_i\\) values."
+          )),
           tags$ul(
             tags$li(tags$b("Linear:"), " best when the classes are roughly separable by a straight line."),
             tags$li(tags$b("RBF:"), " useful for curved regions; gamma controls how local each training point's influence is."),
