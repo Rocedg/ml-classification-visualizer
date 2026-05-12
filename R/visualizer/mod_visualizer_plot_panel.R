@@ -609,11 +609,11 @@ mod_visualizer_plot_panel_server <- function(id,
       }
 
       tags$ul(
-        tags$li(paste("Kernel: Linear")),
+        tags$li(paste("Kernel:", margin_summary$kernel_label)),
         tags$li(paste("C:", format_current_run_number(margin_summary$cost))),
         tags$li(paste("Support vectors:", format_current_run_integer(margin_summary$support_vector_count))),
         tags$li("Decision boundary: score = 0"),
-        tags$li("Margin contours: score = -1 and +1 when available")
+        tags$li("Dashed score contours: score = -1 and +1 when available")
       )
     })
     output$probability_guide_visible <- renderText({
@@ -643,7 +643,7 @@ mod_visualizer_plot_panel_server <- function(id,
       if (active_plot_uses_svm()) {
         return(tagList(
           tags$span("Decision regions"),
-          guide_help_icon("Blue and orange show the SVM predicted class regions. The solid contour is the decision boundary, and dashed contours show the margins when available.")
+          guide_help_icon("Blue and orange show the SVM predicted class regions. The solid contour is where decision score = 0, and dashed contours show score levels around it when available.")
         ))
       }
 
@@ -668,7 +668,7 @@ mod_visualizer_plot_panel_server <- function(id,
     })
 
     output$region_guide_middle_label <- renderText({
-      if (active_plot_uses_svm()) "Boundary / margins" else "Uncertain"
+      if (active_plot_uses_svm()) "Boundary / score contours" else "Uncertain"
     })
 
     output$region_guide_bottom_label <- renderText({

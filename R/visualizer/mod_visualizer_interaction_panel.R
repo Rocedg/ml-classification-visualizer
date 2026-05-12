@@ -272,7 +272,7 @@ visualizer_svm_margin_panel_ui <- function(selected_algorithm, model_results) {
       length(margin_summary$margin_violation_count) == 1 &&
       !is.na(margin_summary$margin_violation_count)) {
     optional_rows <- c(optional_rows, list(
-      summary_row("Inside margin", format_current_run_integer(margin_summary$margin_violation_count))
+      summary_row("Inside score band", format_current_run_integer(margin_summary$margin_violation_count))
     ))
   }
 
@@ -289,13 +289,13 @@ visualizer_svm_margin_panel_ui <- function(selected_algorithm, model_results) {
     tags$h4("SVM margin summary"),
     div(
       class = "knn-inspection-grid",
-      summary_row("Kernel", "Linear"),
+      summary_row("Kernel", margin_summary$kernel_label),
       summary_row("C", format_current_run_number(margin_summary$cost)),
       summary_row("Support vectors", format_current_run_integer(support_vector_count)),
       summary_row("Boundary", "score = 0"),
-      summary_row("Margins", "score = -1 and +1"),
+      summary_row("Score contours", "score = -1 and +1"),
       optional_rows
     ),
-    tags$p("Support vectors are the training points closest to the decision boundary. They define the margin.")
+    tags$p("Support vectors are training points that strongly influence the decision boundary and nearby score contours.")
   )
 }

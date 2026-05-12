@@ -96,14 +96,14 @@ build_classification_plot <- function(classification_data, active_model_view, kn
               )
           }
 
-          margin_breaks <- c(-1, 1)[vapply(c(-1, 1), break_is_visible, logical(1))]
+          score_contour_breaks <- c(-1, 1)[vapply(c(-1, 1), break_is_visible, logical(1))]
 
-          if (length(margin_breaks) > 0) {
+          if (length(score_contour_breaks) > 0) {
             plot_object <- plot_object +
               geom_contour(
                 data = prediction_grid,
                 aes(x = x, y = y, z = decision_value),
-                breaks = margin_breaks,
+                breaks = score_contour_breaks,
                 color = "#475569",
                 linewidth = 0.5,
                 linetype = "dashed",
