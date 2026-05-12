@@ -205,6 +205,24 @@ mod_visualizer_algorithm_controls_server <- function(id) {
       }
     })
 
+    observeEvent(input$run_defaults_button, {
+      if (selected_algorithm_key() == "logistic_regression") {
+        updateSliderInput(session, "logistic_learning_rate", value = default_logistic_learning_rate)
+        updateSliderInput(session, "logistic_max_iter", value = default_logistic_max_iter)
+        updateSliderInput(session, "decision_threshold", value = default_decision_threshold)
+        updateCheckboxInput(session, "logistic_fit_intercept", value = default_logistic_fit_intercept)
+      } else if (selected_algorithm_key() == "knn") {
+        updateSliderInput(session, "knn_k", value = default_knn_k)
+        updateSelectInput(session, "knn_distance_metric", selected = default_knn_distance_metric)
+        updateSelectInput(session, "knn_voting_method", selected = default_knn_voting_method)
+      } else if (selected_algorithm_key() == "svm") {
+        updateSelectInput(session, "svm_kernel", selected = "linear")
+        updateSliderInput(session, "svm_cost", value = default_svm_cost)
+        updateSliderInput(session, "svm_gamma", value = default_svm_gamma)
+        updateSliderInput(session, "svm_degree", value = default_svm_degree)
+      }
+    }, ignoreInit = TRUE)
+
     list(
       selected_algorithm_key = reactive(selected_algorithm_key()),
       algorithm_parameters = reactive({
@@ -278,6 +296,31 @@ mod_visualizer_algorithm_controls_server <- function(id) {
             svm_cost = svm_cost,
             svm_gamma = svm_gamma,
             svm_degree = svm_degree
+          )
+        } else {
+          list()
+        }
+      }),
+      default_algorithm_parameters = reactive({
+        if (selected_algorithm_key() == "logistic_regression") {
+          list(
+            logistic_learning_rate = default_logistic_learning_rate,
+            logistic_max_iter = default_logistic_max_iter,
+            decision_threshold = default_decision_threshold,
+            logistic_fit_intercept = default_logistic_fit_intercept
+          )
+        } else if (selected_algorithm_key() == "knn") {
+          list(
+            knn_k = default_knn_k,
+            knn_distance_metric = default_knn_distance_metric,
+            knn_voting_method = default_knn_voting_method
+          )
+        } else if (selected_algorithm_key() == "svm") {
+          list(
+            svm_kernel = "linear",
+            svm_cost = default_svm_cost,
+            svm_gamma = default_svm_gamma,
+            svm_degree = default_svm_degree
           )
         } else {
           list()

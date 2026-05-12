@@ -243,6 +243,8 @@ mod_visualizer_server <- function(id) {
       }
     })
 
+    model_run_count <- reactiveVal(0)
+
     # The plot panel owns the visible plot and iteration controls. The parent
     # passes reactive data/control state in and receives plot clicks back.
     plot_panel <- mod_visualizer_plot_panel_server(
@@ -250,11 +252,34 @@ mod_visualizer_server <- function(id) {
       classification_data = current_classification_data,
       drawing_mode_active = dataset_controls$drawing_mode_active,
       selected_class_label = dataset_controls$selected_drawing_class,
-      run_model_clicked = algorithm_controls$run_model_clicks,
+      run_model_clicked = reactive(model_run_count()),
       selected_dataset_label = current_dataset_summary_label,
       selected_algorithm_key = algorithm_controls$selected_algorithm_key,
       algorithm_parameters = algorithm_controls$algorithm_parameters
     )
+
+    run_selected_model <- function(parameter_values) {
+      wizard_state("run")
+
+      trained_model_results <- tryCatch(
+        train_classification_model(
+          classification_data = current_classification_data(),
+          algorithm_name = algorithm_controls$selected_algorithm_key(),
+          parameter_values = parameter_values
+        ),
+        error = function(error_object) {
+          showNotification(error_object$message, type = "error")
+          NULL
+        }
+      )
+
+      trained_model_bundle(trained_model_results)
+      model_run_count(isolate(model_run_count()) + 1)
+
+      if (!is.null(trained_model_results)) {
+        wizard_state("results")
+      }
+    }
 
     # Plot clicks add custom points only while draw mode is enabled.
     observeEvent(plot_panel$plot_click_coordinates(), {
@@ -288,25 +313,11 @@ mod_visualizer_server <- function(id) {
     # The Run Classifier button is the training trigger. Parameter changes do
     # not retrain automatically; they are read only when this event fires.
     observeEvent(algorithm_controls$run_model_clicks(), {
-      wizard_state("run")
+      run_selected_model(algorithm_controls$algorithm_parameters())
+    }, ignoreInit = TRUE)
 
-      trained_model_results <- tryCatch(
-        train_classification_model(
-          classification_data = current_classification_data(),
-          algorithm_name = algorithm_controls$selected_algorithm_key(),
-          parameter_values = algorithm_controls$algorithm_parameters()
-        ),
-        error = function(error_object) {
-          showNotification(error_object$message, type = "error")
-          NULL
-        }
-      )
-
-      trained_model_bundle(trained_model_results)
-
-      if (!is.null(trained_model_results)) {
-        wizard_state("results")
-      }
+    observeEvent(algorithm_controls$run_defaults_clicks(), {
+      run_selected_model(algorithm_controls$default_algorithm_parameters())
     }, ignoreInit = TRUE)
 
     plot_panel$set_model_reactive(trained_model_bundle)
