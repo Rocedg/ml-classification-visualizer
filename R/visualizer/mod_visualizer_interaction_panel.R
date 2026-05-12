@@ -238,19 +238,9 @@ visualizer_svm_margin_panel_ui <- function(selected_algorithm, model_results) {
   if (is.null(model_results) || !identical(model_results$algorithm_key, "svm")) {
     return(div(
       class = "knn-inspection-panel svm-summary-panel",
-      tags$h4("SVM margin summary"),
-      tags$p("Run SVM to inspect the margin, decision boundary, and support vectors.")
+      tags$h4("SVM optimization view"),
+      tags$p("Run SVM to inspect the final boundary, support vectors, and score contours.")
     ))
-  }
-
-  margin_summary <- model_results$margin_summary
-
-  if (is.null(margin_summary)) {
-    margin_summary <- model_results$model_object$margin_summary
-  }
-
-  if (is.null(margin_summary)) {
-    margin_summary <- list()
   }
 
   summary_row <- function(label_text, value_text) {
@@ -260,42 +250,20 @@ visualizer_svm_margin_panel_ui <- function(selected_algorithm, model_results) {
     )
   }
 
-  support_vector_count <- margin_summary$support_vector_count
-
-  if (is.null(support_vector_count) && !is.null(model_results$support_vectors)) {
-    support_vector_count <- nrow(model_results$support_vectors)
-  }
-
-  optional_rows <- list()
-
-  if (!is.null(margin_summary$margin_violation_count) &&
-      length(margin_summary$margin_violation_count) == 1 &&
-      !is.na(margin_summary$margin_violation_count)) {
-    optional_rows <- c(optional_rows, list(
-      summary_row("Inside score band", format_current_run_integer(margin_summary$margin_violation_count))
-    ))
-  }
-
-  if (!is.null(margin_summary$misclassified_train_points) &&
-      length(margin_summary$misclassified_train_points) == 1 &&
-      !is.na(margin_summary$misclassified_train_points)) {
-    optional_rows <- c(optional_rows, list(
-      summary_row("Train mistakes", format_current_run_integer(margin_summary$misclassified_train_points))
-    ))
-  }
-
   div(
     class = "knn-inspection-panel svm-summary-panel",
-    tags$h4("SVM margin summary"),
+    tags$h4("SVM optimization view"),
+    tags$p(
+      "SVM is not shown here as a gradient descent animation. Classical SVM training is usually formulated as a constrained optimization problem: it searches for a boundary that maximizes the margin while allowing controlled violations."
+    ),
+    tags$p(
+      "That optimization process is mathematically more complex and outside this visualizer's scope. Instead, this view focuses on the final boundary, support vectors, score contours, and how parameters affect the model."
+    ),
     div(
       class = "knn-inspection-grid",
-      summary_row("Kernel", margin_summary$kernel_label),
-      summary_row("C", format_current_run_number(margin_summary$cost)),
-      summary_row("Support vectors", format_current_run_integer(support_vector_count)),
       summary_row("Boundary", "score = 0"),
-      summary_row("Score contours", "score = -1 and +1"),
-      optional_rows
-    ),
-    tags$p("Support vectors are training points that strongly influence the decision boundary and nearby score contours.")
+      summary_row("Score contours", "-1 and +1 when available"),
+      summary_row("Support vectors", "highlighted rings")
+    )
   )
 }

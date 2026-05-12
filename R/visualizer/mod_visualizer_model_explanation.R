@@ -254,11 +254,13 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) 
             "Real datasets are often not perfectly separable, so SVM allows some points to fall inside the margin or even on the wrong side.",
             " The ", tags$b("C / Cost"), " parameter controls how strongly those violations are penalized."
           ),
-          tags$p(withMathJax(
-            "A soft-margin SVM balances a wide margin and violations with \\(\\min \\; \\frac{1}{2}\\lVert w \\rVert^2 + C \\sum_i \\xi_i\\)."
-          )),
-          tags$p(
-            "The first term prefers a wider margin. The second term penalizes violations, and C controls how strongly that penalty matters."
+          tags$h4("Formal soft-margin optimization"),
+          tags$p(withMathJax("\\(\\text{minimize } \\frac{1}{2}\\lVert w \\rVert^2 + C \\sum_i \\xi_i\\)")),
+          tags$p(withMathJax("\\(\\text{subject to } y_i(w \\cdot x_i + b) \\ge 1 - \\xi_i \\text{ and } \\xi_i \\ge 0\\).")),
+          tags$ul(
+            tags$li(withMathJax("\\(\\frac{1}{2}\\lVert w \\rVert^2\\) encourages a wider margin.")),
+            tags$li(withMathJax("\\(\\xi_i\\) represents margin violations.")),
+            tags$li("C controls how strongly violations are penalized.")
           ),
           tags$ul(
             tags$li(tags$b("Lower C:"), " wider margin, more tolerance for mistakes, often smoother."),
@@ -269,8 +271,14 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) 
             "Kernels let SVM create nonlinear decision boundaries by comparing points in a transformed feature space without explicitly computing that transformation."
           ),
           tags$p(withMathJax(
-            "With kernels, the decision score can be written as \\(f(x) = \\sum_i \\alpha_i y_i K(x_i, x) + b\\). Only support vectors have meaningful nonzero \\(\\alpha_i\\) values."
+            "With kernels, the decision score can be written as \\(f(x) = \\sum_i \\alpha_i y_i K(x_i, x) + b\\)."
           )),
+          tags$ul(
+            tags$li(withMathJax("\\(K(x_i, x)\\) is the kernel function that compares points.")),
+            tags$li(withMathJax("\\(\\alpha_i\\) values determine which training points influence the boundary.")),
+            tags$li(withMathJax("Points with nonzero \\(\\alpha_i\\) are support vectors.")),
+            tags$li("Kernels allow nonlinear boundaries without explicitly drawing the transformed feature space.")
+          ),
           tags$ul(
             tags$li(tags$b("Linear:"), " best when the classes are roughly separable by a straight line."),
             tags$li(tags$b("RBF:"), " useful for curved regions; gamma controls how local each training point's influence is."),

@@ -45,8 +45,9 @@ page_theory_hub_ui <- function(id) {
           tags$ul(
             tags$li("Focus: margin, support vectors, and decision score"),
             tags$li(withMathJax("Margin idea: \\(y_i f(x_i) \\ge 1\\) for points outside the margin")),
-            tags$li(withMathJax("Soft margin: \\(\\frac{1}{2}\\lVert w \\rVert^2 + C \\sum_i \\xi_i\\) balances margin width and violations")),
-            tags$li("Kernels allow straight or curved boundaries without showing probabilities")
+            tags$li(withMathJax("Soft margin objective: minimize \\(\\frac{1}{2}\\lVert w \\rVert^2 + C \\sum_i \\xi_i\\)")),
+            tags$li(withMathJax("Constraints: \\(y_i(w \\cdot x_i + b) \\ge 1 - \\xi_i\\) and \\(\\xi_i \\ge 0\\)")),
+            tags$li("Kernels allow straight or curved boundaries without explicitly drawing the transformed feature space")
           )
         ),
         div(

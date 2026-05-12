@@ -75,14 +75,9 @@ mod_visualizer_training_insights_ui <- function(id) {
       condition = paste0("output['", ns("training_insights_algorithm"), "'] == 'svm'"),
       div(
         class = "app-card theory-summary-card",
-        tags$h3("How SVM decides"),
-        tags$p("SVM chooses a decision boundary by maximizing the margin between classes. Support vectors are the influential training points that define that margin."),
-        tags$p("This visualizer does not animate SVM optimizer steps. Classical SVM training is a constrained optimization problem, so this tab focuses on the final boundary, support vectors, and parameter effects."),
-        tags$p("C controls the penalty for margin violations. Kernels control the boundary shape: Linear is straight, RBF creates flexible local regions, and Polynomial creates curved boundaries controlled by degree."),
-        uiOutput(ns("svm_training_summary_ui")),
-        tags$h4("SVM decision function"),
-        tags$p("The surface shows the SVM decision score across the feature space. The decision boundary is where the score crosses 0."),
-        tags$p(withMathJax("It plots \\(f(x)\\) over the original x/y space, not the full kernel-transformed feature space.")),
+        tags$h3("SVM decision function surface"),
+        tags$p("The surface shows the SVM decision score over the original x/y feature space. The decision boundary is where the score crosses 0."),
+        tags$p("Changing C, kernel, gamma, or degree changes the shape of this surface."),
         plotly::plotlyOutput(
           outputId = ns("svm_decision_surface_plot"),
           height = "320px"
