@@ -41,6 +41,35 @@ page_about_ui <- function(id) {
           class = "app-card about-card",
           tags$h3("Built for Learning"),
           tags$p("The project uses clear names, modular files, and extensive comments so new R programmers can read the code and keep building confidently.")
+        ),
+        
+        div(
+          class = "app-card about-card project-info-card",
+          tags$h3("Project Information"),
+          tags$p(
+            tags$strong("Team: "),
+            "Alex Garcia , Edgar Roca, Jordi Beascoechea."
+          ),
+          tags$p(
+            tags$strong("Subject: "),
+            "Projecte 2."
+          ),
+          tags$p(
+            tags$strong("University: "),
+            "Universitat Politècnica de Catalunya (UPC)."
+          ),
+          tags$p(
+            tags$strong("GitHub repository: "),
+            tags$a(
+              href = "https://github.com/Rocedg/ml-classification-visualizer",
+              target = "_blank",
+              "ml-classification-visualizer"
+            )
+          ),
+          tags$p(
+            tags$strong("Server: "),
+            "Local Shiny server using shiny::runApp()."
+          )
         )
       )
     )
