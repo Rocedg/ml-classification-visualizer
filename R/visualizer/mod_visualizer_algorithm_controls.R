@@ -30,26 +30,7 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
         div(class = "sidebar-step-pill", "2"),
         tags$span("Model")
       ),
-      uiOutput(ns("algorithm_cards_ui")),
-      div(
-        class = "algorithm-card-stack",
-        actionButton(
-          inputId = ns("run_defaults_button"),
-          label = tagList(
-            div(
-              class = "algorithm-card-title-row",
-              tags$span("Run with defaults"),
-              tags$span(
-                class = "help-tooltip",
-                `aria-label` = "Run the current model using recommended default parameter settings.",
-                "?"
-              )
-            )
-          ),
-          class = "algorithm-selection-card run-defaults-button",
-          title = "Run the selected model using recommended starting parameters."
-        )
-      )
+      uiOutput(ns("algorithm_cards_ui"))
     ),
 
     div(
@@ -128,7 +109,8 @@ mod_visualizer_algorithm_controls_server <- function(id) {
 
     output$algorithm_cards_ui <- renderUI({
       # Cards are generated server-side so the active class can follow the
-      # selected algorithm key.
+      # selected algorithm key. "Run with defaults" is included here so it
+      # shares the same algorithm-card-stack and inherits identical spacing.
       create_algorithm_card <- function(button_id, title_text, algorithm_key, tooltip_text, is_available = TRUE) {
         active_class <- if (identical(selected_algorithm_key(), algorithm_key)) "algorithm-selection-card is-active" else "algorithm-selection-card"
 
@@ -174,6 +156,18 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           title_text = "k-NN",
           algorithm_key = "knn",
           tooltip_text = "Classifies a point based on the majority class of its nearest neighbors."
+        ),
+        actionButton(
+          inputId = session$ns("run_defaults_button"),
+          label = tagList(
+            div(
+              class = "algorithm-card-title-row",
+              tags$span("Run with defaults"),
+              help_icon("Run the current model using recommended default parameter settings.")
+            )
+          ),
+          class = "algorithm-selection-card run-defaults-button",
+          title = "Run the selected model using recommended starting parameters."
         )
       )
     })
