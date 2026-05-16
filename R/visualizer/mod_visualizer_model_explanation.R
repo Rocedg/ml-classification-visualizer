@@ -40,10 +40,10 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) 
     }
     
     img_logistic_regression <- .img_uri(
-      file.path(dirname(sys.frame(1)$ofile %||% "."), "logistic_regression_decision_boundary.png")
+      file.path("modules", "logistic_regression_decision_boundary.png")
     )
     # Add more images here following the same pattern, e.g.:
-    # img_knn <- .img_uri(file.path(..., "knn_illustration.png"))
+    # img_knn <- .img_uri(file.path("modules", "knn_illustration.png"))
     
     # ── Centralised per-model configuration ───────────────────────────────────
     model_theory_content <- list(
