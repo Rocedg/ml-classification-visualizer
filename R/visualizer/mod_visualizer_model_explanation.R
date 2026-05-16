@@ -40,7 +40,7 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) 
     }
     
     img_logistic_regression <- .img_uri(
-      file.path("modules", "logistic_regression_decision_boundary.png")
+      file.path("R", "visualizer", "logistic_regression_decision_boundary.png")
     )
     # Add more images here following the same pattern, e.g.:
     # img_knn <- .img_uri(file.path("modules", "knn_illustration.png"))
@@ -53,22 +53,6 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) 
         title = "Logistic Regression",
         
         explanation = tagList(
-          
-          # ── 0. Illustration ───────────────────────────────────────────────
-          if (!is.null(img_logistic_regression))
-            tags$div(
-              style = "text-align:center;margin:0 auto 1.5rem auto;max-width:520px;",
-              tags$img(
-                src   = img_logistic_regression,
-                alt   = "Decision boundary and sigmoid probability surface for Logistic Regression",
-                style = "width:100%;height:auto;border-radius:10px;border:1px solid rgba(0,0,0,0.08);"
-              ),
-              tags$p(
-                style = "font-size:0.8rem;color:#888;margin-top:0.4rem;",
-                "Figure: decision boundary and estimated probability surface p(y=1|x).",
-                " Points are coloured by class; the boundary is where p = 0.5."
-              )
-            ),
           
           # ── 1. What problem does it solve? ──────────────────────────────
           tags$h4("What problem does it solve?"),
@@ -112,6 +96,22 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) 
             tags$li(withMathJax("When \\(z \\to +\\infty \\Rightarrow \\hat{y} \\to 1\\) — confident it is class 1.")),
             tags$li(withMathJax("When \\(z \\to -\\infty \\Rightarrow \\hat{y} \\to 0\\) — confident it is class 0."))
           ),
+          
+          # ── Illustration: decision boundary ───────────────────────────────
+          if (!is.null(img_logistic_regression))
+            tags$div(
+              style = "text-align:center;margin:0 auto 1.5rem auto;max-width:350px;",
+              tags$img(
+                src   = img_logistic_regression,
+                alt   = "Decision boundary and sigmoid probability surface for Logistic Regression",
+                style = "width:100%;height:auto;border-radius:10px;border:1px solid rgba(0,0,0,0.08);"
+              ),
+              tags$p(
+                style = "font-size:0.8rem;color:#888;margin-top:0.4rem;",
+                "Figure: decision boundary and estimated probability surface p(y=1|x).",
+                " Points are coloured by class; the boundary is where p = 0.5."
+              )
+            ),
           
           # ── 4. Cost function ─────────────────────────────────────────────
           tags$h4("Cost function — Log-loss (Binary Cross-Entropy)"),
