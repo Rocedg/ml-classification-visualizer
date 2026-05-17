@@ -13,6 +13,19 @@ train_classification_model <- function(classification_data, algorithm_name, para
     parameter_values <- list()
   }
 
+  required_data_columns <- c("x", "y", "class")
+
+  if (is.null(classification_data) || !all(required_data_columns %in% names(classification_data))) {
+    stop("Dataset must contain x, y, and class columns before training.")
+  }
+
+  classification_data$x <- suppressWarnings(as.numeric(classification_data$x))
+  classification_data$y <- suppressWarnings(as.numeric(classification_data$y))
+  valid_data_rows <- stats::complete.cases(classification_data[, required_data_columns, drop = FALSE]) &
+    is.finite(classification_data$x) &
+    is.finite(classification_data$y)
+  classification_data <- classification_data[valid_data_rows, , drop = FALSE]
+
   if (nrow(classification_data) < 6) {
     stop("Please provide at least 6 data points before training a classifier.")
   }

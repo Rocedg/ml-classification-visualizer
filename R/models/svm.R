@@ -167,18 +167,6 @@ svm_fit_model <- function(training_data,
 }
 
 
-# svm_fit_linear()
-# Purpose:
-#   Compatibility wrapper for the first SVM version's linear fit helper.
-svm_fit_linear <- function(training_data, cost = 1) {
-  svm_fit_model(
-    training_data = training_data,
-    cost = cost,
-    kernel = "linear"
-  )
-}
-
-
 # svm_get_decision_values()
 # Purpose:
 #   Extract the binary decision function scores returned by e1071::predict().

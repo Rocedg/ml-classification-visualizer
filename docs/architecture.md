@@ -27,10 +27,9 @@ Model-specific backends live in `R/models/`:
 
 - `logistic_regression.R`: sigmoid, gradient descent training, saved iteration path, grid/evaluation predictions
 - `knn.R`: neighbor lookup, distance/voting helpers, predictions, grid predictions, point inspection
+- `svm.R`: e1071 SVM fitting, kernel parameter normalization, decision scores, support vector mapping
 
 `R/model_dispatch_helpers.R` owns `train_classification_model()`, which validates data, builds the split/grid, and dispatches to the selected model backend.
-
-Future SVM work should add a focused backend under `R/models/` and a small dispatch branch in `R/model_dispatch_helpers.R`.
 
 ## Plot Helpers
 
@@ -56,8 +55,6 @@ Focused visualizer UI/module files include:
 - `mod_visualizer_training_insights.R`: Training insights tab UI
 - `mod_visualizer_raw_data.R`: raw data table
 - `mod_visualizer_model_explanation.R`: Model Theory / Explanation tab
-
-Future k-NN parameter UI belongs in `mod_visualizer_parameters.R`; future k-NN backend behavior belongs in `R/models/knn.R`.
 
 ```mermaid
 graph TD

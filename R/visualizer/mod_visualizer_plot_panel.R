@@ -242,7 +242,8 @@ mod_visualizer_plot_panel_server <- function(id,
       model_results
     })
 
-    # TODO: Future: generalize this iteration navigation system for other classifiers.
+    # Logistic Regression exposes saved iterations; other classifiers use
+    # final-state diagnostic views.
     logistic_iteration_history <- reactive({
       model_results <- safe_model_results()
       get_logistic_iteration_history(model_results)
