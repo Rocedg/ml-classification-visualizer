@@ -17,22 +17,40 @@ myDashboardApp/
 |-- R/
 |   |-- data_helpers.R
 |   |-- metrics_helpers.R
-|   |-- model_training_helpers.R
 |   |-- playback_helpers.R
-|   |-- plot_helpers.R
+|   |-- model_dispatch_helpers.R
+|   |-- data/
+|   |   |-- preset_datasets.R
+|   |   |-- real_datasets.R
+|   |   |-- synthetic_datasets.R
+|   |   |-- train_test_split.R
+|   |   `-- uploaded_datasets.R
+|   |-- models/
+|   |   |-- logistic_regression.R
+|   |   |-- knn.R
+|   |   `-- svm.R
 |   |-- pages/
 |   |   |-- page_home.R
 |   |   |-- page_theory_hub.R
 |   |   `-- page_about.R
+|   |-- plots/
+|   |   |-- logistic_diagnostics.R
+|   |   `-- main_probability_plot.R
 |   `-- visualizer/
 |       |-- mod_visualizer.R
 |       |-- mod_visualizer_dataset_controls.R
 |       |-- mod_visualizer_algorithm_controls.R
 |       |-- mod_visualizer_plot_panel.R
 |       |-- mod_visualizer_raw_data.R
+|       |-- mod_visualizer_training_insights.R
+|       |-- mod_visualizer_summary_cards.R
+|       |-- mod_visualizer_interaction_panel.R
 |       `-- mod_visualizer_model_explanation.R
 |-- docs/
 |   `-- architecture.md
+|-- static/
+|   |-- diabetes_health_data.csv
+|   `-- titanic_passengers.csv
 `-- www/
     `-- styles.css
 ```
@@ -40,18 +58,10 @@ myDashboardApp/
 ## Supported models
 
 - Logistic Regression
-- SVM (coming soon in the UI)
-- k-NN (coming soon in the UI)
+- SVM
+- k-NN
 
 ## Preset datasets
-## Real-world datasets
-
-The app includes real-world datasets adapted to the required 2D format:
-
-- **Titanic passengers**: uses passenger age and ticket fare to classify whether a passenger survived.
-- **Diabetes health data**: uses glucose level and body mass index to classify diabetes outcome.
-
-These datasets are simplified for visualization. The original datasets contain more variables, but ML Visualizer uses only two numeric variables so the decision regions can be shown clearly.
 ### Synthetic datasets
 
 - Gaussian clusters
@@ -70,10 +80,10 @@ These datasets are simplified for visualization. The original datasets contain m
 Install these packages in R before running the app:
 
 ```r
-install.packages(c("shiny", "ggplot2", "e1071"))
+install.packages(c("shiny", "ggplot2", "plotly", "e1071", "base64enc"))
 ```
 
-The Titanic and diabetes presets are bundled as local static CSV files. The `class` package is normally included with R, and it is used for k-NN.
+The Titanic and diabetes presets are bundled as local static CSV files.
 
 ## How to run the app
 
@@ -107,10 +117,12 @@ The app automatically converts the two uploaded class labels into `Class A` and 
 
 - The project is split into small modules so the code is easier to read.
 - Shared helper functions are kept in the `R/` folder:
-  - `data_helpers.R` prepares preset, uploaded, and plotting-grid data.
+  - `data_helpers.R` prepares common dataset frames and plotting grids.
+  - `R/data/` contains preset, uploaded, real-data, synthetic-data, and split helpers.
   - `metrics_helpers.R` calculates classification metrics.
-  - `model_training_helpers.R` trains the currently available Logistic Regression model.
+  - `R/models/` contains the Logistic Regression, k-NN, and SVM backends.
+  - `model_dispatch_helpers.R` validates run data and dispatches to the selected model.
   - `playback_helpers.R` keeps iteration navigation calculations easy to inspect.
-  - `plot_helpers.R` builds the main classification plot and iteration metric plot.
+  - `R/plots/` builds the main classification plot and model diagnostics.
 - `app.R` remains the main entry point for loading packages, sourcing files, and wiring the UI and server together.
 - The visualizer is designed for understanding model behavior, not for large production datasets.

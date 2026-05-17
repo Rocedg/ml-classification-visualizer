@@ -11,7 +11,6 @@
 #
 # Functions:
 #   - mod_visualizer_plot_panel_ui(): Build the plot tab layout.
-#   - mod_visualizer_training_insights_ui(): Build the training diagnostics tab.
 #   - mod_visualizer_plot_panel_server(): Render the plot, metric cards,
 #     and expose click coordinates.
 #
@@ -39,18 +38,24 @@ mod_visualizer_plot_panel_ui <- function(id) {
   div(
     class = "plot-tab-layout",
     div(
-      class = "plot-top-status-row",
+      class = "main-plot-header",
       div(
-        class = "status-chip status-chip-primary",
-        title = "Background color shows predicted class probability across the feature space.",
-        textOutput(ns("plot_status_text"), inline = TRUE),
-        help_icon("Background color shows predicted class probability across the feature space.")
+        class = "main-plot-title-row",
+        tags$h3(class = "main-plot-title", "Main visualization")
       ),
-      div(class = "status-chip", textOutput(ns("drawing_status_text"), inline = TRUE))
+      div(
+        class = "plot-top-status-row",
+        div(
+          class = "status-chip status-chip-primary",
+          textOutput(ns("plot_status_text"), inline = TRUE)
+        ),
+        div(class = "status-chip", textOutput(ns("drawing_status_text"), inline = TRUE))
+      )
     ),
     div(
+      id = "main-visualization-card",
       class = "plot-canvas-shell main-feature-plot-card",
-      title = "Background color shows predicted class probability across the feature space.",
+      title = "Background color shows how the selected classifier divides the feature space.",
       div(
         class = "main-feature-plot-shell",
         plotOutput(
@@ -65,20 +70,19 @@ mod_visualizer_plot_panel_ui <- function(id) {
           class = "plot-guide-stack",
           div(
             class = "probability-guide-panel",
-            title = "Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.",
+            title = "Background colors explain the selected model output across the feature space.",
             tags$div(
               class = "probability-guide-title",
-              tags$span("Probability"),
-              help_icon("Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.")
+              uiOutput(ns("region_guide_title_ui"), inline = TRUE)
             ),
             tags$div(
               class = "probability-guide-body",
-              tags$div(class = "probability-guide-gradient"),
+              uiOutput(ns("region_guide_gradient_ui")),
               tags$div(
                 class = "probability-guide-labels",
-                tags$span("Class A likely"),
-                tags$span("Uncertain"),
-                tags$span("Class B likely")
+                tags$span(textOutput(ns("region_guide_top_label"), inline = TRUE)),
+                tags$span(textOutput(ns("region_guide_middle_label"), inline = TRUE)),
+                tags$span(textOutput(ns("region_guide_bottom_label"), inline = TRUE))
               )
             )
           ),
@@ -94,167 +98,18 @@ mod_visualizer_plot_panel_ui <- function(id) {
               div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-class-a"), tags$span("Class A")),
               div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-class-b"), tags$span("Class B")),
               div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-train"), tags$span("Train")),
-              div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-test"), tags$span("Test"))
+              div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-test"), tags$span("Test")),
+              conditionalPanel(
+                condition = paste0("output['", ns("svm_guide_visible"), "'] == 'true'"),
+                div(class = "point-guide-row", tags$span(class = "point-guide-dot point-guide-dot-support-vector"), tags$span("Support vector"))
+              )
             )
           )
         )
       )
     ),
-    div(
-      class = "iteration-control-card",
-      div(
-        class = "iteration-control-header",
-        div(
-          class = "status-chip status-chip-primary",
-          title = "Use the playback controls or slider to inspect saved training iterations.",
-          textOutput(ns("iteration_status_text"), inline = TRUE)
-        )
-      ),
-      div(
-        class = "iteration-control-body",
-        conditionalPanel(
-          condition = paste0("output['", ns("show_logistic_playback_controls"), "'] == 'true'"),
-          div(
-            class = "iteration-control-row",
-        div(
-          class = "button-row iteration-button-row",
-          actionButton(
-            inputId = ns("step_backward_button"),
-            label = "←",
-            class = "ml-button ml-button-secondary iteration-icon-button"
-          ),
-          actionButton(
-            inputId = ns("play_pause_button"),
-            label = "▶",
-            class = "ml-button ml-button-secondary iteration-icon-button",
-            onclick = sprintf(
-              "Shiny.setInputValue('%s', Date.now() + Math.random(), {priority: 'event'});",
-              ns("play_pause_command")
-            )
-          ),
-          actionButton(
-            inputId = ns("step_forward_button"),
-            label = "→",
-            class = "ml-button ml-button-secondary iteration-icon-button"
-          )
-        ),
-        div(
-          class = "iteration-slider-group",
-        sliderInput(
-          inputId = ns("iteration_slider"),
-          label = NULL,
-          min = 0,
-          max = 0,
-          value = 0,
-          step = 1,
-          width = "100%"
-        )
-        )
-        )
-        ),
-        conditionalPanel(
-          condition = paste0("output['", ns("show_knn_iteration_note"), "'] == 'true'"),
-          uiOutput(ns("knn_inspection_ui"))
-        )
-      )
-    ),
-    div(
-      class = "plot-side-panel",
-      div(
-        class = "app-card current-run-card",
-        div(
-          class = "current-run-header",
-          tags$span("Current run"),
-          help_icon("Summary of the dataset, model, and parameters used in the current visualization.")
-        ),
-        uiOutput(ns("current_run_summary"))
-      ),
-      div(
-        class = "app-card metrics-comparison-card",
-        div(
-          class = "metrics-comparison-header",
-          tags$span("Model performance"),
-          help_icon("Training points fit the model. Test points are held out and used only to evaluate it.")
-        ),
-        uiOutput(ns("metrics_summary_ui"))
-      )
-    )
-  )
-}
-
-
-mod_visualizer_training_insights_ui <- function(id) {
-  ns <- NS(id)
-  help_icon <- function(help_text) {
-    tags$span(
-      class = "help-tooltip",
-      `aria-label` = help_text,
-      "?"
-    )
-  }
-
-  div(
-    class = "training-insights-tab-layout",
-    div(
-      class = "training-insights-header",
-      title = "Shows model-specific training details.",
-      tags$h3(tags$span("Training insights"), help_icon("Shows model-specific training details.")),
-      tags$p(textOutput(ns("training_insights_subtitle"), inline = TRUE))
-    ),
-    conditionalPanel(
-      condition = paste0("output['", ns("training_insights_algorithm"), "'] == 'logistic_regression'"),
-    div(
-      class = "training-insights-grid",
-      div(
-        class = "plot-canvas-shell diagnostic-plot-shell",
-        title = "Shows how prediction error changes over training iterations.",
-        div(
-          class = "diagnostic-section-header",
-          tags$span("Loss curve"),
-          help_icon("Shows how prediction error changes over training iterations.")
-        ),
-        plotOutput(
-          outputId = ns("iteration_metric_plot"),
-          height = "300px"
-        )
-      ),
-      div(
-        class = "app-card theory-summary-card diagnostic-plot-shell parameter-diagnostic-card",
-        div(
-          class = "plot-top-status-row",
-          div(
-            class = "status-chip status-chip-primary",
-            title = "Shows how the learned model parameters move during optimization.",
-            textOutput(ns("parameter_diagnostic_title"), inline = TRUE),
-            help_icon("Shows how the learned model parameters move during optimization.")
-          )
-        ),
-        conditionalPanel(
-          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'true'"),
-          plotly::plotlyOutput(
-            outputId = ns("parameter_trajectory_3d_plot"),
-            height = "320px"
-          )
-        ),
-        conditionalPanel(
-          condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'false'"),
-          plotOutput(
-            outputId = ns("bias_fixed_loss_landscape_plot"),
-            height = "320px"
-          )
-        )
-      )
-    )
-    ),
-    conditionalPanel(
-      condition = paste0("output['", ns("training_insights_algorithm"), "'] == 'knn'"),
-      div(
-        class = "app-card theory-summary-card",
-        tags$h3("How k-NN predicts"),
-        tags$p("k-NN does not learn parameters through iterations. It classifies each point by looking at the k nearest training points and using majority vote."),
-        tags$p("Smaller k can create more flexible boundaries; larger k usually creates smoother boundaries.")
-      )
-    )
+    visualizer_interaction_panel_ui(ns),
+    visualizer_summary_cards_ui(ns, help_icon)
   )
 }
 
@@ -312,99 +167,21 @@ mod_visualizer_plot_panel_server <- function(id,
       internal_model_reactive(model_reactive_expression)
     }
 
-    format_current_run_number <- function(value, digits = 2) {
-      if (is.null(value) || length(value) != 1 || is.na(value)) {
-        return("—")
-      }
+    reset_display_state <- function() {
+      knn_selected_query_point(NULL)
+      current_iteration(0)
+      advance_playback_generation()
+      is_playing(FALSE)
+      pending_programmatic_slider_values(integer(0))
 
-      numeric_value <- suppressWarnings(as.numeric(value))
-
-      if (is.na(numeric_value)) {
-        return("—")
-      }
-
-      formatC(numeric_value, format = "f", digits = digits)
-    }
-
-    format_metric_value <- function(metrics, metric_name) {
-      if (is.null(metrics) || is.null(metrics[[metric_name]])) {
-        return("—")
-      }
-
-      metric_value <- suppressWarnings(as.numeric(metrics[[metric_name]]))
-
-      if (length(metric_value) != 1 || is.na(metric_value) || !is.finite(metric_value)) {
-        return("—")
-      }
-
-      formatC(metric_value, format = "f", digits = 3)
-    }
-
-    format_current_run_text <- function(value) {
-      if (is.null(value) || length(value) != 1 || is.na(value) || !nzchar(as.character(value))) {
-        return("—")
-      }
-
-      as.character(value)
-    }
-
-    format_algorithm_label <- function(algorithm_key) {
-      if (is.null(algorithm_key) || length(algorithm_key) != 1 || is.na(algorithm_key)) {
-        return("—")
-      }
-
-      switch(
-        as.character(algorithm_key),
-        logistic_regression = "Logistic Regression",
-        svm = "SVM",
-        knn = "k-NN",
-        as.character(algorithm_key)
+      mark_programmatic_slider_update(0)
+      updateSliderInput(
+        session = session,
+        inputId = "iteration_slider",
+        min = 0,
+        max = 0,
+        value = 0
       )
-    }
-
-    format_intercept_label <- function(fit_intercept) {
-      if (is.null(fit_intercept) || length(fit_intercept) != 1 || is.na(fit_intercept)) {
-        return("—")
-      }
-
-      if (isTRUE(fit_intercept)) "ON" else "OFF"
-    }
-
-    format_current_run_integer <- function(value) {
-      if (is.null(value) || length(value) != 1 || is.na(value)) {
-        return("â€”")
-      }
-
-      numeric_value <- suppressWarnings(as.numeric(value))
-
-      if (is.na(numeric_value) || !is.finite(numeric_value)) {
-        return("â€”")
-      }
-
-      as.character(as.integer(round(numeric_value)))
-    }
-
-    format_inspection_number <- function(value, digits = 2) {
-      if (is.null(value) || length(value) != 1 || is.na(value) || !is.finite(value)) {
-        return("-")
-      }
-
-      formatC(as.numeric(value), format = "f", digits = digits)
-    }
-
-    format_split_summary <- function(model_results) {
-      if (is.null(model_results) || is.null(model_results$split_counts)) {
-        return("70 / 30")
-      }
-
-      train_count <- model_results$split_counts$train
-      test_count <- model_results$split_counts$test
-
-      if (is.null(train_count) || is.null(test_count)) {
-        return("70 / 30")
-      }
-
-      paste0(train_count, " / ", test_count)
     }
 
     selected_algorithm_text <- reactive({
@@ -427,6 +204,11 @@ mod_visualizer_plot_panel_server <- function(id,
     })
     outputOptions(output, "show_knn_iteration_note", suspendWhenHidden = FALSE)
 
+    output$show_svm_summary_panel <- renderText({
+      if (identical(selected_algorithm_text(), "svm")) "true" else "false"
+    })
+    outputOptions(output, "show_svm_summary_panel", suspendWhenHidden = FALSE)
+
     output$training_insights_algorithm <- renderText({
       selected_algorithm_text()
     })
@@ -435,6 +217,8 @@ mod_visualizer_plot_panel_server <- function(id,
     output$training_insights_subtitle <- renderText({
       if (identical(selected_algorithm_text(), "knn")) {
         "Review how nearest-neighbor voting makes predictions."
+      } else if (identical(selected_algorithm_text(), "svm")) {
+        "Review the margin, support vectors, and C."
       } else {
         "Track loss and parameter movement."
       }
@@ -449,10 +233,17 @@ mod_visualizer_plot_panel_server <- function(id,
         return(NULL)
       }
 
-      model_reactive_expression()
+      model_results <- model_reactive_expression()
+
+      if (is.null(model_results) || !identical(model_results$algorithm_key, selected_algorithm_text())) {
+        return(NULL)
+      }
+
+      model_results
     })
 
-    # TODO: Future: generalize this iteration navigation system for other classifiers.
+    # Logistic Regression exposes saved iterations; other classifiers use
+    # final-state diagnostic views.
     logistic_iteration_history <- reactive({
       model_results <- safe_model_results()
       get_logistic_iteration_history(model_results)
@@ -483,6 +274,8 @@ mod_visualizer_plot_panel_server <- function(id,
 
       parameter_values <- algorithm_parameters()
       requested_k <- parameter_values$knn_k
+      distance_metric <- parameter_values$knn_distance_metric
+      voting_method <- parameter_values$knn_voting_method
 
       if (is.null(requested_k)) {
         requested_k <- model_results$model_object$effective_k
@@ -490,11 +283,19 @@ mod_visualizer_plot_panel_server <- function(id,
       if (is.null(requested_k)) {
         requested_k <- 5
       }
+      if (is.null(distance_metric)) {
+        distance_metric <- model_results$model_object$distance_metric
+      }
+      if (is.null(voting_method)) {
+        voting_method <- model_results$model_object$voting_method
+      }
 
       inspect_knn_point(
         training_data = model_results$train_data,
         query_point = query_point,
-        k = requested_k
+        k = requested_k,
+        distance_metric = distance_metric,
+        voting_method = voting_method
       )
     })
 
@@ -741,7 +542,11 @@ mod_visualizer_plot_panel_server <- function(id,
 
     output$iteration_status_text <- renderText({
       if (identical(selected_algorithm_text(), "knn")) {
-        return("No training iterations")
+        return("k-NN inspection")
+      }
+
+      if (identical(selected_algorithm_text(), "svm")) {
+        return("SVM margin summary")
       }
 
       model_results <- safe_model_results()
@@ -768,85 +573,18 @@ mod_visualizer_plot_panel_server <- function(id,
     })
 
     output$knn_inspection_ui <- renderUI({
-      model_results <- safe_model_results()
-
-      if (!identical(selected_algorithm_text(), "knn")) {
-        return(NULL)
-      }
-
-      if (is.null(model_results) || !identical(model_results$algorithm_key, "knn")) {
-        return(div(
-          class = "knn-inspection-panel",
-          tags$h4("k-NN inspection"),
-          tags$p("Run k-NN, then click the plot to inspect the k nearest training points.")
-        ))
-      }
-
-      inspection <- active_knn_inspection()
-
-      if (is.null(inspection)) {
-        return(div(
-          class = "knn-inspection-panel",
-          tags$h4("k-NN inspection"),
-          tags$p("Click the plot to inspect the k nearest training points.")
-        ))
-      }
-
-      neighbors <- inspection$neighbors
-
-      if (is.null(neighbors) || nrow(neighbors) == 0) {
-        return(div(
-          class = "knn-inspection-panel",
-          tags$h4("k-NN inspection"),
-          tags$p("No valid training points are available for this inspection.")
-        ))
-      }
-
-      vote_counts <- inspection$vote_counts
-      class_a_votes <- as.integer(vote_counts[["Class A"]])
-      class_b_votes <- as.integer(vote_counts[["Class B"]])
-      predicted_class <- if (is.na(inspection$predicted_class)) "-" else inspection$predicted_class
-
-      neighbor_rows <- lapply(seq_len(nrow(neighbors)), function(row_index) {
-        neighbor <- neighbors[row_index, , drop = FALSE]
-        badge_class <- if (as.character(neighbor$class) == "Class A") "class-badge class-a-badge" else "class-badge class-b-badge"
-
-        tags$tr(
-          tags$td(neighbor$rank),
-          tags$td(tags$span(class = badge_class, as.character(neighbor$class))),
-          tags$td(format_inspection_number(neighbor$distance))
-        )
-      })
-
-      div(
-        class = "knn-inspection-panel",
-        tags$h4("k-NN inspection"),
-        div(
-          class = "knn-inspection-grid",
-          tags$span(class = "knn-inspection-label", "Selected point"),
-          tags$span(
-            class = "knn-inspection-value",
-            paste0("x = ", format_inspection_number(inspection$query_point$x), ", y = ", format_inspection_number(inspection$query_point$y))
-          ),
-          tags$span(class = "knn-inspection-label", "Prediction"),
-          tags$span(class = "knn-inspection-value", predicted_class),
-          tags$span(class = "knn-inspection-label", "Vote"),
-          tags$span(class = "knn-inspection-value", paste0("Class A = ", class_a_votes, ", Class B = ", class_b_votes))
-        ),
-        tags$table(
-          class = "knn-neighbor-table",
-          tags$thead(
-            tags$tr(
-              tags$th("Rank"),
-              tags$th("Class"),
-              tags$th("Distance")
-            )
-          ),
-          tags$tbody(neighbor_rows)
-        )
+      visualizer_knn_inspection_panel_ui(
+        selected_algorithm = selected_algorithm_text(),
+        model_results = safe_model_results(),
+        inspection = active_knn_inspection()
       )
     })
-
+    output$svm_summary_ui <- renderUI({
+      visualizer_svm_margin_panel_ui(
+        selected_algorithm = selected_algorithm_text(),
+        model_results = safe_model_results()
+      )
+    })
     output$current_run_summary <- renderUI({
       parameter_values <- algorithm_parameters()
       model_results <- safe_model_results()
@@ -861,80 +599,103 @@ mod_visualizer_plot_panel_server <- function(id,
         "Not started"
       }
 
-      summary_row <- function(label_text, value_text) {
-        div(
-          class = "current-run-row",
-          tags$span(class = "current-run-label", label_text),
-          tags$span(class = "current-run-value", value_text)
-        )
-      }
-
-      algorithm_key <- selected_algorithm_key()
-
-      if (identical(algorithm_key, "knn")) {
-        return(tagList(
-          summary_row("Dataset", format_current_run_text(selected_dataset_label())),
-          summary_row("Model", format_algorithm_label(algorithm_key)),
-          summary_row("Split 70/30", format_split_summary(model_results)),
-          summary_row("k neighbors", format_current_run_integer(parameter_values$knn_k))
-        ))
-      }
-
-      if (identical(algorithm_key, "logistic_regression")) {
-        return(tagList(
-          summary_row("Dataset", format_current_run_text(selected_dataset_label())),
-          summary_row("Model", format_algorithm_label(algorithm_key)),
-          summary_row("Iteration", iteration_text),
-          summary_row("Split 70/30", format_split_summary(model_results)),
-          summary_row("Learning rate", format_current_run_number(parameter_values$logistic_learning_rate)),
-          summary_row("Threshold", format_current_run_number(parameter_values$decision_threshold)),
-          summary_row("Intercept", format_intercept_label(parameter_values$logistic_fit_intercept))
-        ))
-      }
-
-      tagList(
-        summary_row("Dataset", format_current_run_text(selected_dataset_label())),
-        summary_row("Model", format_algorithm_label(algorithm_key)),
-        summary_row("Split 70/30", format_split_summary(model_results))
+      visualizer_current_run_summary_ui(
+        parameter_values = parameter_values,
+        model_results = model_results,
+        selected_dataset_label = selected_dataset_label(),
+        algorithm_key = selected_algorithm_key(),
+        iteration_text = iteration_text
       )
     })
-
     output$metrics_summary_ui <- renderUI({
       active_model_view <- active_iteration_results()
       train_metrics <- if (is.null(active_model_view)) NULL else active_model_view$train_metrics
       test_metrics <- if (is.null(active_model_view)) NULL else active_model_view$test_metrics
 
-      metric_row <- function(label_text, metric_name) {
-        div(
-          class = "metrics-comparison-row",
-          tags$span(class = "metrics-comparison-label", label_text),
-          tags$span(class = "metrics-comparison-value", format_metric_value(train_metrics, metric_name)),
-          tags$span(class = "metrics-comparison-value metrics-comparison-test-value", format_metric_value(test_metrics, metric_name))
-        )
+      visualizer_metrics_summary_ui(train_metrics, test_metrics)
+    })
+    output$svm_training_summary_ui <- renderUI({
+      model_results <- safe_model_results()
+
+      if (is.null(model_results) || !identical(model_results$algorithm_key, "svm")) {
+        return(tags$p("Run SVM to see support vector counts for the current split."))
       }
 
-      tagList(
-        div(
-          class = "metrics-comparison-row metrics-comparison-row-heading",
-          tags$span("Metric"),
-          tags$span("Train"),
-          tags$span(class = "metrics-comparison-test-heading", "Test")
-        ),
-        metric_row("Accuracy", "accuracy"),
-        metric_row("Precision", "precision"),
-        metric_row("Recall", "recall"),
-        metric_row("F1", "f1_score"),
-        tags$p(
-          class = "metrics-comparison-note",
-          "A large train-test gap can indicate overfitting."
-        )
+      margin_summary <- model_results$margin_summary
+
+      if (is.null(margin_summary)) {
+        margin_summary <- list()
+      }
+
+      tags$ul(
+        tags$li(paste("Kernel:", margin_summary$kernel_label)),
+        tags$li(paste("C:", format_current_run_number(margin_summary$cost))),
+        tags$li(paste("Support vectors:", format_current_run_integer(margin_summary$support_vector_count))),
+        tags$li("Decision boundary: score = 0"),
+        tags$li("Dashed score contours: score = -1 and +1 when available")
       )
     })
-
+    output$svm_decision_surface_plot <- plotly::renderPlotly({
+      build_svm_decision_surface_plot(safe_model_results())
+    })
     output$probability_guide_visible <- renderText({
       if (is.null(active_iteration_results())) "false" else "true"
     })
     outputOptions(output, "probability_guide_visible", suspendWhenHidden = FALSE)
+
+    active_plot_uses_svm <- reactive({
+      active_model_view <- active_iteration_results()
+      !is.null(active_model_view) && identical(active_model_view$algorithm_key, "svm")
+    })
+
+    guide_help_icon <- function(help_text) {
+      tags$span(
+        class = "help-tooltip",
+        `aria-label` = help_text,
+        "?"
+      )
+    }
+
+    output$svm_guide_visible <- renderText({
+      if (active_plot_uses_svm()) "true" else "false"
+    })
+    outputOptions(output, "svm_guide_visible", suspendWhenHidden = FALSE)
+
+    output$region_guide_title_ui <- renderUI({
+      if (active_plot_uses_svm()) {
+        return(tagList(
+          tags$span("Decision regions"),
+          guide_help_icon("Blue and orange show the SVM predicted class regions. The solid contour is where decision score = 0, and dashed contours show score levels around it when available.")
+        ))
+      }
+
+      tagList(
+        tags$span("Probability"),
+        guide_help_icon("Blue means Class A is more likely, orange means Class B is more likely, and the middle region is uncertain.")
+      )
+    })
+
+    output$region_guide_gradient_ui <- renderUI({
+      guide_class <- if (active_plot_uses_svm()) {
+        "probability-guide-gradient decision-region-guide-gradient"
+      } else {
+        "probability-guide-gradient"
+      }
+
+      tags$div(class = guide_class)
+    })
+
+    output$region_guide_top_label <- renderText({
+      if (active_plot_uses_svm()) "Class A region" else "Class A likely"
+    })
+
+    output$region_guide_middle_label <- renderText({
+      if (active_plot_uses_svm()) "Boundary / score contours" else "Uncertain"
+    })
+
+    output$region_guide_bottom_label <- renderText({
+      if (active_plot_uses_svm()) "Class B region" else "Class B likely"
+    })
 
     output$classification_plot <- renderPlot({
       current_classification_data <- classification_data()
@@ -1002,7 +763,7 @@ mod_visualizer_plot_panel_server <- function(id,
       )
     })
 
-    output$bias_fixed_loss_landscape_plot <- renderPlot({
+    output$bias_fixed_loss_landscape_plot <- plotly::renderPlotly({
       model_results <- safe_model_results()
       iteration_history <- logistic_iteration_history()
 
@@ -1031,11 +792,12 @@ mod_visualizer_plot_panel_server <- function(id,
         iteration_history = iteration_history,
         current_iteration = current_iteration() + 1
       )
-    }, res = 110)
+    })
 
     list(
       plot_click_coordinates = reactive(input$plot_click),
-      set_model_reactive = set_model_reactive
+      set_model_reactive = set_model_reactive,
+      reset_display_state = reset_display_state
     )
   })
 }

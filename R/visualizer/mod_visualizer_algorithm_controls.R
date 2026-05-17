@@ -28,7 +28,7 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
       div(
         class = "sidebar-section-header",
         div(class = "sidebar-step-pill", "2"),
-        tags$span("Select Algorithm")
+        tags$span("Model")
       ),
       uiOutput(ns("algorithm_cards_ui"))
     ),
@@ -42,6 +42,7 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
       ),
       div(
         class = "parameter-panel",
+        tags$p(class = "sidebar-helper-text", "Tune the selected model, or keep the defaults for a quick first run."),
         uiOutput(ns("parameter_controls_ui"))
       )
     ),
@@ -53,9 +54,10 @@ mod_visualizer_algorithm_controls_ui <- function(id) {
         div(class = "sidebar-step-pill", "4"),
         tags$span("Run")
       ),
+      tags$p(class = "run-helper-text", textOutput(ns("run_helper_text"), inline = TRUE)),
       actionButton(
         inputId = ns("run_classifier_button"),
-        label = "Run Classifier",
+        label = "Run model",
         class = "ml-button ml-button-primary ml-button-full",
         title = "Train the selected classifier and update the plot, metrics, and training views."
       )
@@ -87,6 +89,11 @@ mod_visualizer_algorithm_controls_server <- function(id) {
     default_decision_threshold <- 0.50
     default_logistic_fit_intercept <- TRUE
     default_knn_k <- 5
+    default_knn_distance_metric <- "euclidean"
+    default_knn_voting_method <- "uniform"
+    default_svm_cost <- 1
+    default_svm_gamma <- 0.5
+    default_svm_degree <- 3
 
     observeEvent(input$choose_logistic_regression, {
       selected_algorithm_key("logistic_regression")
@@ -96,9 +103,14 @@ mod_visualizer_algorithm_controls_server <- function(id) {
       selected_algorithm_key("knn")
     })
 
+    observeEvent(input$choose_svm, {
+      selected_algorithm_key("svm")
+    })
+
     output$algorithm_cards_ui <- renderUI({
       # Cards are generated server-side so the active class can follow the
-      # selected algorithm key.
+      # selected algorithm key. "Run with defaults" is included here so it
+      # shares the same algorithm-card-stack and inherits identical spacing.
       create_algorithm_card <- function(button_id, title_text, algorithm_key, tooltip_text, is_available = TRUE) {
         active_class <- if (identical(selected_algorithm_key(), algorithm_key)) "algorithm-selection-card is-active" else "algorithm-selection-card"
 
@@ -111,7 +123,7 @@ mod_visualizer_algorithm_controls_server <- function(id) {
         )
 
         if (is_available) {
-          actionLink(
+          actionButton(
             inputId = session$ns(button_id),
             label = card_contents,
             class = active_class,
@@ -120,7 +132,6 @@ mod_visualizer_algorithm_controls_server <- function(id) {
         } else {
           div(
             class = paste(active_class, "is-coming-soon"),
-            title = tooltip_text,
             card_contents
           )
         }
@@ -138,14 +149,25 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           button_id = "choose_svm",
           title_text = "SVM",
           algorithm_key = "svm",
-          tooltip_text = "Finds a separating boundary with the widest possible margin between classes.",
-          is_available = FALSE
+          tooltip_text = "Finds a decision boundary that maximizes the margin between classes. The closest training points are called support vectors."
         ),
         create_algorithm_card(
           button_id = "choose_knn",
           title_text = "k-NN",
           algorithm_key = "knn",
           tooltip_text = "Classifies a point based on the majority class of its nearest neighbors."
+        ),
+        actionButton(
+          inputId = session$ns("run_defaults_button"),
+          label = tagList(
+            div(
+              class = "algorithm-card-title-row",
+              tags$span("Run with defaults"),
+              help_icon("Run the current model using recommended default parameter settings.")
+            )
+          ),
+          class = "algorithm-selection-card run-defaults-button",
+          title = "Run the selected model using recommended starting parameters."
         )
       )
     })
@@ -154,71 +176,24 @@ mod_visualizer_algorithm_controls_server <- function(id) {
       # Parameter controls are algorithm-specific. The returned values are read
       # by mod_visualizer_server() only when Run Classifier is clicked.
       if (selected_algorithm_key() == "logistic_regression") {
-        tagList(
-          sliderInput(
-            inputId = session$ns("logistic_learning_rate"),
-            label = help_label(
-              "Learning rate",
-              "Controls how large each training update is. Higher values learn faster but may become unstable."
-            ),
-            min = 0.01,
-            max = 1,
-            value = 0.12,
-            step = 0.01
-          ),
-          sliderInput(
-            inputId = session$ns("logistic_max_iter"),
-            label = help_label(
-              "Iterations",
-              "Maximum number of training steps shown in the visualization."
-            ),
-            min = 10,
-            max = 100,
-            value = 60,
-            step = 10
-          ),
-          sliderInput(
-            inputId = session$ns("decision_threshold"),
-            label = help_label(
-              "Threshold",
-              "Probability cutoff used to assign a predicted class."
-            ),
-            min = 0.30,
-            max = 0.70,
-            value = 0.50,
-            step = 0.01
-          ),
-          checkboxInput(
-            inputId = session$ns("logistic_fit_intercept"),
-            label = help_label(
-              "Fit intercept",
-              "Allows the decision boundary to shift by learning a bias term."
-            ),
-            value = TRUE
-          )
-        )
+        visualizer_logistic_parameter_controls_ui(session$ns, help_label)
       } else if (selected_algorithm_key() == "knn") {
-        tagList(
-          sliderInput(
-            inputId = session$ns("knn_k"),
-            label = help_label(
-              "k neighbors",
-              "Number of nearest training points used to vote for the predicted class."
-            ),
-            min = 1,
-            max = 25,
-            value = 5,
-            step = 1
-          )
+        visualizer_knn_parameter_controls_ui(
+          ns = session$ns,
+          help_label = help_label,
+          default_knn_distance_metric = default_knn_distance_metric,
+          default_knn_voting_method = default_knn_voting_method
+        )
+      } else if (selected_algorithm_key() == "svm") {
+        visualizer_svm_parameter_controls_ui(
+          ns = session$ns,
+          help_label = help_label,
+          default_svm_cost = default_svm_cost,
+          default_svm_gamma = default_svm_gamma,
+          default_svm_degree = default_svm_degree
         )
       } else {
-        tagList(
-          div(
-            class = "algorithm-placeholder-card",
-            tags$span("Coming soon"),
-            tags$p("Parameters for this algorithm will appear here when it is enabled.")
-          )
-        )
+        visualizer_parameter_placeholder_ui()
       }
     })
 
@@ -227,10 +202,30 @@ mod_visualizer_algorithm_controls_server <- function(id) {
         "Run to update the boundary, metrics, and training views."
       } else if (selected_algorithm_key() == "knn") {
         "Run to update k-NN decision regions and metrics."
+      } else if (selected_algorithm_key() == "svm") {
+        "Run to update SVM decision regions, margins, support vectors, and metrics."
       } else {
         "This algorithm is coming soon. Choose Logistic Regression to run the classifier."
       }
     })
+
+    observeEvent(input$run_defaults_button, {
+      if (selected_algorithm_key() == "logistic_regression") {
+        updateSliderInput(session, "logistic_learning_rate", value = default_logistic_learning_rate)
+        updateSliderInput(session, "logistic_max_iter", value = default_logistic_max_iter)
+        updateSliderInput(session, "decision_threshold", value = default_decision_threshold)
+        updateCheckboxInput(session, "logistic_fit_intercept", value = default_logistic_fit_intercept)
+      } else if (selected_algorithm_key() == "knn") {
+        updateSliderInput(session, "knn_k", value = default_knn_k)
+        updateSelectInput(session, "knn_distance_metric", selected = default_knn_distance_metric)
+        updateSelectInput(session, "knn_voting_method", selected = default_knn_voting_method)
+      } else if (selected_algorithm_key() == "svm") {
+        updateSelectInput(session, "svm_kernel", selected = "linear")
+        updateSliderInput(session, "svm_cost", value = default_svm_cost)
+        updateSliderInput(session, "svm_gamma", value = default_svm_gamma)
+        updateSliderInput(session, "svm_degree", value = default_svm_degree)
+      }
+    }, ignoreInit = TRUE)
 
     list(
       selected_algorithm_key = reactive(selected_algorithm_key()),
@@ -263,19 +258,80 @@ mod_visualizer_algorithm_controls_server <- function(id) {
           )
         } else if (selected_algorithm_key() == "knn") {
           knn_k <- input$knn_k
+          knn_distance_metric <- input$knn_distance_metric
+          knn_voting_method <- input$knn_voting_method
 
           if (is.null(knn_k)) {
             knn_k <- default_knn_k
           }
+          if (is.null(knn_distance_metric)) {
+            knn_distance_metric <- default_knn_distance_metric
+          }
+          if (is.null(knn_voting_method)) {
+            knn_voting_method <- default_knn_voting_method
+          }
 
           list(
-            knn_k = knn_k
+            knn_k = knn_k,
+            knn_distance_metric = knn_distance_metric,
+            knn_voting_method = knn_voting_method
+          )
+        } else if (selected_algorithm_key() == "svm") {
+          svm_kernel <- input$svm_kernel
+          svm_cost <- input$svm_cost
+          svm_gamma <- input$svm_gamma
+          svm_degree <- input$svm_degree
+
+          if (is.null(svm_kernel)) {
+            svm_kernel <- "linear"
+          }
+          if (is.null(svm_cost)) {
+            svm_cost <- default_svm_cost
+          }
+          if (is.null(svm_gamma)) {
+            svm_gamma <- default_svm_gamma
+          }
+          if (is.null(svm_degree)) {
+            svm_degree <- default_svm_degree
+          }
+
+          list(
+            svm_kernel = svm_kernel,
+            svm_cost = svm_cost,
+            svm_gamma = svm_gamma,
+            svm_degree = svm_degree
           )
         } else {
           list()
         }
       }),
-      run_model_clicks = reactive(input$run_classifier_button)
+      default_algorithm_parameters = reactive({
+        if (selected_algorithm_key() == "logistic_regression") {
+          list(
+            logistic_learning_rate = default_logistic_learning_rate,
+            logistic_max_iter = default_logistic_max_iter,
+            decision_threshold = default_decision_threshold,
+            logistic_fit_intercept = default_logistic_fit_intercept
+          )
+        } else if (selected_algorithm_key() == "knn") {
+          list(
+            knn_k = default_knn_k,
+            knn_distance_metric = default_knn_distance_metric,
+            knn_voting_method = default_knn_voting_method
+          )
+        } else if (selected_algorithm_key() == "svm") {
+          list(
+            svm_kernel = "linear",
+            svm_cost = default_svm_cost,
+            svm_gamma = default_svm_gamma,
+            svm_degree = default_svm_degree
+          )
+        } else {
+          list()
+        }
+      }),
+      run_model_clicks = reactive(input$run_classifier_button),
+      run_defaults_clicks = reactive(input$run_defaults_button)
     )
   })
 }

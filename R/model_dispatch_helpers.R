@@ -1,0 +1,214 @@
+# Model dispatch helpers for the ML Visualizer app.
+# train_classification_model()
+# Purpose:
+#   Validate user data, build the prediction grid, and dispatch training.
+# Inputs:
+#   - classification_data: current preset/uploaded/drawn dataset
+#   - algorithm_name: selected algorithm key from the sidebar
+#   - parameter_values: current algorithm controls from the sidebar
+# Output:
+#   A model result list consumed by plot, metrics, playback, and theory modules.
+train_classification_model <- function(classification_data, algorithm_name, parameter_values) {
+  if (is.null(parameter_values)) {
+    parameter_values <- list()
+  }
+
+  required_data_columns <- c("x", "y", "class")
+
+  if (is.null(classification_data) || !all(required_data_columns %in% names(classification_data))) {
+    stop("Dataset must contain x, y, and class columns before training.")
+  }
+
+  classification_data$x <- suppressWarnings(as.numeric(classification_data$x))
+  classification_data$y <- suppressWarnings(as.numeric(classification_data$y))
+  valid_data_rows <- stats::complete.cases(classification_data[, required_data_columns, drop = FALSE]) &
+    is.finite(classification_data$x) &
+    is.finite(classification_data$y)
+  classification_data <- classification_data[valid_data_rows, , drop = FALSE]
+
+  if (nrow(classification_data) < 6) {
+    stop("Please provide at least 6 data points before training a classifier.")
+  }
+
+  if (length(unique(classification_data$class)) < 2) {
+    stop("The dataset must contain both Class A and Class B.")
+  }
+
+  split_classification_data <- create_train_test_split(classification_data)
+  train_classification_data <- split_classification_data[split_classification_data$split == "train", , drop = FALSE]
+
+  # The grid is created once for this run from all points. Every saved
+  # iteration writes its probabilities into the same coordinate layout.
+  prediction_grid <- build_prediction_grid(split_classification_data)
+
+  if (algorithm_name == "logistic_regression") {
+    if (nrow(train_classification_data) < 2) {
+      stop("The training split needs at least 2 data points. Add more data before running the classifier.")
+    }
+
+    if (length(unique(train_classification_data$class)) < 2) {
+      stop("The training split must contain both Class A and Class B. Add more balanced data before running the classifier.")
+    }
+
+    decision_threshold <- parameter_values$decision_threshold
+    logistic_learning_rate <- parameter_values$logistic_learning_rate
+    logistic_fit_intercept <- parameter_values$logistic_fit_intercept
+    logistic_max_iter <- parameter_values$logistic_max_iter
+
+    if (is.null(decision_threshold)) {
+      decision_threshold <- 0.5
+    }
+    if (is.null(logistic_learning_rate)) {
+      logistic_learning_rate <- 0.12
+    }
+    if (is.null(logistic_fit_intercept)) {
+      logistic_fit_intercept <- TRUE
+    }
+    if (is.null(logistic_max_iter)) {
+      logistic_max_iter <- 60
+    }
+    logistic_fit_intercept <- isTRUE(logistic_fit_intercept)
+
+    # Parameter checks keep invalid UI or programmatic values from entering
+    # the training loop.
+    if (!is.numeric(decision_threshold) || length(decision_threshold) != 1 || is.na(decision_threshold)) {
+      stop("Decision threshold must be a single numeric value.")
+    }
+
+    if (decision_threshold < 0 || decision_threshold > 1) {
+      stop("Decision threshold must be between 0 and 1.")
+    }
+
+    if (!is.numeric(logistic_learning_rate) || length(logistic_learning_rate) != 1 || is.na(logistic_learning_rate)) {
+      stop("Learning rate must be a single numeric value.")
+    }
+
+    if (logistic_learning_rate <= 0) {
+      stop("Learning rate must be greater than 0.")
+    }
+
+    if (!is.numeric(logistic_max_iter) || length(logistic_max_iter) != 1 || is.na(logistic_max_iter)) {
+      stop("Max iterations must be a single numeric value.")
+    }
+
+    if (logistic_max_iter < 1) {
+      stop("Max iterations must be at least 1.")
+    }
+
+    logistic_training_results <- train_logistic_regression_iterations(
+      classification_data = train_classification_data,
+      prediction_grid = prediction_grid,
+      prediction_threshold = decision_threshold,
+      fit_intercept = logistic_fit_intercept,
+      learning_rate = logistic_learning_rate,
+      max_iter = logistic_max_iter,
+      evaluation_data = split_classification_data
+    )
+
+    algorithm_label <- "Logistic Regression"
+    algorithm_training_results <- logistic_training_results
+  } else if (algorithm_name == "knn") {
+    requested_k <- parameter_values$knn_k
+    distance_metric <- normalize_knn_distance_metric(parameter_values$knn_distance_metric)
+    voting_method <- normalize_knn_voting_method(parameter_values$knn_voting_method)
+
+    if (is.null(requested_k)) {
+      requested_k <- 5
+    }
+
+    if (!is.numeric(requested_k) || length(requested_k) != 1 || is.na(requested_k)) {
+      stop("k neighbors must be a single numeric value.")
+    }
+
+    if (requested_k < 1) {
+      stop("k neighbors must be at least 1.")
+    }
+
+    knn_training_results <- train_knn_classifier(
+      classification_data = train_classification_data,
+      prediction_grid = prediction_grid,
+      k = requested_k,
+      distance_metric = distance_metric,
+      voting_method = voting_method,
+      evaluation_data = split_classification_data
+    )
+
+    algorithm_label <- "k-NN"
+    algorithm_training_results <- knn_training_results
+  } else if (algorithm_name == "svm") {
+    svm_kernel <- normalize_svm_kernel(parameter_values$svm_kernel)
+    svm_cost <- parameter_values$svm_cost
+    svm_gamma <- parameter_values$svm_gamma
+    svm_degree <- parameter_values$svm_degree
+
+    if (is.null(svm_cost)) {
+      svm_cost <- 1
+    }
+
+    svm_cost <- suppressWarnings(as.numeric(svm_cost))
+
+    if (length(svm_cost) != 1 || is.na(svm_cost)) {
+      stop("C / Cost must be a single numeric value.")
+    }
+
+    if (svm_cost <= 0) {
+      stop("C / Cost must be greater than 0.")
+    }
+
+    if (svm_kernel %in% c("radial", "polynomial")) {
+      svm_gamma <- normalize_svm_gamma(svm_gamma)
+    } else {
+      svm_gamma <- 0.5
+    }
+
+    if (identical(svm_kernel, "polynomial")) {
+      svm_degree <- normalize_svm_degree(svm_degree)
+    } else {
+      svm_degree <- 3
+    }
+
+    svm_training_results <- train_svm_classifier(
+      classification_data = train_classification_data,
+      prediction_grid = prediction_grid,
+      cost = svm_cost,
+      kernel = svm_kernel,
+      gamma = svm_gamma,
+      degree = svm_degree,
+      evaluation_data = split_classification_data
+    )
+
+    algorithm_label <- "SVM"
+    algorithm_training_results <- svm_training_results
+  } else {
+    stop("Only Logistic Regression, k-NN, and SVM are currently available for training.")
+  }
+
+  trained_model <- algorithm_training_results$model_object
+  prediction_grid <- algorithm_training_results$prediction_grid
+  training_predictions <- algorithm_training_results$training_predictions
+  metrics <- algorithm_training_results$metrics
+  train_metrics <- algorithm_training_results$train_metrics
+  test_metrics <- algorithm_training_results$test_metrics
+  split_counts <- algorithm_training_results$split_counts
+  iteration_history <- algorithm_training_results$iterations
+  iteration_metrics <- algorithm_training_results$iteration_metrics
+
+  list(
+    algorithm_key = algorithm_name,
+    algorithm_label = algorithm_label,
+    model_object = trained_model,
+    classification_data = algorithm_training_results$classification_data,
+    train_data = algorithm_training_results$train_data,
+    test_data = algorithm_training_results$test_data,
+    split_counts = split_counts,
+    prediction_grid = prediction_grid,
+    training_predictions = training_predictions,
+    support_vectors = algorithm_training_results$support_vectors,
+    margin_summary = algorithm_training_results$margin_summary,
+    metrics = metrics,
+    train_metrics = train_metrics,
+    test_metrics = test_metrics,
+    iterations = iteration_history,
+    iteration_metrics = iteration_metrics
+  )
+}

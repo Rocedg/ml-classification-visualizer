@@ -16,15 +16,28 @@ library(shiny)
 library(ggplot2)
 library(plotly)
 
+if (!requireNamespace("e1071", quietly = TRUE)) {
+  message("Optional dependency missing: install.packages('e1071') to enable Linear SVM.")
+}
+
 # ---------------------------- Helper Source Files -----------------------------
 
 # Source helper files before modules so their functions are available everywhere.
 helper_files <- c(
   "R/data_helpers.R",
+  "R/data/train_test_split.R",
+  "R/data/real_datasets.R",
+  "R/data/synthetic_datasets.R",
+  "R/data/preset_datasets.R",
+  "R/data/uploaded_datasets.R",
   "R/metrics_helpers.R",
-  "R/model_training_helpers.R",
+  "R/models/logistic_regression.R",
+  "R/models/knn.R",
+  "R/models/svm.R",
+  "R/model_dispatch_helpers.R",
   "R/playback_helpers.R",
-  "R/plot_helpers.R"
+  "R/plots/main_probability_plot.R",
+  "R/plots/logistic_diagnostics.R"
 )
 
 for (helper_file in helper_files) {
@@ -39,7 +52,11 @@ module_files <- c(
   "R/pages/page_theory_hub.R",
   "R/pages/page_about.R",
   "R/visualizer/mod_visualizer_dataset_controls.R",
+  "R/visualizer/mod_visualizer_parameters.R",
   "R/visualizer/mod_visualizer_algorithm_controls.R",
+  "R/visualizer/mod_visualizer_interaction_panel.R",
+  "R/visualizer/mod_visualizer_summary_cards.R",
+  "R/visualizer/mod_visualizer_training_insights.R",
   "R/visualizer/mod_visualizer_plot_panel.R",
   "R/visualizer/mod_visualizer_raw_data.R",
   "R/visualizer/mod_visualizer_model_explanation.R",
@@ -61,7 +78,26 @@ ui <- fluidPage(
       rel = "stylesheet",
       href = "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
     ),
-    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
+    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+    tags$script(HTML("
+      (function registerMainVisualizationScroll() {
+        if (!window.Shiny || !Shiny.addCustomMessageHandler) {
+          window.setTimeout(registerMainVisualizationScroll, 50);
+          return;
+        }
+
+        Shiny.addCustomMessageHandler('scroll-to-main-visualization', function(message) {
+          var targetId = message && message.id ? message.id : 'main-visualization-card';
+          var target = document.getElementById(targetId) || document.querySelector('.visualizer-main-column');
+
+          if (target && target.scrollIntoView) {
+            window.requestAnimationFrame(function() {
+              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          }
+        });
+      })();
+    "))
   ),
 
   div(

@@ -20,6 +20,35 @@
 #     - Raw data table
 #     - Model explanation content
 
+
+visualizer_sidebar_results_ui <- function(ns) {
+  div(
+    class = "wizard-results-card",
+    tags$div(class = "wizard-results-kicker", "Results ready"),
+    tags$h3("Model ready"),
+    tags$p(
+      class = "wizard-results-note",
+      "Inspect the visualization or edit the setup to run again."
+    ),
+    div(
+      class = "wizard-results-actions",
+      actionButton(
+        inputId = ns("edit_setup_button"),
+        label = "Edit setup",
+        class = "ml-button ml-button-secondary ml-button-full",
+        title = "Reopen the setup controls without clearing the current visualization."
+      ),
+      actionButton(
+        inputId = ns("start_over_button"),
+        label = "Start over",
+        class = "ml-button ml-button-link wizard-start-over-button",
+        title = "Clear the current model results and return to the beginning."
+      )
+    )
+  )
+}
+
+
 mod_visualizer_ui <- function(id) {
   ns <- NS(id)
 
@@ -29,8 +58,18 @@ mod_visualizer_ui <- function(id) {
       class = "visualizer-layout",
       div(
         class = "visualizer-sidebar",
-        mod_visualizer_dataset_controls_ui(ns("dataset_controls")),
-        mod_visualizer_algorithm_controls_ui(ns("algorithm_controls"))
+        conditionalPanel(
+          condition = paste0("output['", ns("wizard_state"), "'] != 'results'"),
+          div(
+            class = "wizard-setup-panel",
+            mod_visualizer_dataset_controls_ui(ns("dataset_controls")),
+            mod_visualizer_algorithm_controls_ui(ns("algorithm_controls"))
+          )
+        ),
+        conditionalPanel(
+          condition = paste0("output['", ns("wizard_state"), "'] == 'results'"),
+          uiOutput(ns("wizard_results_ui"))
+        )
       ),
       div(
         class = "visualizer-main-column",
@@ -69,8 +108,14 @@ mod_visualizer_ui <- function(id) {
 
 mod_visualizer_server <- function(id) {
   moduleServer(id, function(input, output, session) {
+    wizard_state <- reactiveVal("data")
     dataset_controls <- mod_visualizer_dataset_controls_server("dataset_controls")
     algorithm_controls <- mod_visualizer_algorithm_controls_server("algorithm_controls")
+
+    output$wizard_state <- renderText({
+      wizard_state()
+    })
+    outputOptions(output, "wizard_state", suspendWhenHidden = FALSE)
 
     # The visualizer keeps preset/uploaded data separate from user-drawn
     # points so drawing can be cleared without losing the selected base dataset.
@@ -84,7 +129,11 @@ mod_visualizer_server <- function(id) {
       base_classification_data(new_preset_data)
       drawn_classification_data(create_empty_classification_data())
       current_base_dataset_label(dataset_controls$selected_dataset_name())
-    }, ignoreInit = FALSE)
+
+      if (identical(isolate(wizard_state()), "data")) {
+        wizard_state("model")
+      }
+    }, ignoreInit = TRUE)
 
     # Uploads are already validated by mod_visualizer_dataset_controls_server().
     observeEvent(dataset_controls$uploaded_dataset(), {
@@ -94,8 +143,20 @@ mod_visualizer_server <- function(id) {
         base_classification_data(uploaded_classification_data)
         drawn_classification_data(create_empty_classification_data())
         current_base_dataset_label("Uploaded CSV")
+
+        if (identical(isolate(wizard_state()), "data")) {
+          wizard_state("model")
+        }
       }
     }, ignoreNULL = TRUE)
+
+    observeEvent(algorithm_controls$selected_algorithm_key(), {
+      current_state <- isolate(wizard_state())
+
+      if (current_state %in% c("data", "model")) {
+        wizard_state("parameters")
+      }
+    }, ignoreInit = TRUE)
 
     observeEvent(dataset_controls$clear_drawn_points(), {
       drawn_classification_data(create_empty_classification_data())
@@ -157,6 +218,8 @@ mod_visualizer_server <- function(id) {
       }
     })
 
+    model_run_count <- reactiveVal(0)
+
     # The plot panel owns the visible plot and iteration controls. The parent
     # passes reactive data/control state in and receives plot clicks back.
     plot_panel <- mod_visualizer_plot_panel_server(
@@ -164,11 +227,39 @@ mod_visualizer_server <- function(id) {
       classification_data = current_classification_data,
       drawing_mode_active = dataset_controls$drawing_mode_active,
       selected_class_label = dataset_controls$selected_drawing_class,
-      run_model_clicked = algorithm_controls$run_model_clicks,
+      run_model_clicked = reactive(model_run_count()),
       selected_dataset_label = current_dataset_summary_label,
       selected_algorithm_key = algorithm_controls$selected_algorithm_key,
       algorithm_parameters = algorithm_controls$algorithm_parameters
     )
+
+    run_selected_model <- function(parameter_values) {
+      wizard_state("run")
+
+      trained_model_results <- tryCatch(
+        train_classification_model(
+          classification_data = current_classification_data(),
+          algorithm_name = algorithm_controls$selected_algorithm_key(),
+          parameter_values = parameter_values
+        ),
+        error = function(error_object) {
+          showNotification(error_object$message, type = "error")
+          NULL
+        }
+      )
+
+      trained_model_bundle(trained_model_results)
+      model_run_count(isolate(model_run_count()) + 1)
+
+      if (!is.null(trained_model_results)) {
+        wizard_state("results")
+      }
+
+      session$sendCustomMessage(
+        type = "scroll-to-main-visualization",
+        message = list(id = "main-visualization-card")
+      )
+    }
 
     # Plot clicks add custom points only while draw mode is enabled.
     observeEvent(plot_panel$plot_click_coordinates(), {
@@ -199,22 +290,30 @@ mod_visualizer_server <- function(id) {
 
     trained_model_bundle <- reactiveVal(NULL)
 
+    output$wizard_results_ui <- renderUI({
+      visualizer_sidebar_results_ui(ns = session$ns)
+    })
+
     # The Run Classifier button is the training trigger. Parameter changes do
     # not retrain automatically; they are read only when this event fires.
     observeEvent(algorithm_controls$run_model_clicks(), {
-      trained_model_results <- tryCatch(
-        train_classification_model(
-          classification_data = current_classification_data(),
-          algorithm_name = algorithm_controls$selected_algorithm_key(),
-          parameter_values = algorithm_controls$algorithm_parameters()
-        ),
-        error = function(error_object) {
-          showNotification(error_object$message, type = "error")
-          NULL
-        }
-      )
+      run_selected_model(algorithm_controls$algorithm_parameters())
+    }, ignoreInit = TRUE)
 
-      trained_model_bundle(trained_model_results)
+    observeEvent(algorithm_controls$run_defaults_clicks(), {
+      run_selected_model(algorithm_controls$default_algorithm_parameters())
+    }, ignoreInit = TRUE)
+
+    observeEvent(input$edit_setup_button, {
+      wizard_state("parameters")
+    }, ignoreInit = TRUE)
+
+    observeEvent(input$start_over_button, {
+      trained_model_bundle(NULL)
+      model_run_count(0)
+      drawn_classification_data(create_empty_classification_data())
+      plot_panel$reset_display_state()
+      wizard_state("data")
     }, ignoreInit = TRUE)
 
     plot_panel$set_model_reactive(trained_model_bundle)

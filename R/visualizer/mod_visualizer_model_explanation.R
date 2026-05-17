@@ -4,20 +4,19 @@
 #   This tab combines conceptual explanations with the latest metric values.
 #
 # Functions:
-#   - model_theory_panel_module_ui(): Build the Model Theory tab layout.
-#   - model_theory_panel_module_server(): Render algorithm-specific content.
+#   - mod_visualizer_model_explanation_ui(): Build the Model Theory tab layout.
+#   - mod_visualizer_model_explanation_server(): Render algorithm-specific content.
 #
 # Inputs / Outputs:
 #   Inputs:
 #     - Reactive selected algorithm key
-#     - Reactive trained model bundle
 #   Outputs:
 #     - Styled explanatory content for the selected model
 
 
 mod_visualizer_model_explanation_ui <- function(id) {
   ns <- NS(id)
-
+  
   div(
     class = "theory-panel-layout",
     uiOutput(ns("model_theory_content_ui"))
@@ -25,17 +24,36 @@ mod_visualizer_model_explanation_ui <- function(id) {
 }
 
 
-mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, trained_model_bundle) {
+mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key) {
   moduleServer(id, function(input, output, session) {
-
-    # Centralised per-model configuration
+    
+    # ── Model illustration images (Base64) ────────────────────────────────────
+    # Images are read once from disk and embedded as data URIs so the module
+    # remains self-contained with no dependency on www/ or external URLs.
+    # Place the image files in the same directory as this module, or adjust
+    # the paths below to point to your www/ or assets/ folder.
+    .img_uri <- function(path, mime = "image/png") {
+      if (!requireNamespace("base64enc", quietly = TRUE))
+        stop("Package 'base64enc' is required. Install it with: install.packages('base64enc')")
+      if (!file.exists(path)) return(NULL)
+      paste0("data:", mime, ";base64,", base64enc::base64encode(path))
+    }
+    
+    img_logistic_regression <- .img_uri(
+      file.path("R", "visualizer", "logistic_regression_decision_boundary.png")
+    )
+    # Add more images here following the same pattern, e.g.:
+    # img_knn <- .img_uri(file.path("modules", "knn_illustration.png"))
+    
+    # ── Centralised per-model configuration ───────────────────────────────────
     model_theory_content <- list(
-
+      
+      # ── LOGISTIC REGRESSION ───────────────────────────────────────────────
       logistic_regression = list(
         title = "Logistic Regression",
-
+        
         explanation = tagList(
-
+          
           # ── 1. What problem does it solve? ──────────────────────────────
           tags$h4("What problem does it solve?"),
           tags$p(
@@ -44,7 +62,7 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, 
             " the probability that an observation belongs to one of two classes (0 or 1).",
             " Unlike linear regression, the output is always a number between 0 and 1."
           ),
-
+          
           # ── 2. Step 1 — linear combination ──────────────────────────────
           tags$h4("Step 1 — Linear combination"),
           tags$p(
@@ -61,7 +79,7 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, 
             tags$li(withMathJax("\\(b\\) — bias term (intercept).")),
             tags$li(withMathJax("\\(z\\) — raw score, can be any real number \\((-\\infty, +\\infty)\\)."))
           ),
-
+          
           # ── 3. Step 2 — sigmoid function ────────────────────────────────
           tags$h4("Step 2 — Sigmoid function"),
           tags$p(
@@ -78,7 +96,23 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, 
             tags$li(withMathJax("When \\(z \\to +\\infty \\Rightarrow \\hat{y} \\to 1\\) — confident it is class 1.")),
             tags$li(withMathJax("When \\(z \\to -\\infty \\Rightarrow \\hat{y} \\to 0\\) — confident it is class 0."))
           ),
-
+          
+          # ── Illustration: decision boundary ───────────────────────────────
+          if (!is.null(img_logistic_regression))
+            tags$div(
+              style = "text-align:center;margin:0 auto 1.5rem auto;max-width:350px;",
+              tags$img(
+                src   = img_logistic_regression,
+                alt   = "Decision boundary and sigmoid probability surface for Logistic Regression",
+                style = "width:100%;height:auto;border-radius:10px;border:1px solid rgba(0,0,0,0.08);"
+              ),
+              tags$p(
+                style = "font-size:0.8rem;color:#888;margin-top:0.4rem;",
+                "Figure: decision boundary and estimated probability surface p(y=1|x).",
+                " Points are coloured by class; the boundary is where p = 0.5."
+              )
+            ),
+          
           # ── 4. Cost function ─────────────────────────────────────────────
           tags$h4("Cost function — Log-loss (Binary Cross-Entropy)"),
           tags$p(
@@ -108,7 +142,7 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, 
             tags$li(withMathJax("If \\(y = 0\\) and \\(\\hat{y} \\approx 0\\): cost \\(\\approx 0\\) ✓")),
             tags$li(withMathJax("If \\(y = 0\\) and \\(\\hat{y} \\approx 1\\): cost \\(\\to \\infty\\) ✗"))
           ),
-
+          
           # ── 5. Gradient descent ──────────────────────────────────────────
           tags$h4("Gradient Descent — how the model learns"),
           tags$p(
@@ -155,7 +189,7 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, 
             tags$li(withMathJax("\\(\\eta\\) (eta) — the ", tags$b("learning rate"), ": controls step size. Too large → overshoots. Too small → very slow.")),
             tags$li("This loop repeats until the cost stops decreasing — called ", tags$b("convergence"), ".")
           ),
-
+          
           # ── 6. Regularisation ────────────────────────────────────────────
           tags$h4("Regularisation — preventing overfitting"),
           tags$p(
@@ -183,7 +217,7 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, 
             tags$li("L1 can drive some weights to exactly zero — effectively removing irrelevant features."),
             tags$li(withMathJax("\\(\\lambda = 0\\) means no regularisation (risk of overfitting); very large \\(\\lambda\\) risks underfitting."))
           ),
-
+          
           # ── 7. Decision boundary ─────────────────────────────────────────
           tags$h4("Decision boundary"),
           tags$p(
@@ -201,7 +235,7 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, 
             tags$li("Higher threshold → stricter classification (higher precision, lower recall).")
           )
         ),
-
+        
         strengths = tagList(
           tags$li("Easy to interpret — each weight directly reflects a feature's influence on the log-odds."),
           tags$li("Fast to train and computationally efficient baseline model."),
@@ -209,7 +243,7 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, 
           tags$li("Works well when classes are roughly linearly separable."),
           tags$li("Regularisation (L1/L2) gives explicit control over model complexity.")
         ),
-
+        
         parameter_note = tagList(
           tags$p(tags$b("Decision threshold"), withMathJax("\\((\\tau)\\)"), ":"),
           tags$p("Shifts the decision boundary between the two classes."),
@@ -224,83 +258,356 @@ mod_visualizer_model_explanation_server <- function(id, selected_algorithm_key, 
           )
         )
       ),
-
+      
       # ── SVM ───────────────────────────────────────────────────────────────
       svm = list(
         title = "Support Vector Machine",
-        explanation = "SVM searches for a separating boundary that maximises the margin between classes. With a radial kernel, the boundary can bend around more complex shapes.",
-        strengths = c(
-          "Can learn nonlinear boundaries",
-          "Often performs well on complex shapes",
-          "Margin-based decision rule"
+        explanation = tagList(
+          tags$h4("What SVM tries to do"),
+          tags$p(
+            "SVM searches for a decision boundary that separates the classes while maximizing the margin between them.",
+            " Instead of estimating class probabilities, it focuses on a decision score and the boundary where that score crosses 0."
+          ),
+          tags$h4("Decision function"),
+          tags$p(withMathJax("For a linear SVM, the score is \\(f(x) = w \\cdot x + b\\).")),
+          tags$ul(
+            tags$li(withMathJax("\\(f(x) > 0\\): one class.")),
+            tags$li(withMathJax("\\(f(x) < 0\\): the other class.")),
+            tags$li(withMathJax("\\(f(x) = 0\\): the decision boundary."))
+          ),
+          tags$h4("Margin and support vectors"),
+          tags$p(
+            "The margin is the distance between the decision boundary and the closest influential training points.",
+            " Those points are called ", tags$b("support vectors"), ". They define the margin and have the strongest influence on the final boundary."
+          ),
+          tags$p(withMathJax(
+            "For labels \\(y_i \\in \\{-1, +1\\}\\), points safely outside the margin satisfy \\(y_i f(x_i) \\ge 1\\). Points near or inside that band influence the boundary most."
+          )),
+          tags$h4("Soft margin and C"),
+          tags$p(
+            "Real datasets are often not perfectly separable, so SVM allows some points to fall inside the margin or even on the wrong side.",
+            " The ", tags$b("C / Cost"), " parameter controls how strongly those violations are penalized."
+          ),
+          tags$h4("Formal soft-margin optimization"),
+          tags$p(withMathJax("\\(\\text{minimize } \\frac{1}{2}\\lVert w \\rVert^2 + C \\sum_i \\xi_i\\)")),
+          tags$p(withMathJax("\\(\\text{subject to } y_i(w \\cdot x_i + b) \\ge 1 - \\xi_i \\text{ and } \\xi_i \\ge 0\\).")),
+          tags$ul(
+            tags$li(withMathJax("\\(\\frac{1}{2}\\lVert w \\rVert^2\\) encourages a wider margin.")),
+            tags$li(withMathJax("\\(\\xi_i\\) represents margin violations.")),
+            tags$li("C controls how strongly violations are penalized.")
+          ),
+          tags$ul(
+            tags$li(tags$b("Lower C:"), " wider margin, more tolerance for mistakes, often smoother."),
+            tags$li(tags$b("Higher C:"), " stronger penalty for violations, tighter fit to training data, possible overfitting.")
+          ),
+          tags$h4("Kernels"),
+          tags$p(
+            "Kernels let SVM create nonlinear decision boundaries by comparing points in a transformed feature space without explicitly computing that transformation."
+          ),
+          tags$p(withMathJax(
+            "With kernels, the decision score can be written as \\(f(x) = \\sum_i \\alpha_i y_i K(x_i, x) + b\\)."
+          )),
+          tags$ul(
+            tags$li(withMathJax("\\(K(x_i, x)\\) is the kernel function that compares points.")),
+            tags$li(withMathJax("\\(\\alpha_i\\) values determine which training points influence the boundary.")),
+            tags$li(withMathJax("Points with nonzero \\(\\alpha_i\\) are support vectors.")),
+            tags$li("Kernels allow nonlinear boundaries without explicitly drawing the transformed feature space.")
+          ),
+          tags$ul(
+            tags$li(tags$b("Linear:"), " best when the classes are roughly separable by a straight line."),
+            tags$li(tags$b("RBF:"), " useful for curved regions; gamma controls how local each training point's influence is."),
+            tags$li(tags$b("Polynomial:"), " useful for polynomial-like curves; degree controls the curve complexity.")
+          ),
+          tags$h4("Why no SVM iteration animation?"),
+          tags$p(
+            "Unlike Logistic Regression in this visualizer, SVM is not shown as a step-by-step gradient descent animation.",
+            " Classical SVM training is usually formulated as a constrained optimization problem, often solved through dual optimization methods.",
+            " Showing that optimizer accurately is outside this project's scope, so the app focuses on the final boundary, margin, support vectors, and parameter effects."
+          )
         ),
-        parameter_note = "Main parameters in this app: kernel, cost, and gamma."
+        strengths = tagList(
+          tags$li("Useful when classes can be separated with a clear margin."),
+          tags$li("Kernels can handle nonlinear patterns when a straight line is not enough."),
+          tags$li("Works well on small to medium datasets, but parameter choice matters: too much flexibility can overfit, while too little can underfit.")
+        ),
+        parameter_note = tagList(
+          tags$p(tags$b("Kernel:"), " controls the type of boundary the model can learn."),
+          tags$p(tags$b("C / Cost:"), " controls the penalty for margin violations."),
+          tags$p(tags$b("Gamma:"), " for RBF and Polynomial kernels, higher values make the boundary more local and flexible; lower values create smoother, broader regions."),
+          tags$p(tags$b("Degree:"), " for Polynomial kernels, higher values allow more complex curves but can overfit."),
+          tags$ul(
+            tags$li("Linear is best for data that is roughly separable by a straight line."),
+            tags$li("RBF is useful for nonlinear datasets with curved regions."),
+            tags$li("Polynomial can help when the boundary follows polynomial-like curves.")
+          )
+        )
       ),
-
+      
       # ── KNN ───────────────────────────────────────────────────────────────
       knn = list(
         title = "k-Nearest Neighbors",
-        explanation = "k-NN does not fit a single equation. Instead, it looks at nearby labelled points and uses their votes to decide the class for each location.",
-        strengths = c(
-          "Very intuitive",
-          "Responds to local structure",
-          "Useful for comparing neighbourhood effects"
+        
+        explanation = tagList(
+          
+          # ── 1. What problem does it solve? ──────────────────────────────
+          tags$h4("What problem does it solve?"),
+          tags$p(
+            "k-Nearest Neighbors (k-NN) is a ", tags$b("non-parametric, instance-based"), " classification algorithm.",
+            " Unlike logistic regression, it does not fit an equation to the data during training.",
+            " Instead, it memorises the entire training set and, at prediction time,",
+            " looks up the ", tags$b("K most similar points"), " to decide the class of a new observation.",
+            " Because it defers all computation to prediction time, it is also called a ",
+            tags$b("lazy learner"), "."
+          ),
+          tags$p(
+            "Intuition: if you move to a new city and want to know whether a neighbourhood is",
+            " quiet or lively, you simply look at your closest neighbours and go with the majority."
+          ),
+          
+          # ── 2. What is K? ────────────────────────────────────────────────
+          tags$h4("What is K?"),
+          tags$p(
+            tags$b("K"), " is the single hyperparameter of the algorithm.",
+            " It tells the model how many neighbouring training points to consult",
+            " before making a decision."
+          ),
+          tags$ul(
+            tags$li(withMathJax("\\(K = 1\\) — the new point inherits the class of its single nearest neighbour.")),
+            tags$li(withMathJax("\\(K = 3\\) — the three closest points each cast one vote; majority wins.")),
+            tags$li(withMathJax("\\(K = N\\) (all points) — every point votes; the model always predicts the most frequent class in the dataset (useless)."))
+          ),
+          tags$p(
+            "In practice K is chosen by cross-validation. Using an ",
+            tags$b("odd K"), " avoids ties when there are two classes."
+          ),
+          
+          # ── 3. Step 1 — distance metric ──────────────────────────────────
+          tags$h4("Step 1 — Measure distance"),
+          tags$p(
+            "To rank training points by similarity, k-NN needs a ", tags$b("distance metric"),
+            ". The three most common are:"
+          ),
+          
+          tags$p(tags$b("Euclidean distance (L2) — straight-line distance in feature space:")),
+          tags$div(
+            class = "math-box",
+            withMathJax(
+              "$$d_{\\text{Euclidean}}(\\mathbf{x}, \\mathbf{x}') =
+              \\sqrt{\\sum_{j=1}^{p} (x_j - x'_j)^2}$$"
+            )
+          ),
+          
+          tags$p(tags$b("Manhattan distance (L1) — sum of absolute differences, like navigating a grid:")),
+          tags$div(
+            class = "math-box",
+            withMathJax(
+              "$$d_{\\text{Manhattan}}(\\mathbf{x}, \\mathbf{x}') =
+              \\sum_{j=1}^{p} |x_j - x'_j|$$"
+            )
+          ),
+          
+          tags$p(
+            tags$b("Minkowski distance — a unified family that contains both:"),
+            " setting ", withMathJax("\\(p = 2\\)"),
+            " gives Euclidean; setting ", withMathJax("\\(p = 1\\)"), " gives Manhattan."
+          ),
+          tags$div(
+            class = "math-box",
+            withMathJax(
+              "$$d_{\\text{Minkowski}}(\\mathbf{x}, \\mathbf{x}') =
+              \\left( \\sum_{j=1}^{p} |x_j - x'_j|^{\\,q} \\right)^{1/q}$$"
+            )
+          ),
+          tags$ul(
+            tags$li(withMathJax("\\(\\mathbf{x}\\) — the new (query) point to classify.")),
+            tags$li(withMathJax("\\(\\mathbf{x}'\\) — a training point.")),
+            tags$li(withMathJax("\\(p\\) — number of features (dimensions)."))
+          ),
+          tags$p(
+            tags$b("Important:"), " because distance is sensitive to scale,",
+            " features should be standardised (zero mean, unit variance) before applying k-NN.",
+            " A feature measured in kilometres would otherwise dominate one measured in metres."
+          ),
+          
+          # ── 4. Step 2 — find K nearest neighbours ────────────────────────
+          tags$h4("Step 2 — Find the K nearest neighbours"),
+          tags$p(
+            "Compute the distance from the new point ", withMathJax("\\(\\mathbf{x}_{\\text{new}}\\)"),
+            " to every training point ", withMathJax("\\(\\mathbf{x}_i\\)"),
+            ", then sort all N distances in ascending order and take the first K:"
+          ),
+          tags$div(
+            class = "math-box",
+            withMathJax(
+              "$$\\mathcal{N}_K(\\mathbf{x}_{\\text{new}}) =
+              \\text{the } K \\text{ training points with smallest }
+              d(\\mathbf{x}_{\\text{new}},\\, \\mathbf{x}_i)$$"
+            )
+          ),
+          tags$p(
+            "Visually, this corresponds to drawing a circle (in 2D) or a sphere (in 3D)",
+            " centred on the new point and expanding it until it touches exactly K training points."
+          ),
+          
+          # ── 5. Step 3 — majority vote ─────────────────────────────────────
+          tags$h4("Step 3 — Majority vote (classification)"),
+          tags$p(
+            "Each of the K neighbours casts one vote for its own class label.",
+            " The new point is assigned to the class that receives the most votes:"
+          ),
+          tags$div(
+            class = "math-box",
+            withMathJax(
+              "$$\\hat{y} = \\underset{c}{\\operatorname{arg\\,max}}
+              \\sum_{i \\in \\mathcal{N}_K(\\mathbf{x}_{\\text{new}})} \\mathbf{1}\\{y_i = c\\}$$"
+            )
+          ),
+          tags$ul(
+            tags$li(withMathJax("\\(c\\) — a candidate class label.")),
+            tags$li(withMathJax("\\(\\mathbf{1}\\{y_i = c\\}\\) — indicator function: 1 if neighbour \\(i\\) belongs to class \\(c\\), 0 otherwise.")),
+            tags$li(withMathJax("\\(\\hat{y}\\) — the predicted class: the one with the highest vote count."))
+          ),
+          tags$p(
+            "Example with K = 5: neighbours have labels [A, A, B, A, B].",
+            " Class A gets 3 votes, Class B gets 2. Prediction: ", tags$b("A"), "."
+          ),
+          
+          # ── 6. Worked numeric example ─────────────────────────────────────
+          tags$h4("Worked numeric example"),
+          tags$p(
+            "Suppose we have four training points in 2D (features: height, weight)",
+            " and we want to classify a new point ", withMathJax("\\(\\mathbf{x}_{\\text{new}} = (4, 5)\\)"),
+            " using K = 3."
+          ),
+          tags$div(
+            class = "math-box",
+            withMathJax(
+              "$$\\begin{array}{c|cc|c|c}
+              \\text{Point} & x_1 & x_2 & \\text{Class} & d_{\\text{Euclidean}} \\\\
+              \\hline
+              A_1 & 1 & 2 & A & \\sqrt{(4-1)^2+(5-2)^2} = \\sqrt{18} \\approx 4.24 \\\\
+              A_2 & 2 & 3 & A & \\sqrt{(4-2)^2+(5-3)^2} = \\sqrt{8}  \\approx 2.83 \\\\
+              A_3 & 3 & 4 & A & \\sqrt{(4-3)^2+(5-4)^2} = \\sqrt{2}  \\approx 1.41 \\\\
+              B_1 & 6 & 7 & B & \\sqrt{(4-6)^2+(5-7)^2} = \\sqrt{8}  \\approx 2.83 \\\\
+              B_2 & 7 & 8 & B & \\sqrt{(4-7)^2+(5-8)^2} = \\sqrt{18} \\approx 4.24
+              \\end{array}$$"
+            )
+          ),
+          tags$p(
+            "Sorted by distance: ", withMathJax("\\(A_3 (1.41),\\; A_2 (2.83),\\; B_1 (2.83)\\)"),
+            ". The three nearest neighbours are ", tags$b("A, A, B"),
+            ". Votes: A = 2, B = 1. Prediction: ", tags$b("Class A"), "."
+          ),
+          
+          # ── 7. Effect of K — bias-variance tradeoff ───────────────────────
+          tags$h4("Effect of K — bias-variance tradeoff"),
+          tags$p(
+            "The choice of K directly controls the model's ", tags$b("bias-variance tradeoff"), ":"
+          ),
+          tags$ul(
+            tags$li(
+              tags$b("Small K (e.g. K = 1):"),
+              " the decision boundary is very jagged and closely follows every training point.",
+              " Low bias, high variance — prone to ", tags$b("overfitting"), ".",
+              " A single outlier can flip the prediction."
+            ),
+            tags$li(
+              tags$b("Large K (e.g. K = N):"),
+              " the boundary becomes very smooth — in the extreme, always predicts the majority class.",
+              " High bias, low variance — prone to ", tags$b("underfitting"), ".",
+              " Local patterns are lost."
+            ),
+            tags$li(
+              tags$b("Optimal K:"),
+              " found by ", tags$b("cross-validation"),
+              " — split the data into folds, train on some, evaluate on the rest,",
+              " and pick the K that minimises validation error."
+            )
+          ),
+          tags$p(
+            "A useful rule of thumb: start with ", withMathJax("\\(K = \\sqrt{N}\\)"),
+            " (square root of the number of training samples) and tune from there."
+          ),
+          
+          # ── 8. Weighted voting ────────────────────────────────────────────
+          tags$h4("Weighted voting — an extension"),
+          tags$p(
+            "Standard k-NN gives every neighbour equal weight.",
+            " A common improvement is to weight each vote by the ", tags$b("inverse of its distance"),
+            ", so closer neighbours have more influence:"
+          ),
+          tags$div(
+            class = "math-box",
+            withMathJax(
+              "$$\\hat{y} = \\underset{c}{\\operatorname{arg\\,max}}
+              \\sum_{i \\in \\mathcal{N}_K} \\frac{1}{d(\\mathbf{x}_{\\text{new}}, \\mathbf{x}_i)} \\cdot \\mathbf{1}\\{y_i = c\\}$$"
+            )
+          ),
+          tags$p(
+            "If a neighbour is at distance 0 (exact match), it is assigned infinite weight",
+            " and its class is returned directly."
+          )
         ),
-        parameter_note = "Main parameter in this app: number of neighbors (k)."
+          
+        
+        strengths = tagList(
+          tags$li("Extremely intuitive — the algorithm mirrors human reasoning about similarity."),
+          tags$li(
+            tags$b("No training phase"), " — the model simply memorises the dataset,",
+            " making it trivial to add new training points."
+          ),
+          tags$li("Non-parametric — makes no assumptions about the shape of the decision boundary."),
+          tags$li("Naturally handles multi-class problems without any modification."),
+          tags$li("Works well for small datasets with complex, irregular boundaries."),
+          tags$li("Responds sensitively to local structure in the data.")
+        ),
+        
+        parameter_note = tagList(
+          tags$p(tags$b("Number of neighbours"), withMathJax("\\((K)\\)"), ":"),
+          tags$p(
+            "The single most important parameter.",
+            " Controls the smoothness of the decision boundary."
+          ),
+          tags$ul(
+            tags$li(withMathJax("Small \\(K\\) (e.g. 1–3) → complex, jagged boundary — risk of overfitting.")),
+            tags$li(withMathJax("Large \\(K\\) → smooth boundary — risk of underfitting and ignoring local patterns.")),
+            tags$li(
+              "Use ", tags$b("odd K"), " with two-class problems to avoid ties.",
+              " Cross-validation is the principled way to choose K."
+            )
+          ),
+          tags$p(tags$b("Distance metric"), ":"),
+          tags$ul(
+            tags$li("Euclidean (L2) is the default and works well for continuous features on a similar scale."),
+            tags$li("Manhattan (L1) is more robust to outliers in individual dimensions."),
+            tags$li(
+              tags$b("Always standardise features"), " before fitting k-NN —",
+              " a feature with a large numeric range will otherwise dominate the distance computation."
+            )
+          )
+        )
       )
     )
-
+    
     output$model_theory_content_ui <- renderUI({
-
-      algorithm_key  <- selected_algorithm_key()
-      model_results  <- tryCatch(trained_model_bundle(), error = function(e) NULL)
-
-      model_info <- model_theory_content[[algorithm_key]]
-
+      
+      algorithm_key <- selected_algorithm_key()
+      model_info    <- model_theory_content[[algorithm_key]]
+      
       if (is.null(model_info)) {
         return(tags$p("No theory available for this model."))
       }
-
-      metrics_block <- if (is.null(model_results)) {
-        div(
-          class = "app-card theory-summary-card",
-          tags$h4("Current Run Summary"),
-          tags$p("Run the classifier from the sidebar to populate this summary with live metrics.")
-        )
-      } else {
-        div(
-          class = "app-card theory-summary-card",
-          tags$h4("Current Run Summary"),
-          tags$p(paste("Algorithm:",  model_results$algorithm_label)),
-          tags$p(paste("Accuracy:",   model_results$metrics$accuracy)),
-          tags$p(paste("Precision:",  model_results$metrics$precision)),
-          tags$p(paste("Recall:",     model_results$metrics$recall)),
-          tags$p(paste("F1 Score:",   model_results$metrics$f1_score))
-        )
-      }
-
+      
       div(
-        class = "theory-panel-grid",
-
-        div(
-          class = "theory-main",
-          div(
-            class = "app-card theory-detail-card",
-            tags$h3(model_info$title),
-            model_info$explanation,
-
-            tags$h4("Why it helps in this app"),
-            tags$ul(model_info$strengths),
-
-            tags$h4("Parameter focus"),
-            model_info$parameter_note
-          )
-        ),
-
-        div(
-          class = "theory-side",
-          metrics_block
-        )
+        class = "app-card theory-detail-card",
+        tags$h3(model_info$title),
+        model_info$explanation,
+        
+        tags$h4("Why it helps in this app"),
+        tags$ul(model_info$strengths),
+        
+        tags$h4("Parameter focus"),
+        model_info$parameter_note
       )
     })
   })

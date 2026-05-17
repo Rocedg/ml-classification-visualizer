@@ -40,11 +40,14 @@ page_theory_hub_ui <- function(id) {
         div(
           class = "app-card theory-card",
           tags$h3("Support Vector Machine"),
-          tags$p("SVM tries to place a boundary that separates the classes as confidently as possible. With different kernels, it can learn straight or curved boundaries."),
+          tags$p("SVM searches for a boundary with a wide margin. Support vectors are the training points that shape that boundary most strongly."),
+          tags$p(withMathJax("The decision score is \\(f(x)\\). The boundary is \\(f(x) = 0\\); positive and negative scores fall on opposite sides.")),
           tags$ul(
-            tags$li("Focus: separation margin"),
-            tags$li("Important parameters: cost and gamma"),
-            tags$li("Useful for flexible nonlinear boundaries")
+            tags$li("Focus: margin, support vectors, and decision score"),
+            tags$li(withMathJax("Margin idea: \\(y_i f(x_i) \\ge 1\\) for points outside the margin")),
+            tags$li(withMathJax("Soft margin objective: minimize \\(\\frac{1}{2}\\lVert w \\rVert^2 + C \\sum_i \\xi_i\\)")),
+            tags$li(withMathJax("Constraints: \\(y_i(w \\cdot x_i + b) \\ge 1 - \\xi_i\\) and \\(\\xi_i \\ge 0\\)")),
+            tags$li("Kernels allow straight or curved boundaries without explicitly drawing the transformed feature space")
           )
         ),
         div(
