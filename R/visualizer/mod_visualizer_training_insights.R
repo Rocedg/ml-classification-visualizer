@@ -54,7 +54,11 @@ mod_visualizer_training_insights_ui <- function(id) {
           ),
           conditionalPanel(
             condition = paste0("output['", ns("show_3d_parameter_diagnostic"), "'] == 'false'"),
-            plotOutput(
+            tags$p(
+              class = "parameter-diagnostic-note",
+              "When the intercept is disabled, the model only learns the two feature weights. This makes it possible to draw the loss landscape directly in 2D."
+            ),
+            plotly::plotlyOutput(
               outputId = ns("bias_fixed_loss_landscape_plot"),
               height = "320px"
             )

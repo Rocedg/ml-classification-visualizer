@@ -761,7 +761,7 @@ mod_visualizer_plot_panel_server <- function(id,
       )
     })
 
-    output$bias_fixed_loss_landscape_plot <- renderPlot({
+    output$bias_fixed_loss_landscape_plot <- plotly::renderPlotly({
       model_results <- safe_model_results()
       iteration_history <- logistic_iteration_history()
 
@@ -790,7 +790,7 @@ mod_visualizer_plot_panel_server <- function(id,
         iteration_history = iteration_history,
         current_iteration = current_iteration() + 1
       )
-    }, res = 110)
+    })
 
     list(
       plot_click_coordinates = reactive(input$plot_click),

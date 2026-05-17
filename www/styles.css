@@ -951,6 +951,12 @@ a { text-decoration: none; }
 .diagnostic-plot-shell { min-height: 320px; }
 .parameter-diagnostic-card { padding: 10px; }
 .parameter-diagnostic-card .plot-top-status-row { margin-bottom: 6px; }
+.parameter-diagnostic-note {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
 .plot-side-panel {
   grid-area: metrics;
   display: flex;

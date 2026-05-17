@@ -332,30 +332,85 @@ calculate_logistic_objective <- function(weight_x, weight_y, bias, classificatio
 #   - iteration_history: saved logistic states for the parameter path
 #   - current_iteration: selected playback index
 # Output:
-#   A ggplot showing the loss landscape and parameter trajectory.
+#   A Plotly heatmap/contour showing the loss landscape and parameter path.
 build_bias_fixed_loss_landscape_plot <- function(classification_data,
                                                  iteration_history,
                                                  current_iteration) {
   trajectory_data <- build_parameter_trajectory_data(iteration_history)
 
-  if (is.null(trajectory_data) || nrow(trajectory_data) == 0) {
-    placeholder_data <- data.frame(
-      x = 1,
-      y = 1,
-      label = "Run Logistic Regression with Fit intercept off to see the 2D loss surface."
+  build_empty_loss_landscape_plot <- function(message) {
+    empty_loss_data <- data.frame(
+      weight_x = numeric(0),
+      weight_y = numeric(0)
     )
 
-    return(
-      ggplot(placeholder_data, aes(x = x, y = y, label = label)) +
-        geom_text(color = "#6d8196", size = 4) +
-        xlim(0, 2) +
-        ylim(0, 2) +
-        theme_void(base_family = "Manrope") +
-        theme(
-          plot.margin = margin(4, 4, 4, 4),
-          plot.background = element_rect(fill = "#ffffff", color = NA),
-          panel.background = element_rect(fill = "#ffffff", color = NA)
+    empty_plot <- plotly::plot_ly(
+      data = empty_loss_data,
+      x = ~weight_x,
+      y = ~weight_y,
+      type = "scatter",
+      mode = "markers",
+      hoverinfo = "none",
+      showlegend = FALSE
+    )
+
+    plotly::layout(
+      empty_plot,
+      title = list(text = "Loss landscape without intercept"),
+      annotations = list(
+        list(
+          text = message,
+          x = 0.5,
+          y = 0.5,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(color = "#6d8196", size = 14)
         )
+      ),
+      xaxis = list(visible = FALSE),
+      yaxis = list(visible = FALSE),
+      margin = list(l = 0, r = 0, b = 0, t = 60),
+      paper_bgcolor = "#ffffff",
+      plot_bgcolor = "#ffffff"
+    )
+  }
+
+  if (
+    is.null(classification_data) ||
+      nrow(classification_data) == 0 ||
+      !all(c("x", "y", "class") %in% names(classification_data)) ||
+      is.null(trajectory_data) ||
+      nrow(trajectory_data) == 0
+  ) {
+    return(
+      build_empty_loss_landscape_plot(
+        "Run Logistic Regression with Fit intercept off to see the 2D loss landscape."
+      )
+    )
+  }
+
+  trajectory_data <- trajectory_data[
+    is.finite(trajectory_data$weight_x) & is.finite(trajectory_data$weight_y),
+    ,
+    drop = FALSE
+  ]
+
+  if (nrow(trajectory_data) == 0) {
+    return(
+      build_empty_loss_landscape_plot("No finite parameter path is available for the 2D loss landscape.")
+    )
+  }
+
+  classification_data <- classification_data[
+    is.finite(classification_data$x) & is.finite(classification_data$y),
+    ,
+    drop = FALSE
+  ]
+
+  if (nrow(classification_data) == 0) {
+    return(
+      build_empty_loss_landscape_plot("No finite training points are available for the 2D loss landscape.")
     )
   }
 
@@ -371,82 +426,167 @@ build_bias_fixed_loss_landscape_plot <- function(classification_data,
   x_padding <- max(diff(x_range) * 0.45, 0.35)
   y_padding <- max(diff(y_range) * 0.45, 0.35)
 
-  weight_grid <- expand.grid(
-    weight_x = seq(x_range[1] - x_padding, x_range[2] + x_padding, length.out = 70),
-    weight_y = seq(y_range[1] - y_padding, y_range[2] + y_padding, length.out = 70)
+  weight_x_values <- seq(x_range[1] - x_padding, x_range[2] + x_padding, length.out = 60)
+  weight_y_values <- seq(y_range[1] - y_padding, y_range[2] + y_padding, length.out = 60)
+
+  loss_matrix <- matrix(
+    NA_real_,
+    nrow = length(weight_y_values),
+    ncol = length(weight_x_values)
   )
 
-  weight_grid$loss_value <- vapply(
-    seq_len(nrow(weight_grid)),
-    function(row_index) {
+  for (row_index in seq_along(weight_y_values)) {
+    loss_matrix[row_index, ] <- vapply(
+      weight_x_values,
+      function(candidate_weight_x) {
+        calculate_logistic_objective(
+          weight_x = candidate_weight_x,
+          weight_y = weight_y_values[row_index],
+          bias = 0,
+          classification_data = classification_data
+        )
+      },
+      numeric(1)
+    )
+  }
+
+  finite_losses <- loss_matrix[is.finite(loss_matrix)]
+  if (length(finite_losses) == 0) {
+    finite_losses <- 0
+  }
+  loss_cap <- as.numeric(stats::quantile(finite_losses, 0.95, na.rm = TRUE))
+  if (!is.finite(loss_cap)) {
+    loss_cap <- max(finite_losses, na.rm = TRUE)
+  }
+  loss_display_matrix <- pmin(loss_matrix, loss_cap)
+
+  trajectory_data$loss_value <- vapply(
+    seq_len(nrow(trajectory_data)),
+    function(path_index) {
       calculate_logistic_objective(
-        weight_x = weight_grid$weight_x[row_index],
-        weight_y = weight_grid$weight_y[row_index],
+        weight_x = trajectory_data$weight_x[path_index],
+        weight_y = trajectory_data$weight_y[path_index],
         bias = 0,
         classification_data = classification_data
       )
     },
     numeric(1)
   )
-  # Very large losses are capped for display so the color scale keeps useful
-  # contrast near the training path.
-  weight_grid$loss_display <- pmin(weight_grid$loss_value, stats::quantile(weight_grid$loss_value, 0.95))
+  trajectory_data$tooltip <- paste0(
+    "Iteration: ", trajectory_data$iteration,
+    "<br>Weight x: ", round(trajectory_data$weight_x, 4),
+    "<br>Weight y: ", round(trajectory_data$weight_y, 4),
+    "<br>Loss: ", round(trajectory_data$loss_value, 4)
+  )
 
   marker_data <- rbind(
-    data.frame(marker = "Start", trajectory_data[1, c("weight_x", "weight_y", "iteration")]),
-    data.frame(marker = "Current", trajectory_data[bounded_iteration, c("weight_x", "weight_y", "iteration")]),
-    data.frame(marker = "Final", trajectory_data[nrow(trajectory_data), c("weight_x", "weight_y", "iteration")])
+    data.frame(marker = "Start", trajectory_data[1, c("weight_x", "weight_y", "iteration", "tooltip")]),
+    data.frame(marker = "Current", trajectory_data[bounded_iteration, c("weight_x", "weight_y", "iteration", "tooltip")]),
+    data.frame(marker = "Final", trajectory_data[nrow(trajectory_data), c("weight_x", "weight_y", "iteration", "tooltip")])
   )
   marker_data$marker <- factor(marker_data$marker, levels = c("Start", "Current", "Final"))
 
-  ggplot(weight_grid, aes(x = weight_x, y = weight_y)) +
-    geom_raster(aes(fill = loss_display), interpolate = TRUE, alpha = 0.95) +
-    geom_contour(aes(z = loss_value), color = "#ffffff", linewidth = 0.35, alpha = 0.5, bins = 8) +
-    geom_path(
-      data = trajectory_data,
-      aes(x = weight_x, y = weight_y),
-      color = "#243b57",
-      linewidth = 0.95,
-      alpha = 0.9
-    ) +
-    geom_point(
-      data = trajectory_data,
-      aes(x = weight_x, y = weight_y),
-      color = "#b9ddd5",
-      size = 1.8,
-      alpha = 0.9
-    ) +
-    geom_point(
-      data = marker_data,
-      aes(x = weight_x, y = weight_y, color = marker, shape = marker),
-      size = 4,
-      stroke = 0.9
-    ) +
-    scale_fill_gradientn(
-      colours = c("#e0f2fe", "#d7ebe6", "#fff7ed", "#fb923c"),
-      name = "Binary cross-entropy"
-    ) +
-    scale_color_manual(values = c("Start" = "#243b57", "Current" = "#111827", "Final" = "#ff8b3d"), name = NULL) +
-    scale_shape_manual(values = c("Start" = 21, "Current" = 23, "Final" = 24), name = NULL) +
-    labs(
-      title = "Loss landscape (bias fixed to 0)",
-      subtitle = paste("Current iteration:", trajectory_data$iteration[bounded_iteration]),
-      x = "weight_x",
-      y = "weight_y"
-    ) +
-    theme_minimal(base_family = "Manrope") +
-    theme(
-      legend.position = "bottom",
-      legend.title = element_text(color = "#334155", size = 9, face = "bold"),
-      legend.text = element_text(color = "#475569", size = 9),
-      panel.grid.minor = element_blank(),
-      panel.grid.major = element_line(color = "#eef3f7", linewidth = 0.55),
-      axis.title = element_text(color = "#47627b", size = 10, face = "bold"),
-      axis.text = element_text(color = "#6d8196", size = 9),
-      plot.title = element_text(color = "#243b57", size = 12, face = "bold"),
-      plot.subtitle = element_text(color = "#6d8196", size = 10),
-      plot.margin = margin(4, 4, 4, 4),
-      plot.background = element_rect(fill = "#ffffff", color = NA),
-      panel.background = element_rect(fill = "#ffffff", color = NA)
+  loss_plot <- plotly::plot_ly(
+    x = weight_x_values,
+    y = weight_y_values,
+    z = loss_display_matrix,
+    type = "heatmap",
+    colorscale = list(
+      list(0, "#e0f2fe"),
+      list(0.45, "#d7ebe6"),
+      list(0.7, "#fff7ed"),
+      list(1, "#fb923c")
+    ),
+    colorbar = list(title = "Loss"),
+    hovertemplate = paste(
+      "Weight x: %{x:.3f}",
+      "<br>Weight y: %{y:.3f}",
+      "<br>Loss: %{z:.4f}",
+      "<extra></extra>"
     )
+  )
+
+  loss_plot <- plotly::add_trace(
+    loss_plot,
+    x = weight_x_values,
+    y = weight_y_values,
+    z = loss_display_matrix,
+    type = "contour",
+    contours = list(coloring = "none", showlabels = FALSE),
+    line = list(color = "rgba(255, 255, 255, 0.65)", width = 1),
+    showscale = FALSE,
+    hoverinfo = "skip",
+    name = "Loss contours",
+    inherit = FALSE
+  )
+
+  loss_plot <- plotly::add_trace(
+    loss_plot,
+    data = trajectory_data,
+    x = ~weight_x,
+    y = ~weight_y,
+    type = "scatter",
+    mode = "lines+markers",
+    name = "Gradient descent path",
+    text = ~tooltip,
+    hoverinfo = "text",
+    line = list(color = "#243b57", width = 3),
+    marker = list(
+      size = 5,
+      color = "#b9ddd5",
+      line = list(color = "#243b57", width = 0.5)
+    ),
+    inherit = FALSE
+  )
+
+  marker_styles <- list(
+    Start = list(color = "#ffffff", line = list(color = "#243b57", width = 2), symbol = "circle"),
+    Current = list(color = "#243b57", line = list(color = "#ffffff", width = 2), symbol = "diamond"),
+    Final = list(color = "#ff8b3d", line = list(color = "#7c2d12", width = 2), symbol = "triangle-up")
+  )
+
+  for (marker_name in levels(marker_data$marker)) {
+    selected_marker <- marker_data[marker_data$marker == marker_name, , drop = FALSE]
+
+    loss_plot <- plotly::add_trace(
+      loss_plot,
+      data = selected_marker,
+      x = ~weight_x,
+      y = ~weight_y,
+      type = "scatter",
+      mode = "markers",
+      name = marker_name,
+      text = ~paste0(marker, "<br>", tooltip),
+      hoverinfo = "text",
+      marker = c(list(size = 11), marker_styles[[marker_name]]),
+      inherit = FALSE
+    )
+  }
+
+  plotly::layout(
+    loss_plot,
+    title = list(
+      text = paste0(
+        "Loss landscape without intercept",
+        "<br><sup>Color shows loss for different weight combinations; the path shows gradient descent updates.",
+        "<br>Current iteration: ", trajectory_data$iteration[bounded_iteration], "</sup>"
+      )
+    ),
+    xaxis = list(
+      title = "Weight x",
+      gridcolor = "#eef3f7",
+      zeroline = TRUE,
+      zerolinecolor = "#94a3b8"
+    ),
+    yaxis = list(
+      title = "Weight y",
+      gridcolor = "#eef3f7",
+      zeroline = TRUE,
+      zerolinecolor = "#94a3b8"
+    ),
+    legend = list(orientation = "h", x = 0, y = -0.16),
+    margin = list(l = 55, r = 18, b = 50, t = 76),
+    paper_bgcolor = "#ffffff",
+    plot_bgcolor = "#ffffff"
+  )
 }
