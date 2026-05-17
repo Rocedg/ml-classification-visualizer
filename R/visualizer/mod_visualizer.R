@@ -254,6 +254,11 @@ mod_visualizer_server <- function(id) {
       if (!is.null(trained_model_results)) {
         wizard_state("results")
       }
+
+      session$sendCustomMessage(
+        type = "scroll-to-main-visualization",
+        message = list(id = "main-visualization-card")
+      )
     }
 
     # Plot clicks add custom points only while draw mode is enabled.

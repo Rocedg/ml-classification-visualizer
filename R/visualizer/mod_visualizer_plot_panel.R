@@ -53,6 +53,7 @@ mod_visualizer_plot_panel_ui <- function(id) {
       )
     ),
     div(
+      id = "main-visualization-card",
       class = "plot-canvas-shell main-feature-plot-card",
       title = "Background color shows how the selected classifier divides the feature space.",
       div(

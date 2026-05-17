@@ -78,7 +78,26 @@ ui <- fluidPage(
       rel = "stylesheet",
       href = "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
     ),
-    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
+    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+    tags$script(HTML("
+      (function registerMainVisualizationScroll() {
+        if (!window.Shiny || !Shiny.addCustomMessageHandler) {
+          window.setTimeout(registerMainVisualizationScroll, 50);
+          return;
+        }
+
+        Shiny.addCustomMessageHandler('scroll-to-main-visualization', function(message) {
+          var targetId = message && message.id ? message.id : 'main-visualization-card';
+          var target = document.getElementById(targetId) || document.querySelector('.visualizer-main-column');
+
+          if (target && target.scrollIntoView) {
+            window.requestAnimationFrame(function() {
+              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          }
+        });
+      })();
+    "))
   ),
 
   div(
